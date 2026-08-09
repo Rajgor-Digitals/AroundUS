@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash Screen Theme (Seamless transition) -->
+    <style name="Theme.AroundUS.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
+        <item name="postSplashScreenTheme">@style/Theme.AroundUS</item>
+    </style>
+
+    <!-- Dark Theme -->
+    <style name="Theme.AroundUS" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#4CAF50</item>
+        <item name="colorPrimaryContainer">#1B5E20</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorOnPrimaryContainer">#C8E6C9</item>
+        <item name="colorSecondary">#80CBC4</item>
+        <item name="colorSecondaryContainer">#004D40</item>
+        <item name="android:colorBackground">#121212</item>
+        <item name="colorSurface">#1E1E1E</item>
+        <item name="colorSurfaceVariant">#2D2D2D</item>
+        <item name="colorOnSurface">#E1E3E6</item>
+        <item name="colorOnSurfaceVariant">#BDC1C6</item>
+        <item name="colorOnBackground">#E1E3E6</item>
+        <item name="colorTertiary">#42A5F5</item>
+        <item name="colorTertiaryContainer">#0D47A1</item>
+        <item name="colorError">#CF6679</item>
+        <item name="colorOutline">#5F6368</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">#1E1E1E</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

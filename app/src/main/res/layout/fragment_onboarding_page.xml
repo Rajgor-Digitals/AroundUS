@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <!-- PAGE 1 LAYOUT CONTAINER (Centered design) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutPage1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <ImageView
+            android:id="@+id/ivLogoPin1"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_marginTop="32dp"
+            android:contentDescription="AroundUs Logo"
+            android:src="@drawable/ic_aroundus_custom_logo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvTitle1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="#111827"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/ivLogoPin1" />
+
+        <TextView
+            android:id="@+id/tvSubtitle1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"
+            android:textColor="#111827"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle1" />
+
+        <TextView
+            android:id="@+id/tvDesc1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="18dp"
+            android:layout_marginEnd="40dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#4B5563"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvSubtitle1" />
+
+        <ImageView
+            android:id="@+id/ivIllustration1"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="24dp"
+            android:contentDescription="Neighborhood Illustration"
+            android:scaleType="centerCrop"
+            android:src="@drawable/img_onboarding_1"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvDesc1" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- STANDARD PAGE LAYOUT CONTAINER (FOR PAGE 3 only) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutPageStandard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <ImageView
+            android:id="@+id/ivIllustrationStandard"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Page Illustration"
+            android:scaleType="fitCenter"
+            android:src="@drawable/img_onboarding_3"
+            app:layout_constraintBottom_toTopOf="@+id/tvTitleStandard"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed"
+            app:layout_constraintVertical_bias="0.25"
+            app:layout_constraintWidth_percent="0.9" />
+
+        <TextView
+            android:id="@+id/tvTitleStandard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="#111827"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/tvDescStandard"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ivIllustrationStandard" />
+
+        <TextView
+            android:id="@+id/tvDescStandard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="44dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="44dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:lineSpacingExtra="8dp"
+            android:textColor="#4B5563"
+            android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvTitleStandard" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- PAGE 2 LAYOUT - "Stay Updated" (matches reference design exactly) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutPage2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Illustration fills top ~58% of the page -->
+        <ImageView
+            android:id="@+id/ivIllustrationPage2"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Stay Updated Illustration"
+            android:scaleType="fitCenter"
+            android:src="@drawable/img_onboarding_stay_updated"
+            app:layout_constraintBottom_toTopOf="@+id/tvTitlePage2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintHeight_percent="0.58"
+            app:layout_constraintVertical_chainStyle="packed"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <!-- Title: "Stay Updated" — "Stay" dark, "Updated" green (set via code) -->
+        <TextView
+            android:id="@+id/tvTitlePage2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="#111827"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/tvDescPage2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ivIllustrationPage2" />
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/tvDescPage2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="44dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="44dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#6B7280"
+            android:textSize="17sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvTitlePage2"
+            app:layout_constraintVertical_bias="0.0" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- PAGE 3 LAYOUT - "Connect & Help" (matches reference design exactly) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutPage3"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Illustration fills top ~58% of the page -->
+        <ImageView
+            android:id="@+id/ivIllustrationPage3"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Connect and Help Illustration"
+            android:scaleType="fitCenter"
+            android:src="@drawable/img_onboarding_connect_help"
+            app:layout_constraintBottom_toTopOf="@+id/tvTitlePage3"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintHeight_percent="0.58"
+            app:layout_constraintVertical_chainStyle="packed"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <!-- Title: "Connect & Help" — "Connect" dark, "& Help" green (set via code) -->
+        <TextView
+            android:id="@+id/tvTitlePage3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="#111827"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/tvDescPage3"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ivIllustrationPage3" />
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/tvDescPage3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="44dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="44dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#6B7280"
+            android:textSize="17sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvTitlePage3"
+            app:layout_constraintVertical_bias="0.0" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- PAGE 4 LAYOUT - "Buy, Sell & Share" (marketplace slide) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutPage4"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Illustration fills top ~58% of the page -->
+        <ImageView
+            android:id="@+id/ivIllustrationPage4"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Buy Sell Share Illustration"
+            android:scaleType="fitCenter"
+            android:src="@drawable/img_onboarding_buy_sell_share"
+            app:layout_constraintBottom_toTopOf="@+id/tvTitlePage4"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintHeight_percent="0.58"
+            app:layout_constraintVertical_chainStyle="packed"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <!-- Title: "Buy, Sell & Share" — "Buy, Sell &" dark, "Share" green (set via code) -->
+        <TextView
+            android:id="@+id/tvTitlePage4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="#111827"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/tvDescPage4"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ivIllustrationPage4" />
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/tvDescPage4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="44dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="44dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#6B7280"
+            android:textSize="17sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvTitlePage4"
+            app:layout_constraintVertical_bias="0.0" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- PAGE 5 LAYOUT - "Events & Activities" (calendar/events slide) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutPage5"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Illustration fills top ~58% of the page -->
+        <ImageView
+            android:id="@+id/ivIllustrationPage5"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Events and Activities Illustration"
+            android:scaleType="fitCenter"
+            android:src="@drawable/img_onboarding_events_activities"
+            app:layout_constraintBottom_toTopOf="@+id/tvTitlePage5"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintHeight_percent="0.58"
+            app:layout_constraintVertical_chainStyle="packed"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <!-- Title: "Events & Activities" — "Events &" dark, "Activities" green (set via code) -->
+        <TextView
+            android:id="@+id/tvTitlePage5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="#111827"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/tvDescPage5"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ivIllustrationPage5" />
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/tvDescPage5"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="44dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="44dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#6B7280"
+            android:textSize="17sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvTitlePage5"
+            app:layout_constraintVertical_bias="0.0" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- PAGE 6 LAYOUT - "Stay Safe & Secure" (final slide) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutPage6"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Illustration fills top ~58% of the page -->
+        <ImageView
+            android:id="@+id/ivIllustrationPage6"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Stay Safe and Secure Illustration"
+            android:scaleType="fitCenter"
+            android:src="@drawable/img_onboarding_safety"
+            app:layout_constraintBottom_toTopOf="@+id/tvTitlePage6"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintHeight_percent="0.58"
+            app:layout_constraintVertical_chainStyle="packed"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <!-- Title: "Stay Safe & Secure" — "Stay" dark, "Safe & Secure" green (set via code) -->
+        <TextView
+            android:id="@+id/tvTitlePage6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="#111827"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/tvDescPage6"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ivIllustrationPage6" />
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/tvDescPage6"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="44dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="44dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#6B7280"
+            android:textSize="17sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvTitlePage6"
+            app:layout_constraintVertical_bias="0.0" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- PAGE 7 LAYOUT - "Welcome to Around Us!" (grand finale slide) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutPage7"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Illustration fills top ~52% of the page -->
+        <ImageView
+            android:id="@+id/ivIllustrationPage7"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Welcome to AroundUs Illustration"
+            android:scaleType="fitCenter"
+            android:src="@drawable/img_onboarding_welcome"
+            app:layout_constraintBottom_toTopOf="@+id/tvTitlePage7"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintHeight_percent="0.52"
+            app:layout_constraintVertical_chainStyle="packed"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <!-- Title: "Welcome to Around Us!" — "Welcome to" dark, "Around Us!" green -->
+        <TextView
+            android:id="@+id/tvTitlePage7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="#111827"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/tvDescPage7"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ivIllustrationPage7" />
+
+        <!-- Description -->
+        <TextView
+            android:id="@+id/tvDescPage7"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="44dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="44dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:lineSpacingExtra="6dp"
+            android:textColor="#6B7280"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toTopOf="@+id/tvTaglinePage7"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvTitlePage7" />
+
+        <!-- Cursive green tagline (script font matching reference) -->
+        <TextView
+            android:id="@+id/tvTaglinePage7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/dancing_script"
+            android:gravity="center"
+            android:text="Let\'s build a stronger community together! ♡"
+            android:textColor="#16A34A"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvDescPage7"
+            app:layout_constraintVertical_bias="0.1" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

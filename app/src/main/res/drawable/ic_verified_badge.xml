@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Starburst circle background -->
+    <path
+        android:fillColor="#2563EB"
+        android:pathData="M23,12l-2.44,-2.79l0.34,-3.69l-3.61,-0.82l-1.89,-3.2L12,2.96L8.6,1.5L6.71,4.7L3.1,5.52l0.34,3.69L1,12l2.44,2.79l-0.34,3.7l3.61,0.82l1.89,3.2l3.4,-1.46l3.4,1.46l1.89,-3.2l3.61,-0.82l-0.34,-3.69L23,12z" />
+    <!-- White checkmark -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10.09,15.59L6.5,12l1.41,-1.41l2.18,2.17l5.88,-5.88L17.38,8.3L10.09,15.59z" />
+</vector>

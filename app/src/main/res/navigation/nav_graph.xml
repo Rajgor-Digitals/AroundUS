@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <!-- Home -->
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.aroundus.app.fragments.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home">
+
+        <action
+            android:id="@+id/action_home_to_postDetail"
+            app:destination="@id/postDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+        <action
+            android:id="@+id/action_home_to_createPost"
+            app:destination="@id/createPostFragment"
+            app:enterAnim="@anim/slide_up" />
+
+        <action
+            android:id="@+id/action_home_to_search"
+            app:destination="@id/searchFragment"
+            app:enterAnim="@anim/fade_in" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/postDetailFragment"
+        android:name="com.aroundus.app.fragments.PostDetailFragment"
+        android:label="Post"
+        tools:layout="@layout/fragment_post_detail">
+
+        <action
+            android:id="@+id/action_postDetail_to_comments"
+            app:destination="@id/commentsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/createPostFragment"
+        android:name="com.aroundus.app.fragments.CreatePostFragment"
+        android:label="Create Post"
+        tools:layout="@layout/fragment_create_post" />
+
+    <fragment
+        android:id="@+id/commentsFragment"
+        android:name="com.aroundus.app.fragments.CommentsFragment"
+        android:label="Comments"
+        tools:layout="@layout/fragment_comments" />
+
+    <fragment
+        android:id="@+id/searchFragment"
+        android:name="com.aroundus.app.fragments.SearchFragment"
+        android:label="Search"
+        tools:layout="@layout/fragment_search" />
+
+    <!-- Marketplace -->
+    <fragment
+        android:id="@+id/marketplaceFragment"
+        android:name="com.aroundus.app.fragments.MarketplaceFragment"
+        android:label="Marketplace"
+        tools:layout="@layout/fragment_marketplace">
+
+        <action
+            android:id="@+id/action_marketplace_to_productDetail"
+            app:destination="@id/productDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+        <action
+            android:id="@+id/action_marketplace_to_sellItem"
+            app:destination="@id/sellItemFragment"
+            app:enterAnim="@anim/slide_up" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/productDetailFragment"
+        android:name="com.aroundus.app.fragments.ProductDetailFragment"
+        android:label="Product"
+        tools:layout="@layout/fragment_product_detail" />
+
+    <fragment
+        android:id="@+id/sellItemFragment"
+        android:name="com.aroundus.app.fragments.SellItemFragment"
+        android:label="Sell Item" />
+
+    <!-- Events -->
+    <fragment
+        android:id="@+id/eventsFragment"
+        android:name="com.aroundus.app.fragments.EventsFragment"
+        android:label="Events"
+        tools:layout="@layout/fragment_events">
+
+        <action
+            android:id="@+id/action_events_to_eventDetail"
+            app:destination="@id/eventDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/eventDetailFragment"
+        android:name="com.aroundus.app.fragments.EventDetailFragment"
+        android:label="Event" />
+
+    <!-- Community -->
+    <fragment
+        android:id="@+id/communityFragment"
+        android:name="com.aroundus.app.fragments.CommunityFragment"
+        android:label="Community"
+        tools:layout="@layout/fragment_community">
+
+        <action
+            android:id="@+id/action_community_to_groupDetail"
+            app:destination="@id/groupDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/groupDetailFragment"
+        android:name="com.aroundus.app.fragments.GroupDetailFragment"
+        android:label="Group" />
+
+    <!-- Notifications -->
+    <fragment
+        android:id="@+id/notificationsFragment"
+        android:name="com.aroundus.app.fragments.NotificationsFragment"
+        android:label="Notifications"
+        tools:layout="@layout/fragment_notifications" />
+
+    <!-- Profile -->
+    <fragment
+        android:id="@+id/myProfileFragment"
+        android:name="com.aroundus.app.fragments.MyProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_my_profile">
+
+        <action
+            android:id="@+id/action_profile_to_settings"
+            app:destination="@id/settingsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+        <action
+            android:id="@+id/action_profile_to_chatList"
+            app:destination="@id/chatListFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+    </fragment>
+
+    <!-- Chat -->
+    <fragment
+        android:id="@+id/chatListFragment"
+        android:name="com.aroundus.app.fragments.ChatListFragment"
+        android:label="Messages"
+        tools:layout="@layout/fragment_chat_list" />
+
+    <!-- Settings -->
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.aroundus.app.fragments.SettingsFragment"
+        android:label="Settings"
+        tools:layout="@layout/fragment_settings" />
+
+</navigation>

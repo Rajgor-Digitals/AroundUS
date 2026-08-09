@@ -1,0 +1,20 @@
+# Gradle / Build
+.gradle/
+build/
+app/build/
+.artifacts/
+
+# IDE files
+.idea/
+.kotlin/
+*.iml
+.navigation/
+captures/
+
+# Local configuration (SDK paths, secrets)
+local.properties
+
+# OS / Temp files
+.DS_Store
+Thumbs.db
+*.log
