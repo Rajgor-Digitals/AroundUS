@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="54dp"
+    android:height="54dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <!-- Outer Pin Shape in Emerald Green -->
+  <path
+      android:fillColor="#0E8A42"
+      android:pathData="M32,4C20.95,4 12,12.95 12,24c0,14.8 17.5,34.2 19.12,35.9a1.2,1.2 0,0 0,1.76,0C34.5,58.2 52,38.8 52,24 52,12.95 43.05,4 32,4z"/>
+  <!-- White Inner Badge Circle -->
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M32,36c-6.63,0 -12,-5.37 -12,-12s5.37,-12 12,-12 12,5.37 12,12 -5.37,12 -12,12z"/>
+  <!-- House / Community Figures Icon Inside Badge -->
+  <path
+      android:fillColor="#0E8A42"
+      android:pathData="M32,15L21,24h4.5v9h13v-9H43L32,15z M32,18.8l6,5v6.4h-3.2v-5.2h-5.6v5.2H26v-6.4L32,18.8z"/>
+  <!-- People silhouette dots -->
+  <path
+      android:fillColor="#0E8A42"
+      android:pathData="M29.2,22.8a1.6,1.6 0,1 0,0,-3.2 1.6,1.6 0,0 0,0,3.2z M34.8,22.8a1.6,1.6 0,1 0,0,-3.2 1.6,1.6 0,0 0,0,3.2z"/>
+</vector>

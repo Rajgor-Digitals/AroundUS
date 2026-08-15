@@ -1,20 +1,92 @@
 package com.aroundus.app.activities
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.text.InputType
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.UnderlineSpan
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.aroundus.app.databinding.ActivityRegisterBinding
 
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegisterBinding
+    private var isPasswordVisible = false
+    private var isConfirmPasswordVisible = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupTermsText()
+        setupPasswordToggles()
+        setupClickListeners()
+    }
+
+    private fun setupTermsText() {
+        val fullText = "I agree to the Terms of Use and Privacy Policy."
+        val spannable = SpannableString(fullText)
+        val greenColor = Color.parseColor("#0D8A3F")
+
+        val termsStart = fullText.indexOf("Terms of Use")
+        if (termsStart >= 0) {
+            val termsEnd = termsStart + "Terms of Use".length
+            spannable.setSpan(ForegroundColorSpan(greenColor), termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(UnderlineSpan(), termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        val privacyStart = fullText.indexOf("Privacy Policy")
+        if (privacyStart >= 0) {
+            val privacyEnd = privacyStart + "Privacy Policy".length
+            spannable.setSpan(ForegroundColorSpan(greenColor), privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(UnderlineSpan(), privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        binding.tvTerms.text = spannable
+        binding.tvTerms.setOnClickListener {
+            binding.cbTerms.isChecked = !binding.cbTerms.isChecked
+        }
+    }
+
+    private fun setupPasswordToggles() {
+        binding.btnTogglePassword.setOnClickListener {
+            isPasswordVisible = !isPasswordVisible
+            val selection = binding.etPassword.selectionEnd
+            if (isPasswordVisible) {
+                binding.etPassword.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                binding.btnTogglePassword.alpha = 1.0f
+            } else {
+                binding.etPassword.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                binding.btnTogglePassword.alpha = 0.6f
+            }
+            binding.etPassword.setSelection(selection.coerceAtLeast(0))
+        }
+
+        binding.btnToggleConfirmPassword.setOnClickListener {
+            isConfirmPasswordVisible = !isConfirmPasswordVisible
+            val selection = binding.etConfirmPassword.selectionEnd
+            if (isConfirmPasswordVisible) {
+                binding.etConfirmPassword.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                binding.btnToggleConfirmPassword.alpha = 1.0f
+            } else {
+                binding.etConfirmPassword.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                binding.btnToggleConfirmPassword.alpha = 0.6f
+            }
+            binding.etConfirmPassword.setSelection(selection.coerceAtLeast(0))
+        }
+    }
+
+    private fun setupClickListeners() {
         binding.btnBack.setOnClickListener { finish() }
+
+        binding.btnNeedHelp.setOnClickListener {
+            Toast.makeText(this, "AroundUS Support: Contact help@aroundus.app", Toast.LENGTH_LONG).show()
+        }
 
         binding.btnRegister.setOnClickListener {
             val name = binding.etFullName.text.toString().trim()
@@ -23,20 +95,54 @@ class RegisterActivity : AppCompatActivity() {
             val password = binding.etPassword.text.toString()
             val confirmPass = binding.etConfirmPassword.text.toString()
 
-            binding.tilFullName.error = null
-            binding.tilEmail.error = null
-            binding.tilPassword.error = null
-            binding.tilConfirmPassword.error = null
-
             var isValid = true
-            if (name.isEmpty()) { binding.tilFullName.error = "Name required"; isValid = false }
-            if (email.isEmpty()) { binding.tilEmail.error = "Email required"; isValid = false }
-            if (password.isEmpty()) { binding.tilPassword.error = "Password required"; isValid = false }
-            if (password != confirmPass) { binding.tilConfirmPassword.error = "Passwords don't match"; isValid = false }
+            if (name.isEmpty()) {
+                binding.etFullName.error = "Full Name required"
+                binding.etFullName.requestFocus()
+                isValid = false
+            } else if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                binding.etEmail.error = "Valid Email required"
+                binding.etEmail.requestFocus()
+                isValid = false
+            } else if (phone.isEmpty()) {
+                binding.etPhone.error = "Phone Number required"
+                binding.etPhone.requestFocus()
+                isValid = false
+            } else if (password.isEmpty()) {
+                binding.etPassword.error = "Password required"
+                binding.etPassword.requestFocus()
+                isValid = false
+            } else if (password.length < 6) {
+                binding.etPassword.error = "Password must be at least 6 characters"
+                binding.etPassword.requestFocus()
+                isValid = false
+            } else if (password != confirmPass) {
+                binding.etConfirmPassword.error = "Passwords don't match"
+                binding.etConfirmPassword.requestFocus()
+                isValid = false
+            } else if (!binding.cbTerms.isChecked) {
+                Toast.makeText(this, "Please agree to the Terms of Use and Privacy Policy", Toast.LENGTH_SHORT).show()
+                isValid = false
+            }
 
             if (isValid) {
                 startActivity(Intent(this, OtpVerificationActivity::class.java))
             }
+        }
+
+        binding.btnGoogle.setOnClickListener {
+            Toast.makeText(this, "Signing up with Google...", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, OtpVerificationActivity::class.java))
+        }
+
+        binding.btnFacebook.setOnClickListener {
+            Toast.makeText(this, "Signing up with Facebook...", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, OtpVerificationActivity::class.java))
+        }
+
+        binding.btnApple.setOnClickListener {
+            Toast.makeText(this, "Signing up with Apple...", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, OtpVerificationActivity::class.java))
         }
 
         binding.btnLogin.setOnClickListener {
