@@ -155,12 +155,96 @@ object DummyData {
         Notification("5", "comment", "James Wilson replied to your comment", R.drawable.shape_avatar_placeholder, "5h", false)
     )
 
-    val groups = listOf(
-        Group("1", "Maple Grove Gardening Club", "A community for gardening enthusiasts to share tips, plants, and more!", R.drawable.bg_gradient_onboarding, 248, true),
-        Group("2", "Neighborhood Safety Watch", "Stay informed about local safety updates and alerts.", R.drawable.bg_gradient_onboarding, 512, true),
-        Group("3", "Local Foodies", "Share restaurant recommendations, recipes, and food events.", R.drawable.bg_gradient_onboarding, 89, false),
-        Group("4", "Parents & Kids Network", "A safe space for parents to connect and share resources.", R.drawable.bg_gradient_onboarding, 167, false)
+    val groupCategories = listOf(
+        GroupCategory("1", "All", R.drawable.ic_grid_category, isSelected = true),
+        GroupCategory("2", "Local", R.drawable.ic_home, isSelected = false),
+        GroupCategory("3", "Buy / Sell", R.drawable.ic_sell, isSelected = false),
+        GroupCategory("4", "Help & Support", R.drawable.ic_support_heart, isSelected = false),
+        GroupCategory("5", "Activities", R.drawable.ic_event, isSelected = false),
+        GroupCategory("6", "Education", R.drawable.ic_school, isSelected = false),
+        GroupCategory("7", "More", R.drawable.ic_more_horiz, isSelected = false)
     )
+
+    val myGroups = listOf(
+        Group(
+            id = "1",
+            name = "Bhujpur Residents",
+            description = "Stay updated with local news and events.",
+            coverRes = R.drawable.img_group_bhujpur_residents,
+            membersText = "1.2K Members",
+            category = "Local",
+            isAdmin = true,
+            iconBadgeRes = R.drawable.ic_people,
+            isJoined = true,
+            isNotificationOn = true
+        ),
+        Group(
+            id = "2",
+            name = "Bhujpur Buy & Sell",
+            description = "Buy, sell and exchange items in your area.",
+            coverRes = R.drawable.img_group_bhujpur_buysell,
+            membersText = "856 Members",
+            category = "Buy / Sell",
+            isAdmin = true,
+            iconBadgeRes = R.drawable.ic_sell,
+            isJoined = true,
+            isNotificationOn = true
+        ),
+        Group(
+            id = "3",
+            name = "Help Each Other",
+            description = "Community support and help for everyone.",
+            coverRes = R.drawable.img_group_help_each_other,
+            membersText = "634 Members",
+            category = "Help & Support",
+            isAdmin = false,
+            iconBadgeRes = R.drawable.ic_support_heart,
+            isJoined = true,
+            isNotificationOn = true
+        )
+    )
+
+    val discoverGroups = listOf(
+        Group(
+            id = "4",
+            name = "Yoga & Wellness Bhujpur",
+            description = "Join yoga sessions, wellness tips and a healthy lifestyle community.",
+            coverRes = R.drawable.img_group_yoga_wellness,
+            membersText = "789 Members",
+            category = "Health",
+            isJoined = false
+        ),
+        Group(
+            id = "5",
+            name = "Students Hub Bhujpur",
+            description = "Study materials, notes, guidance and student discussions.",
+            coverRes = R.drawable.img_group_students_hub,
+            membersText = "1.1K Members",
+            category = "Education",
+            isJoined = false
+        ),
+        Group(
+            id = "6",
+            name = "Pet Lovers Bhujpur",
+            description = "For pet lovers to share tips, stories and help each other.",
+            coverRes = R.drawable.img_group_pet_lovers,
+            membersText = "642 Members",
+            category = "Pets",
+            isJoined = false
+        ),
+        Group(
+            id = "7",
+            name = "Clean & Green Bhujpur",
+            description = "Let's keep our city clean and green together.",
+            coverRes = R.drawable.img_group_clean_green,
+            membersText = "512 Members",
+            category = "Environment",
+            isJoined = false
+        )
+    )
+
+    val groups = myGroups + discoverGroups
+
 
     val onboardingPages = listOf(
         OnboardingPage(

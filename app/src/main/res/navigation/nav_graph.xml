@@ -5,6 +5,12 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/homeFragment">
 
+    <action
+        android:id="@+id/action_global_notifications"
+        app:destination="@id/notificationsFragment"
+        app:enterAnim="@anim/slide_in_right"
+        app:exitAnim="@anim/slide_out_left" />
+
     <!-- Home -->
     <fragment
         android:id="@+id/homeFragment"
@@ -29,6 +35,7 @@
             app:enterAnim="@anim/fade_in" />
 
     </fragment>
+
 
     <fragment
         android:id="@+id/postDetailFragment"

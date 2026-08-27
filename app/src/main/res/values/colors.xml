@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary Royal Blue -->
-    <color name="primary">#2563EB</color>
-    <color name="primary_dark">#1D4ED8</color>
-    <color name="primary_light">#3B82F6</color>
-    <color name="primary_container">#DBEAFE</color>
+    <!-- Primary App Green -->
+    <color name="primary">#0D8A3F</color>
+    <color name="primary_dark">#065F46</color>
+    <color name="primary_light">#16A34A</color>
+    <color name="primary_container">#DCFCE7</color>
     <color name="on_primary">#FFFFFF</color>
-    <color name="on_primary_container">#1E40AF</color>
+    <color name="on_primary_container">#065F46</color>
 
-    <!-- Onboarding Green Theme -->
+
+    <!-- Onboarding / App Green Theme -->
     <color name="onboarding_primary">#0D8A3F</color>
     <color name="onboarding_primary_dark">#065F46</color>
     <color name="onboarding_text_dark">#1E293B</color>
     <color name="onboarding_text_grey">#64748B</color>
     <color name="onboarding_dot_inactive">#E2E8F0</color>
+    <color name="app_green">#0D8A3F</color>
+    <color name="app_green_light">#F0FDF4</color>
+    <color name="app_green_border">#0D8A3F</color>
+
 
     <!-- Secondary Teal -->
     <color name="secondary">#14B8A6</color>
@@ -96,9 +101,9 @@
     <color name="overlay_light">#33FFFFFF</color>
 
     <!-- Bottom Nav -->
-    <color name="nav_selected">#2563EB</color>
+    <color name="nav_selected">#0D8A3F</color>
     <color name="nav_unselected">#64748B</color>
-    <color name="nav_indicator">#DBEAFE</color>
+    <color name="nav_indicator">#DCFCE7</color>
 
     <!-- Avatar placeholder colors -->
     <color name="avatar_1">#3B82F6</color>

@@ -76,9 +76,19 @@ data class Group(
     val name: String,
     val description: String,
     val coverRes: Int,
-    val membersCount: Int,
-    val isPublic: Boolean,
-    var isJoined: Boolean = false
+    val membersText: String,
+    val category: String,
+    val isAdmin: Boolean = false,
+    val iconBadgeRes: Int = 0,
+    var isJoined: Boolean = false,
+    var isNotificationOn: Boolean = true
+)
+
+data class GroupCategory(
+    val id: String,
+    val name: String,
+    val iconRes: Int,
+    var isSelected: Boolean = false
 )
 
 data class OnboardingPage(

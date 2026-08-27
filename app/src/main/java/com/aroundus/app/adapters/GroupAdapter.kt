@@ -17,8 +17,8 @@ class GroupAdapter(
         fun bind(group: Group) {
             binding.tvGroupName.text = group.name
             binding.tvGroupDesc.text = group.description
-            binding.tvMembersCount.text = "${group.membersCount} members"
-            binding.chipPrivacy.text = if (group.isPublic) "Public" else "Private"
+            binding.tvMembersCount.text = group.membersText
+            binding.chipPrivacy.text = group.category
             binding.ivGroupCover.setImageResource(group.coverRes)
 
             binding.btnJoin.text = if (group.isJoined) "Joined" else "Join"
