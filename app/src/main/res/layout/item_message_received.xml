@@ -1,49 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="start"
     android:orientation="horizontal"
-    android:paddingStart="8dp"
-    android:paddingTop="4dp"
-    android:paddingEnd="64dp"
-    android:paddingBottom="4dp">
-
-    <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/ivAvatar"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginTop="4dp"
-        android:src="@drawable/shape_avatar_placeholder" />
+    android:paddingStart="12dp"
+    android:paddingTop="3dp"
+    android:paddingEnd="48dp"
+    android:paddingBottom="3dp">
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_rounded_card"
+        android:background="@drawable/bg_bubble_incoming"
+        android:elevation="0.5dp"
+        android:maxWidth="280dp"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:paddingStart="14dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="8dp">
 
         <TextView
             android:id="@+id/tvMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif"
-            android:maxWidth="260dp"
-            android:text="Yes! Looking forward to it 🎉"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp" />
+            android:lineSpacingExtra="3dp"
+            android:textColor="#0F172A"
+            android:textSize="14sp"
+            tools:text="I saw your post about the tuition teacher. I think I can help with that." />
 
         <TextView
             android:id="@+id/tvTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
-            android:layout_marginTop="2dp"
-            android:text="10:33 AM"
-            android:textColor="@color/text_tertiary"
-            android:textSize="10sp" />
+            android:layout_marginTop="4dp"
+            android:fontFamily="sans-serif"
+            android:textColor="#94A3B8"
+            android:textSize="11sp"
+            tools:text="9:28 AM" />
 
     </LinearLayout>
 

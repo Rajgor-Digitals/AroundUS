@@ -1,372 +1,1333 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="#F8FAFC"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingStart="14dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="28dp">
 
-        <!-- Cover Photo + Avatar -->
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="200dp">
-
-            <ImageView
-                android:id="@+id/ivCoverPhoto"
-                android:layout_width="match_parent"
-                android:layout_height="160dp"
-                android:background="@drawable/bg_gradient_onboarding"
-                android:contentDescription="Cover"
-                android:scaleType="centerCrop" />
-
-            <!-- Toolbar overlay -->
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="@android:color/transparent"
-                app:navigationIcon="@drawable/ic_arrow_back"
-                app:navigationIconTint="#FFFFFF"
-                app:menu="@menu/menu_post_detail"
-                app:title="" />
-
-            <!-- Avatar -->
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/ivAvatar"
-                android:layout_width="88dp"
-                android:layout_height="88dp"
-                android:layout_gravity="bottom|start"
-                android:layout_marginStart="16dp"
-                android:src="@drawable/shape_avatar_placeholder"
-                app:civ_border_color="#FFFFFF"
-                app:civ_border_width="4dp" />
-
-        </FrameLayout>
-
-        <!-- Profile Header -->
-        <LinearLayout
+        <!-- 1. Top Header Actions Bar -->
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#FFFFFF"
-            android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="16dp">
+            android:paddingBottom="8dp">
+
+            <!-- Menu Button (Opens Navigation Drawer) -->
+            <FrameLayout
+                android:id="@+id/btnMenu"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_profile_header_btn"
+                android:clickable="true"
+                android:focusable="true"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <ImageView
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="Menu"
+                    android:src="@drawable/ic_menu_hamburger"
+                    app:tint="#111827" />
+            </FrameLayout>
+
+            <!-- Right Actions Container: Settings & Notifications -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <!-- Settings Button -->
+                <FrameLayout
+                    android:id="@+id/btnSettings"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/bg_profile_header_btn"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="19dp"
+                        android:layout_height="19dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Settings"
+                        android:src="@drawable/ic_settings"
+                        app:tint="#111827" />
+                </FrameLayout>
+
+                <!-- Notifications Button with Badge -->
+                <FrameLayout
+                    android:id="@+id/btnNotifications"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_profile_header_btn"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="19dp"
+                        android:layout_height="19dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Notifications"
+                        android:src="@drawable/ic_notifications"
+                        app:tint="#111827" />
+
+                    <!-- Unread Badge "3" -->
+                    <TextView
+                        android:id="@+id/tvNotificationBadge"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="1dp"
+                        android:layout_marginEnd="1dp"
+                        android:background="@drawable/bg_notification_badge_green"
+                        android:fontFamily="sans-serif-bold"
+                        android:gravity="center"
+                        android:text="3"
+                        android:textColor="#FFFFFF"
+                        android:textSize="9sp" />
+                </FrameLayout>
+
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- 2. User Profile Hero Card (Compact, Exactly Matching Reference Image) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#EAEFF5"
+            app:strokeWidth="1dp">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="12dp">
 
-                <LinearLayout
-                    android:id="@+id/nameSection"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    app:layout_constraintEnd_toStartOf="@id/btnActions"
+                <!-- Soft Neighborhood Illustration Pinned to Right Side Only with 0dp height so it never stretches the card -->
+                <ImageView
+                    android:id="@+id/ivNeighborhoodBg"
+                    android:layout_width="160dp"
+                    android:layout_height="0dp"
+                    android:alpha="0.85"
+                    android:contentDescription="Neighborhood artwork"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/bg_profile_neighborhood_light"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- Avatar Frame (Left) -->
+                <FrameLayout
+                    android:id="@+id/avatarContainer"
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent">
 
-                    <LinearLayout
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:id="@+id/ivAvatar"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:src="@drawable/img_avatar_gaurav_rajgor"
+                        app:civ_border_color="#FFFFFF"
+                        app:civ_border_width="2.5dp" />
+
+                    <!-- Camera Button Overlay -->
+                    <FrameLayout
+                        android:id="@+id/btnChangeAvatar"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="bottom|end"
+                        android:background="@drawable/shape_circle_primary"
+                        android:backgroundTint="#008A3C"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:layout_width="11dp"
+                            android:layout_height="11dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Change avatar"
+                            android:src="@drawable/ic_camera"
+                            app:tint="#FFFFFF" />
+                    </FrameLayout>
+                </FrameLayout>
+
+                <!-- User Name & Verified Badge (Top Right Row) -->
+                <LinearLayout
+                    android:id="@+id/llUserNameRow"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/avatarContainer"
+                    app:layout_constraintTop_toTopOf="@id/avatarContainer">
+
+                    <TextView
+                        android:id="@+id/tvUserName"
                         android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-bold"
+                        android:maxLines="1"
+                        android:text="Gaurav Rajgor"
+                        android:textColor="#111827"
+                        android:textSize="17sp" />
+
+                    <ImageView
+                        android:id="@+id/ivVerified"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="6dp"
+                        android:contentDescription="Verified Neighbor"
+                        android:src="@drawable/ic_verified_green" />
+                </LinearLayout>
+
+                <!-- Handle (@username) -->
+                <TextView
+                    android:id="@+id/tvUsername"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@gauravrajgor"
+                    android:textColor="#64748B"
+                    android:textSize="12sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/avatarContainer"
+                    app:layout_constraintTop_toBottomOf="@id/llUserNameRow" />
+
+                <!-- Location with Green Pin -->
+                <LinearLayout
+                    android:id="@+id/llUserLocationRow"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/avatarContainer"
+                    app:layout_constraintTop_toBottomOf="@id/tvUsername">
+
+                    <ImageView
+                        android:layout_width="11dp"
+                        android:layout_height="11dp"
+                        android:contentDescription="Location pin"
+                        android:src="@drawable/ic_location"
+                        app:tint="#0D8A3F" />
+
+                    <TextView
+                        android:id="@+id/tvUserLocation"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-medium"
+                        android:maxLines="1"
+                        android:text="Bhujpur, Kutch, Gujarat"
+                        android:textColor="#1E293B"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- Bio Section (Directly underneath location in the same right column!) -->
+                <TextView
+                    android:id="@+id/tvBio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="5dp"
+                    android:fontFamily="sans-serif"
+                    android:lineSpacingExtra="1.5dp"
+                    android:text="Passionate about building a better community. Let's connect and create a positive impact together."
+                    android:textColor="#334155"
+                    android:textSize="11.5sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/avatarContainer"
+                    app:layout_constraintTop_toBottomOf="@id/llUserLocationRow" />
+
+                <!-- Edit Profile Button (Pill at bottom right) -->
+                <LinearLayout
+                    android:id="@+id/btnEditProfile"
+                    android:layout_width="wrap_content"
+                    android:layout_height="28dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_btn_edit_profile"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvBio">
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:contentDescription="Edit"
+                        android:src="@drawable/ic_edit"
+                        app:tint="#0D8A3F" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Edit Profile"
+                        android:textColor="#0D8A3F"
+                        android:textSize="11.5sp" />
+                </LinearLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 3. Stats Row (4 Metric Cards: Posts, Groups, Connections, Saved) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <!-- 1. Posts Metric Card -->
+            <LinearLayout
+                android:id="@+id/cardPosts"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_metric_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingTop="9dp"
+                android:paddingBottom="9dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_people"
+                    app:tint="#0D8A3F" />
+
+                <TextView
+                    android:id="@+id/tvPostsCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:fontFamily="sans-serif-black"
+                    android:text="0"
+                    android:textColor="#111827"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Posts"
+                    android:textColor="#64748B"
+                    android:textSize="10.5sp" />
+            </LinearLayout>
+
+            <!-- 2. Groups Metric Card -->
+            <LinearLayout
+                android:id="@+id/cardGroups"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_metric_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingTop="9dp"
+                android:paddingBottom="9dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_group"
+                    app:tint="#0D8A3F" />
+
+                <TextView
+                    android:id="@+id/tvGroupsCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:fontFamily="sans-serif-black"
+                    android:text="0"
+                    android:textColor="#111827"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Groups"
+                    android:textColor="#64748B"
+                    android:textSize="10.5sp" />
+            </LinearLayout>
+
+            <!-- 3. Connections Metric Card -->
+            <LinearLayout
+                android:id="@+id/cardConnections"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_metric_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingTop="9dp"
+                android:paddingBottom="9dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_chat_bubble"
+                    app:tint="#0D8A3F" />
+
+                <TextView
+                    android:id="@+id/tvConnectionsCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:fontFamily="sans-serif-black"
+                    android:text="0"
+                    android:textColor="#111827"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Connections"
+                    android:textColor="#64748B"
+                    android:textSize="10.5sp" />
+            </LinearLayout>
+
+            <!-- 4. Saved Metric Card -->
+            <LinearLayout
+                android:id="@+id/cardSaved"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_metric_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingTop="9dp"
+                android:paddingBottom="9dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_bookmark"
+                    app:tint="#0D8A3F" />
+
+                <TextView
+                    android:id="@+id/tvSavedCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:fontFamily="sans-serif-black"
+                    android:text="0"
+                    android:textColor="#111827"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Saved"
+                    android:textColor="#64748B"
+                    android:textSize="10.5sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 4. Menu Navigation Card (6 Rows) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#EAEFF5"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- 1. My Posts -->
+                <LinearLayout
+                    android:id="@+id/rowMyPosts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_menu_item_icon_container">
+
+                        <ImageView
+                            android:layout_width="17dp"
+                            android:layout_height="17dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_document_text"
+                            app:tint="#0D8A3F" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="My Posts"
+                            android:textColor="#111827"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif"
+                            android:text="View and manage your posts"
+                            android:textColor="#64748B"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="#94A3B8" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="58dp"
+                    android:background="#F1F5F9" />
+
+                <!-- 2. My Comments -->
+                <LinearLayout
+                    android:id="@+id/rowMyComments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_menu_item_icon_container">
+
+                        <ImageView
+                            android:layout_width="17dp"
+                            android:layout_height="17dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_chat_bubble"
+                            app:tint="#0D8A3F" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="My Comments"
+                            android:textColor="#111827"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif"
+                            android:text="Posts you commented on"
+                            android:textColor="#64748B"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="#94A3B8" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="58dp"
+                    android:background="#F1F5F9" />
+
+                <!-- 3. Saved Posts -->
+                <LinearLayout
+                    android:id="@+id/rowSavedPosts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_menu_item_icon_container">
+
+                        <ImageView
+                            android:layout_width="17dp"
+                            android:layout_height="17dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_bookmark"
+                            app:tint="#0D8A3F" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="Saved Posts"
+                            android:textColor="#111827"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif"
+                            android:text="Posts you have saved"
+                            android:textColor="#64748B"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="#94A3B8" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="58dp"
+                    android:background="#F1F5F9" />
+
+                <!-- 4. My Listings -->
+                <LinearLayout
+                    android:id="@+id/rowMyListings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_menu_item_icon_container">
+
+                        <ImageView
+                            android:layout_width="17dp"
+                            android:layout_height="17dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_sell"
+                            app:tint="#0D8A3F" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="My Listings"
+                            android:textColor="#111827"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif"
+                            android:text="Items you are selling or offering"
+                            android:textColor="#64748B"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="#94A3B8" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="58dp"
+                    android:background="#F1F5F9" />
+
+                <!-- 5. My Events -->
+                <LinearLayout
+                    android:id="@+id/rowMyEvents"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_menu_item_icon_container">
+
+                        <ImageView
+                            android:layout_width="17dp"
+                            android:layout_height="17dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_event"
+                            app:tint="#0D8A3F" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="My Events"
+                            android:textColor="#111827"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif"
+                            android:text="Events you created or joined"
+                            android:textColor="#64748B"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="#94A3B8" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="58dp"
+                    android:background="#F1F5F9" />
+
+                <!-- 6. Help & Support -->
+                <LinearLayout
+                    android:id="@+id/rowHelpSupport"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_menu_item_icon_container">
+
+                        <ImageView
+                            android:layout_width="17dp"
+                            android:layout_height="17dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_help_circle"
+                            app:tint="#0D8A3F" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="Help &amp; Support"
+                            android:textColor="#111827"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif"
+                            android:text="Get help and view support center"
+                            android:textColor="#64748B"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="#94A3B8" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 5. Two Side-by-Side Cards: "My Badges" and "Community Activity" -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <!-- Left Card: My Badges -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#EAEFF5"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="11dp">
+
+                    <!-- Header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/tvUserName"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="My Badges"
+                            android:textColor="#111827"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/btnViewAllBadges"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-black"
-                            android:text="Sarah Johnson"
-                            android:textColor="@color/text_primary"
-                            android:textSize="20sp" />
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="View all"
+                            android:textColor="#0D8A3F"
+                            android:textSize="10.5sp" />
+                    </LinearLayout>
 
-                        <ImageView
-                            android:id="@+id/ivVerified"
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_marginStart="4dp"
-                            android:contentDescription="Verified User"
-                            android:src="@drawable/ic_verified_badge" />
+                    <!-- 3 Hexagonal Badges in Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <!-- Badge 1: Active Member -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <ImageView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:src="@drawable/ic_badge_active_member" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:lineSpacingExtra="1dp"
+                                android:text="Active\nMember"
+                                android:textColor="#334155"
+                                android:textSize="9sp" />
+                        </LinearLayout>
+
+                        <!-- Badge 2: Helpful Neighbor -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <ImageView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:src="@drawable/ic_badge_helpful_neighbor" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:lineSpacingExtra="1dp"
+                                android:text="Helpful\nNeighbor"
+                                android:textColor="#334155"
+                                android:textSize="9sp" />
+                        </LinearLayout>
+
+                        <!-- Badge 3: Community Builder -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <ImageView
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:src="@drawable/ic_badge_community_builder" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:lineSpacingExtra="1dp"
+                                android:text="Community\nBuilder"
+                                android:textColor="#334155"
+                                android:textSize="9sp" />
+                        </LinearLayout>
 
                     </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tvUsername"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif"
-                        android:text="@sarahjohnson"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Right Card: Community Activity -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:layout_weight="1"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#EAEFF5"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
-                    android:id="@+id/btnActions"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
+                    android:orientation="vertical"
+                    android:padding="11dp">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnMessage"
-                        style="@style/Widget.AroundUS.Button.Outlined"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:layout_marginEnd="8dp"
-                        android:fontFamily="sans-serif-bold"
-                        android:text="@string/message"
-                        android:textSize="12sp"
-                        app:icon="@drawable/ic_message"
-                        app:iconSize="16dp"
-                        app:iconTint="#2563EB"
-                        app:strokeColor="#2563EB" />
+                    <!-- Header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnEditProfile"
-                        style="@style/Widget.AroundUS.Button.Small"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:background="@drawable/bg_primary_button"
-                        app:backgroundTint="@null"
-                        android:fontFamily="sans-serif-bold"
-                        android:text="Edit Profile"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp" />
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:fontFamily="sans-serif-bold"
+                            android:maxLines="1"
+                            android:text="Community Activity"
+                            android:textColor="#111827"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/btnViewAllActivity"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="View all"
+                            android:textColor="#0D8A3F"
+                            android:textSize="10.5sp" />
+                    </LinearLayout>
+
+                    <!-- Activity 1: Joined Around Us -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:background="@drawable/bg_menu_item_icon_container">
+
+                            <ImageView
+                                android:layout_width="13dp"
+                                android:layout_height="13dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_activity_joined" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="7dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:fontFamily="sans-serif-bold"
+                                android:maxLines="1"
+                                android:text="Joined Around Us"
+                                android:textColor="#111827"
+                                android:textSize="10.5sp" />
+
+                            <TextView
+                                android:id="@+id/tvJoinedDate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif"
+                                android:text="May 12, 2024"
+                                android:textColor="#64748B"
+                                android:textSize="9sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Activity 2: First Post -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:background="@drawable/bg_menu_item_icon_container"
+                            android:backgroundTint="#EFF6FF">
+
+                            <ImageView
+                                android:layout_width="13dp"
+                                android:layout_height="13dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_activity_post" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="7dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:fontFamily="sans-serif-bold"
+                                android:maxLines="1"
+                                android:text="First Post"
+                                android:textColor="#111827"
+                                android:textSize="10.5sp" />
+
+                            <TextView
+                                android:id="@+id/tvFirstPostDate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif"
+                                android:text="May 14, 2024"
+                                android:textColor="#64748B"
+                                android:textSize="9sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Activity 3: Helpful Neighbor Badge -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:background="@drawable/bg_menu_item_icon_container"
+                            android:backgroundTint="#FEF3C7">
+
+                            <ImageView
+                                android:layout_width="13dp"
+                                android:layout_height="13dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_activity_badge" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="7dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:fontFamily="sans-serif-bold"
+                                android:maxLines="1"
+                                android:text="Helpful Neighbor"
+                                android:textColor="#111827"
+                                android:textSize="10.5sp" />
+
+                            <TextView
+                                android:id="@+id/tvBadgeDate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif"
+                                android:text="Jun 01, 2024"
+                                android:textColor="#64748B"
+                                android:textSize="9sp" />
+                        </LinearLayout>
+                    </LinearLayout>
 
                 </LinearLayout>
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <!-- Bio -->
-            <TextView
-                android:id="@+id/tvBio"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:fontFamily="sans-serif"
-                android:lineSpacingExtra="3dp"
-                android:text="🌿 Nature lover | Community organizer | Dog mom 🐶 Living in Maple Grove for 6 years"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
-
-            <!-- Location -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:src="@drawable/ic_location"
-                    app:tint="#2563EB" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/dummy_neighborhood"
-                    android:textColor="#2563EB"
-                    android:textSize="13sp" />
-
-            </LinearLayout>
-
-            <!-- Stats Row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <LinearLayout
-                    android:id="@+id/btnPosts"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvPostsCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-black"
-                        android:text="48"
-                        android:textColor="@color/text_primary"
-                        android:textSize="20sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif"
-                        android:text="@string/posts"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="32dp"
-                    android:background="#F1F5F9" />
-
-                <LinearLayout
-                    android:id="@+id/btnFollowers"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvFollowersCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-black"
-                        android:text="1.2K"
-                        android:textColor="@color/text_primary"
-                        android:textSize="20sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif"
-                        android:text="@string/followers"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="32dp"
-                    android:background="#F1F5F9" />
-
-                <LinearLayout
-                    android:id="@+id/btnFollowing"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvFollowingCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-black"
-                        android:text="342"
-                        android:textColor="@color/text_primary"
-                        android:textSize="20sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif"
-                        android:text="@string/following"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <!-- Badges row -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <com.google.android.material.chip.Chip
-                    style="@style/Widget.Material3.Chip.Assist"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="⭐ Top Contributor"
-                    android:textColor="#2563EB"
-                    app:chipBackgroundColor="#DBEAFE"
-                    app:chipMinHeight="28dp"
-                    app:strokeWidth="0dp" />
-
-                <com.google.android.material.chip.Chip
-                    style="@style/Widget.Material3.Chip.Assist"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="🏘️ Neighbor"
-                    android:textColor="#D97706"
-                    app:chipBackgroundColor="#FEF3C7"
-                    app:chipMinHeight="28dp"
-                    app:strokeWidth="0dp" />
-
-            </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
 
-        <View
+        <!-- 6. Invite Your Neighbors Banner Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardInviteNeighbors"
             android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:background="#F1F5F9" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="#F3FAF5"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#DCFCE7"
+            app:strokeWidth="1dp">
 
-        <!-- Posts Grid -->
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayout"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="#FFFFFF"
-            app:tabGravity="fill"
-            app:tabIndicatorColor="#2563EB"
-            app:tabIndicatorHeight="3dp"
-            app:tabMode="fixed"
-            app:tabSelectedTextColor="#2563EB"
-            app:tabTextColor="@color/text_secondary">
-
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Posts" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp">
 
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Listings" />
+                <!-- Invite Graphic Illustration -->
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:contentDescription="Invite graphic"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/img_invite_neighbors_clean" />
 
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Events" />
+                <!-- Text Column -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Badges" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
+                        android:text="Invite Your Neighbors"
+                        android:textColor="#111827"
+                        android:textSize="13sp" />
 
-        </com.google.android.material.tabs.TabLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif"
+                        android:lineSpacingExtra="1dp"
+                        android:maxLines="2"
+                        android:text="Invite people around you and make our community stronger."
+                        android:textColor="#64748B"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
 
+                <!-- "Invite Now" Pill Button -->
+                <LinearLayout
+                    android:id="@+id/btnInviteNow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:background="@drawable/bg_invite_pill_btn"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
+
+                    <ImageView
+                        android:layout_width="11dp"
+                        android:layout_height="11dp"
+                        android:src="@drawable/ic_share"
+                        app:tint="#FFFFFF" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Invite Now"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Hidden / Collapsible RecyclerView for user's posts (loaded dynamically) -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvPosts"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:clipToPadding="false"
             android:nestedScrollingEnabled="false"
-            android:paddingTop="8dp"
-            android:paddingBottom="88dp" />
+            android:visibility="gone" />
 
     </LinearLayout>
 

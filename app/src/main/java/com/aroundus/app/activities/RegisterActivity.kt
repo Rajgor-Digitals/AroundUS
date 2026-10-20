@@ -10,11 +10,15 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.UnderlineSpan
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.aroundus.app.databinding.ActivityRegisterBinding
+import com.aroundus.app.repository.UserRepository
+import kotlinx.coroutines.launch
 
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegisterBinding
+    private val userRepository = UserRepository()
     private var isPasswordVisible = false
     private var isConfirmPasswordVisible = false
 
@@ -126,22 +130,35 @@ class RegisterActivity : AppCompatActivity() {
             }
 
             if (isValid) {
-                startActivity(Intent(this, OtpVerificationActivity::class.java))
+                lifecycleScope.launch {
+                    binding.btnRegister.isEnabled = false
+                    val result = userRepository.signUp(email, password, name, phone)
+                    binding.btnRegister.isEnabled = true
+
+                    when (result) {
+                        is com.aroundus.app.repository.NetworkResult.Success -> {
+                            val otpRepository = com.aroundus.app.repository.OtpRepository()
+                            val generatedOtp = otpRepository.generate6DigitOtp()
+                            otpRepository.sendOtp(email, generatedOtp)
+
+                            Toast.makeText(this@RegisterActivity, "OTP sent to $email", Toast.LENGTH_LONG).show()
+
+                            val intent = Intent(this@RegisterActivity, OtpVerificationActivity::class.java).apply {
+                                putExtra("email", email)
+                                putExtra("otpCode", generatedOtp)
+                            }
+                            startActivity(intent)
+                        }
+                        is com.aroundus.app.repository.NetworkResult.Error -> {
+                            Toast.makeText(this@RegisterActivity, result.message, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
             }
         }
 
         binding.btnGoogle.setOnClickListener {
             Toast.makeText(this, "Signing up with Google...", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, OtpVerificationActivity::class.java))
-        }
-
-        binding.btnFacebook.setOnClickListener {
-            Toast.makeText(this, "Signing up with Facebook...", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, OtpVerificationActivity::class.java))
-        }
-
-        binding.btnApple.setOnClickListener {
-            Toast.makeText(this, "Signing up with Apple...", Toast.LENGTH_SHORT).show()
             startActivity(Intent(this, OtpVerificationActivity::class.java))
         }
 

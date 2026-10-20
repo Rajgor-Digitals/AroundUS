@@ -1,40 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="end"
     android:orientation="horizontal"
-    android:paddingStart="64dp"
-    android:paddingTop="4dp"
-    android:paddingEnd="8dp"
-    android:paddingBottom="4dp">
+    android:paddingStart="48dp"
+    android:paddingTop="3dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="3dp">
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_primary_button"
+        android:background="@drawable/bg_bubble_outgoing"
+        android:elevation="0.5dp"
+        android:maxWidth="280dp"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:paddingStart="14dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="8dp">
 
         <TextView
             android:id="@+id/tvMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif"
-            android:maxWidth="260dp"
-            android:text="Hey! Are you coming to the event?"
-            android:textColor="@color/on_primary"
-            android:textSize="14sp" />
+            android:lineSpacingExtra="3dp"
+            android:textColor="#14532D"
+            android:textSize="14sp"
+            tools:text="Hey Priya! That's great 😊" />
 
-        <TextView
-            android:id="@+id/tvTime"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
-            android:layout_marginTop="2dp"
-            android:text="10:32 AM ✓✓"
-            android:textColor="#CCFFFFFF"
-            android:textSize="10sp" />
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:textColor="#0D8A3F"
+                android:textSize="11sp"
+                tools:text="9:30 AM" />
+
+            <ImageView
+                android:id="@+id/ivReceipt"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginStart="4dp"
+                android:contentDescription="Read"
+                android:src="@drawable/ic_done_all_green"
+                app:tint="#0D8A3F" />
+        </LinearLayout>
 
     </LinearLayout>
 

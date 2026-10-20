@@ -33,13 +33,18 @@ class SplashActivity : AppCompatActivity() {
             animateEntrance()
             animateProgressBar()
 
-            // Navigate to OnboardingActivity after 2.8 seconds
+            // Navigate to MainActivity if logged in, or OnboardingActivity snappy after 900ms
             Handler(Looper.getMainLooper()).postDelayed({
-                val intent = Intent(this, OnboardingActivity::class.java)
+                val targetActivity = if (com.aroundus.app.network.SupabaseClient.isLoggedIn()) {
+                    MainActivity::class.java
+                } else {
+                    OnboardingActivity::class.java
+                }
+                val intent = Intent(this, targetActivity)
                 startActivity(intent)
                 overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                 finish()
-            }, 2800)
+            }, 900)
 
         } catch (e: Exception) {
             // Fallback to avoid crash if binding fails
@@ -50,26 +55,26 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun animateEntrance() {
-        // Subtle fade-in + slight slide-up for the logo section
+        // Fast, smooth fade-in + slight slide-up for the logo section
         val fadeSlideUp = AnimationSet(true).apply {
-            addAnimation(AlphaAnimation(0f, 1f).apply { duration = 600 })
-            addAnimation(TranslateAnimation(0f, 0f, 30f, 0f).apply { duration = 600 })
+            addAnimation(AlphaAnimation(0f, 1f).apply { duration = 350 })
+            addAnimation(TranslateAnimation(0f, 0f, 20f, 0f).apply { duration = 350 })
             interpolator = DecelerateInterpolator()
         }
         binding.topSection.startAnimation(fadeSlideUp)
 
         // Illustration fades in slightly delayed
         val fadeIn = AlphaAnimation(0f, 1f).apply {
-            duration = 800
-            startOffset = 200
+            duration = 400
+            startOffset = 100
             interpolator = DecelerateInterpolator()
         }
         binding.ivNeighborhoodScene.startAnimation(fadeIn)
 
         // Bottom section fades in last
         val fadeInBottom = AlphaAnimation(0f, 1f).apply {
-            duration = 600
-            startOffset = 400
+            duration = 350
+            startOffset = 200
             interpolator = DecelerateInterpolator()
         }
         binding.bottomSection.startAnimation(fadeInBottom)
@@ -82,7 +87,7 @@ class SplashActivity : AppCompatActivity() {
         progressBar.isIndeterminate = false
 
         ObjectAnimator.ofInt(progressBar, "progress", 0, 100).apply {
-            duration = 2600
+            duration = 850
             interpolator = LinearInterpolator()
             start()
         }

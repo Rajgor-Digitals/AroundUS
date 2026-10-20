@@ -12,7 +12,8 @@ data class Post(
     val likesCount: Int,
     val commentsCount: Int,
     var isLiked: Boolean = false,
-    var isSaved: Boolean = false
+    var isSaved: Boolean = false,
+    val userAvatarPath: String? = null
 )
 
 data class Story(

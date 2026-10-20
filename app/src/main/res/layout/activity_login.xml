@@ -300,101 +300,32 @@
                         android:background="#E2E8F0" />
                 </LinearLayout>
 
-                <!-- Social Login Buttons Row (48dp height) -->
+                <!-- Google Login Button -->
                 <LinearLayout
+                    android:id="@+id/btnGoogle"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_social_button_m3"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
                     android:orientation="horizontal">
 
-                    <!-- Google Button -->
-                    <LinearLayout
-                        android:id="@+id/btnGoogle"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_marginEnd="5dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_social_button_m3"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="horizontal">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Google"
+                        android:src="@drawable/ic_google_logo" />
 
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="Google"
-                            android:src="@drawable/ic_google_logo" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="7dp"
-                            android:fontFamily="sans-serif-medium"
-                            android:text="Google"
-                            android:textColor="#0F172A"
-                            android:textSize="12.5sp" />
-                    </LinearLayout>
-
-                    <!-- Facebook Button -->
-                    <LinearLayout
-                        android:id="@+id/btnFacebook"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_marginStart="3dp"
-                        android:layout_marginEnd="3dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_social_button_m3"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="Facebook"
-                            android:src="@drawable/ic_facebook" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="7dp"
-                            android:fontFamily="sans-serif-medium"
-                            android:text="Facebook"
-                            android:textColor="#0F172A"
-                            android:textSize="12.5sp" />
-                    </LinearLayout>
-
-                    <!-- Apple Button -->
-                    <LinearLayout
-                        android:id="@+id/btnApple"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_marginStart="5dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_social_button_m3"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="Apple"
-                            android:src="@drawable/ic_apple" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="7dp"
-                            android:fontFamily="sans-serif-medium"
-                            android:text="Apple"
-                            android:textColor="#0F172A"
-                            android:textSize="12.5sp" />
-                    </LinearLayout>
-
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Continue with Google"
+                        android:textColor="#0F172A"
+                        android:textSize="13.5sp" />
                 </LinearLayout>
 
                 <!-- Sign Up Footer Link -->

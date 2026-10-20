@@ -8,15 +8,21 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aroundus.app.R
+import com.aroundus.app.activities.MainActivity
 import com.aroundus.app.adapters.DiscoverGroupsAdapter
 import com.aroundus.app.adapters.GroupCategoryAdapter
 import com.aroundus.app.adapters.MyGroupsAdapter
 import com.aroundus.app.databinding.FragmentCommunityBinding
 import com.aroundus.app.models.Group
-import com.aroundus.app.utils.DummyData
+import com.aroundus.app.models.GroupCategory
+import com.aroundus.app.models.toUIModel
+import com.aroundus.app.repository.GroupRepository
+import com.aroundus.app.repository.NetworkResult
+import kotlinx.coroutines.launch
 
 class CommunityFragment : Fragment() {
 
@@ -26,6 +32,10 @@ class CommunityFragment : Fragment() {
     private lateinit var categoryAdapter: GroupCategoryAdapter
     private lateinit var myGroupsAdapter: MyGroupsAdapter
     private lateinit var discoverGroupsAdapter: DiscoverGroupsAdapter
+
+    private val groupRepository = GroupRepository()
+    private val myGroupsList = mutableListOf<Group>()
+    private val discoverGroupsList = mutableListOf<Group>()
 
     private var currentCategory = "All"
     private var searchQuery = ""
@@ -43,11 +53,26 @@ class CommunityFragment : Fragment() {
         setupMyGroups()
         setupDiscoverGroups()
         setupSearch()
+        loadSupabaseGroups()
+    }
+
+    private fun loadSupabaseGroups() {
+        lifecycleScope.launch {
+            when (val result = groupRepository.fetchGroups()) {
+                is NetworkResult.Success -> {
+                    val remote = result.data.map { it.toUIModel() }
+                    discoverGroupsList.clear()
+                    discoverGroupsList.addAll(remote)
+                    filterGroups()
+                }
+                is NetworkResult.Error -> {}
+            }
+        }
     }
 
     private fun setupHeader() {
         binding.btnHeaderMenu.setOnClickListener {
-            Toast.makeText(requireContext(), "Menu opened", Toast.LENGTH_SHORT).show()
+            (activity as? MainActivity)?.toggleDrawer()
         }
 
         binding.btnHeaderNotifications.setOnClickListener {
@@ -68,7 +93,14 @@ class CommunityFragment : Fragment() {
     }
 
     private fun setupCategories() {
-        categoryAdapter = GroupCategoryAdapter(DummyData.groupCategories) { selectedCategory ->
+        val groupCategories = listOf(
+            GroupCategory("1", "All", R.drawable.ic_grid_category, isSelected = true),
+            GroupCategory("2", "Local", R.drawable.ic_home, isSelected = false),
+            GroupCategory("3", "Buy / Sell", R.drawable.ic_sell, isSelected = false),
+            GroupCategory("4", "Help & Support", R.drawable.ic_support_heart, isSelected = false),
+            GroupCategory("5", "Activities", R.drawable.ic_event, isSelected = false)
+        )
+        categoryAdapter = GroupCategoryAdapter(groupCategories) { selectedCategory ->
             currentCategory = selectedCategory.name
             filterGroups()
         }
@@ -80,7 +112,7 @@ class CommunityFragment : Fragment() {
 
     private fun setupMyGroups() {
         myGroupsAdapter = MyGroupsAdapter(
-            groups = DummyData.myGroups,
+            groups = myGroupsList,
             onGroupClick = { group ->
                 findNavController().navigate(R.id.action_community_to_groupDetail)
             },
@@ -97,7 +129,7 @@ class CommunityFragment : Fragment() {
 
     private fun setupDiscoverGroups() {
         discoverGroupsAdapter = DiscoverGroupsAdapter(
-            groups = DummyData.discoverGroups,
+            groups = discoverGroupsList,
             onGroupClick = { group ->
                 findNavController().navigate(R.id.action_community_to_groupDetail)
             },
@@ -125,7 +157,7 @@ class CommunityFragment : Fragment() {
 
     private fun filterGroups() {
         // Filter My Groups
-        val filteredMy = DummyData.myGroups.filter { group ->
+        val filteredMy = myGroupsList.filter { group ->
             val matchesCat = currentCategory == "All" || group.category.equals(currentCategory, ignoreCase = true)
             val matchesSearch = searchQuery.isEmpty() || group.name.contains(searchQuery, ignoreCase = true) || group.description.contains(searchQuery, ignoreCase = true)
             matchesCat && matchesSearch
@@ -133,7 +165,7 @@ class CommunityFragment : Fragment() {
         myGroupsAdapter.updateList(filteredMy)
 
         // Filter Discover Groups
-        val filteredDiscover = DummyData.discoverGroups.filter { group ->
+        val filteredDiscover = discoverGroupsList.filter { group ->
             val matchesCat = currentCategory == "All" || group.category.equals(currentCategory, ignoreCase = true)
             val matchesSearch = searchQuery.isEmpty() || group.name.contains(searchQuery, ignoreCase = true) || group.description.contains(searchQuery, ignoreCase = true)
             matchesCat && matchesSearch
@@ -146,4 +178,3 @@ class CommunityFragment : Fragment() {
         _binding = null
     }
 }
-

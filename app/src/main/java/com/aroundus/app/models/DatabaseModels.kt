@@ -1,0 +1,244 @@
+package com.aroundus.app.models
+
+import com.aroundus.app.R
+import com.google.gson.annotations.SerializedName
+
+/**
+ * Supabase Database Entity Models
+ * Core entities corresponding to Supabase Postgres database tables.
+ */
+
+data class UserEntity(
+    @SerializedName(value = "user_id", alternate = ["userId"])
+    val userId: String = "",
+    @SerializedName("name")
+    val name: String = "",
+    @SerializedName("email")
+    val email: String = "",
+    @SerializedName("phone")
+    val phone: String? = null,
+    @SerializedName("location")
+    val location: String? = null,
+    @SerializedName(value = "bio", alternate = ["profile"])
+    val bio: String? = null,
+    @SerializedName(value = "profile_photo", alternate = ["profilePhoto", "avatar_url"])
+    val profilePhoto: String? = null,
+    @SerializedName(value = "username_last_changed", alternate = ["usernameLastChanged"])
+    val usernameLastChanged: Long? = null
+) {
+    val profile: String? get() = bio ?: profilePhoto
+}
+
+data class PostEntity(
+    @SerializedName(value = "post_id", alternate = ["postId"])
+    val postId: String = "",
+    @SerializedName(value = "author_id", alternate = ["authorId"])
+    val authorId: String = "",
+    @SerializedName("type")
+    val type: String = "General",
+    @SerializedName("text")
+    val text: String = "",
+    @SerializedName("media")
+    val media: String? = null,
+    @SerializedName("timestamp")
+    val timestamp: String = "",
+    @SerializedName("location")
+    val location: String? = null
+)
+
+data class CommentEntity(
+    @SerializedName(value = "comment_id", alternate = ["commentId"])
+    val commentId: String = "",
+    @SerializedName(value = "post_id", alternate = ["postId"])
+    val postId: String = "",
+    @SerializedName(value = "user_id", alternate = ["userId"])
+    val userId: String = "",
+    @SerializedName("text")
+    val text: String = "",
+    @SerializedName("timestamp")
+    val timestamp: String = ""
+)
+
+data class GroupEntity(
+    @SerializedName(value = "group_id", alternate = ["groupId"])
+    val groupId: String = "",
+    @SerializedName("name")
+    val name: String = "",
+    @SerializedName("description")
+    val description: String? = null,
+    @SerializedName("category")
+    val category: String? = null,
+    @SerializedName("members")
+    val members: String? = null // Can store count as string, comma-separated user IDs, or JSON string
+)
+
+data class MessageEntity(
+    @SerializedName(value = "message_id", alternate = ["messageId"])
+    val messageId: String = "",
+    @SerializedName(value = "sender_id", alternate = ["senderId"])
+    val senderId: String = "",
+    @SerializedName(value = "receiver_id", alternate = ["receiverId"])
+    val receiverId: String? = null,
+    @SerializedName(value = "group_id", alternate = ["groupId"])
+    val groupId: String? = null,
+    @SerializedName("text")
+    val text: String = "",
+    @SerializedName("timestamp")
+    val timestamp: String = ""
+)
+
+data class EventEntity(
+    @SerializedName(value = "event_id", alternate = ["eventId"])
+    val eventId: String = "",
+    @SerializedName(value = "creator_id", alternate = ["creatorId"])
+    val creatorId: String = "",
+    @SerializedName("title")
+    val title: String = "",
+    @SerializedName("date")
+    val date: String = "",
+    @SerializedName("location")
+    val location: String? = null,
+    @SerializedName("attendees")
+    val attendees: String? = null // Can store attendee count or list of user IDs
+)
+
+/**
+ * Supabase Auth AuthResponse Model
+ */
+data class AuthResponse(
+    @SerializedName("access_token")
+    val accessToken: String? = null,
+    @SerializedName("token_type")
+    val tokenType: String? = null,
+    @SerializedName("user")
+    val user: AuthUser? = null,
+    @SerializedName("error")
+    val error: String? = null,
+    @SerializedName("error_description")
+    val errorDescription: String? = null
+)
+
+data class AuthUser(
+    @SerializedName("id")
+    val id: String = "",
+    @SerializedName("email")
+    val email: String? = null
+)
+
+data class SignUpRequest(
+    @SerializedName("email")
+    val email: String,
+    @SerializedName("password")
+    val password: String,
+    @SerializedName("data")
+    val data: Map<String, String>? = null
+)
+
+data class LoginRequest(
+    @SerializedName("email")
+    val email: String,
+    @SerializedName("password")
+    val password: String
+)
+
+data class OtpRequest(
+    @SerializedName("email")
+    val email: String,
+    @SerializedName("create_user")
+    val createUser: Boolean = true
+)
+
+data class FollowEntity(
+    @SerializedName(value = "follower_id", alternate = ["followerId"])
+    val followerId: String = "",
+    @SerializedName(value = "following_id", alternate = ["followingId"])
+    val followingId: String = ""
+)
+
+// Extension functions to convert Database Entities to UI Models
+
+fun formatTimeAgo(timestampStr: String?): String {
+    if (timestampStr.isNullOrBlank()) return "Just now"
+    try {
+        val timeMs = timestampStr.toLongOrNull() ?: return "Just now"
+        val nowMs = System.currentTimeMillis()
+        val diffMs = nowMs - timeMs
+
+        if (diffMs < 0) return "Just now"
+
+        val diffSec = diffMs / 1000
+        val diffMin = diffSec / 60
+        val diffHours = diffMin / 60
+        val diffDays = diffHours / 24
+
+        return when {
+            diffMin < 1 -> "Just now"
+            diffMin < 60 -> "${diffMin}m ago"
+            diffHours < 24 -> "${diffHours}h ago"
+            diffDays < 7 -> "${diffDays}d ago"
+            else -> "${diffDays / 7}w ago"
+        }
+    } catch (_: Exception) {
+        return "Just now"
+    }
+}
+
+fun PostEntity.toUIModel(userName: String = "Neighbor", userAvatarPath: String? = null): Post {
+    return Post(
+        id = postId,
+        userName = userName,
+        userAvatar = R.drawable.shape_avatar_placeholder,
+        neighborhood = location ?: "Bhujpur, Kutch",
+        timeAgo = formatTimeAgo(timestamp),
+        category = type,
+        text = text,
+        imageRes = if (!media.isNullOrBlank()) R.drawable.bg_image_placeholder else null,
+        likesCount = 0,
+        commentsCount = 0,
+        userAvatarPath = userAvatarPath
+    )
+}
+
+fun CommentEntity.toUIModel(userName: String = "Neighbor"): Comment {
+    return Comment(
+        id = commentId,
+        userName = userName,
+        avatarRes = R.drawable.shape_avatar_placeholder,
+        text = text,
+        time = formatTimeAgo(timestamp),
+        likeCount = 0
+    )
+}
+
+fun GroupEntity.toUIModel(): Group {
+    return Group(
+        id = groupId,
+        name = name,
+        description = description ?: "",
+        coverRes = R.drawable.img_group_bhujpur_residents,
+        membersText = members ?: "1 Member",
+        category = category ?: "Local"
+    )
+}
+
+fun EventEntity.toUIModel(): Event {
+    return Event(
+        id = eventId,
+        title = title,
+        month = "TODAY",
+        day = "1",
+        time = date,
+        location = location ?: "Bhujpur, Kutch",
+        attendeesCount = 1,
+        isFree = true,
+        imageRes = R.drawable.bg_gradient_onboarding
+    )
+}
+
+fun MessageEntity.toUIModel(currentUserId: String?): Message {
+    return Message(
+        text = text,
+        isSent = senderId == currentUserId,
+        time = "Now"
+    )
+}

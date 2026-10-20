@@ -5,17 +5,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aroundus.app.R
 import com.aroundus.app.adapters.EventAdapter
 import com.aroundus.app.databinding.FragmentEventsBinding
-import com.aroundus.app.utils.DummyData
+import com.aroundus.app.models.Event
+import com.aroundus.app.models.toUIModel
+import com.aroundus.app.repository.EventRepository
+import com.aroundus.app.repository.NetworkResult
+import kotlinx.coroutines.launch
 
 class EventsFragment : Fragment() {
 
     private var _binding: FragmentEventsBinding? = null
     private val binding get() = _binding!!
+    private val eventRepository = EventRepository()
+    private val eventList = mutableListOf<Event>()
+    private lateinit var eventAdapter: EventAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEventsBinding.inflate(inflater, container, false)
@@ -25,7 +33,7 @@ class EventsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val eventAdapter = EventAdapter(DummyData.events) { event ->
+        eventAdapter = EventAdapter(eventList) { event ->
             findNavController().navigate(R.id.action_events_to_eventDetail)
         }
         binding.rvEvents.apply {
@@ -33,8 +41,24 @@ class EventsFragment : Fragment() {
             adapter = eventAdapter
         }
 
+        loadSupabaseEvents()
+
         binding.fabCreateEvent.setOnClickListener {
             // Navigate to create event screen
+        }
+    }
+
+    private fun loadSupabaseEvents() {
+        lifecycleScope.launch {
+            when (val result = eventRepository.fetchEvents()) {
+                is NetworkResult.Success -> {
+                    val remoteEvents = result.data.map { it.toUIModel() }
+                    eventList.clear()
+                    eventList.addAll(remoteEvents)
+                    eventAdapter.notifyDataSetChanged()
+                }
+                is NetworkResult.Error -> {}
+            }
         }
     }
 

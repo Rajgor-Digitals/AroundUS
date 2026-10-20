@@ -3,6 +3,8 @@
 build/
 app/build/
 .artifacts/
+*.apk
+*.aab
 
 # IDE files
 .idea/

@@ -3,38 +3,97 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="#FAFAFA">
 
-    <!-- Search Bar -->
-    <com.google.android.material.search.SearchBar
-        android:id="@+id/searchBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp"
-        android:hint="@string/hint_search"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:navigationIcon="@drawable/ic_search" />
-
-    <!-- Tabs: All, People, Posts, Events, Groups -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
+    <!-- Top Search Header Bar -->
+    <LinearLayout
+        android:id="@+id/searchHeaderBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="36dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/searchBar"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="#111827" />
+
+        <!-- Search Input Box -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_search_input_rounded"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:contentDescription="Search Icon"
+                android:src="@drawable/ic_search"
+                app:tint="#64748B" />
+
+            <EditText
+                android:id="@+id/etSearchInput"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@null"
+                android:fontFamily="sans-serif-medium"
+                android:hint="Search posts, neighbors, events..."
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="#111827"
+                android:textColorHint="#94A3B8"
+                android:textSize="14sp" />
+
+            <ImageView
+                android:id="@+id/btnClearSearch"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:clickable="true"
+                android:contentDescription="Clear Search"
+                android:focusable="true"
+                android:src="@drawable/ic_close"
+                android:visibility="gone"
+                app:tint="#94A3B8" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Filter Tabs: All, Posts, People, Groups, Events -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="#FFFFFF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/searchHeaderBar"
         app:tabGravity="start"
-        app:tabIndicatorColor="#2563EB"
-        app:tabIndicatorHeight="3dp"
+        app:tabIndicatorColor="#0D8A3F"
+        app:tabIndicatorHeight="2.5dp"
         app:tabMode="scrollable"
-        app:tabRippleColor="#1A2563EB"
-        app:tabSelectedTextColor="#2563EB"
-        app:tabTextColor="@color/text_secondary">
+        app:tabSelectedTextColor="#0D8A3F"
+        app:tabTextColor="#64748B">
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
@@ -44,34 +103,33 @@
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="People" />
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:text="Posts" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Events" />
+            android:text="People" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Groups" />
 
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Events" />
+
     </com.google.android.material.tabs.TabLayout>
 
-    <!-- Recent Searches / Results -->
+    <!-- Search Results RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvResults"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:paddingTop="8dp"
-        android:paddingBottom="16dp"
-        android:scrollbars="none"
+        android:paddingBottom="24dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

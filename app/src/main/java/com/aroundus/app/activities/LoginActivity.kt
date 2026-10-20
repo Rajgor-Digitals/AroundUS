@@ -10,11 +10,16 @@ import android.view.animation.ScaleAnimation
 import android.view.animation.TranslateAnimation
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.aroundus.app.databinding.ActivityLoginBinding
+import com.aroundus.app.repository.NetworkResult
+import com.aroundus.app.repository.UserRepository
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
+    private val userRepository = UserRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,19 +86,27 @@ class LoginActivity : AppCompatActivity() {
 
             binding.tilEmail.error = null
             binding.tilPassword.error = null
-            navigateToMain()
+
+            lifecycleScope.launch {
+                binding.btnLogin.isEnabled = false
+                val result = userRepository.signIn(email, password)
+                binding.btnLogin.isEnabled = true
+
+                when (result) {
+                    is NetworkResult.Success -> {
+                        val name = result.data.name.ifBlank { "User" }
+                        Toast.makeText(this@LoginActivity, "Welcome back, $name!", Toast.LENGTH_SHORT).show()
+                        navigateToMain()
+                    }
+                    is NetworkResult.Error -> {
+                        Toast.makeText(this@LoginActivity, result.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
 
         binding.btnGoogle.setOnClickListener {
             Toast.makeText(this, "Google sign-in coming soon!", Toast.LENGTH_SHORT).show()
-        }
-
-        binding.btnFacebook.setOnClickListener {
-            Toast.makeText(this, "Facebook sign-in coming soon!", Toast.LENGTH_SHORT).show()
-        }
-
-        binding.btnApple.setOnClickListener {
-            Toast.makeText(this, "Apple sign-in coming soon!", Toast.LENGTH_SHORT).show()
         }
 
         binding.btnRegister.setOnClickListener {

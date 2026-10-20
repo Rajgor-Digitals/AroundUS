@@ -419,112 +419,33 @@
                         android:background="#E5E7EB" />
                 </LinearLayout>
 
-                <!-- Social Sign-Up Buttons (Google, Facebook, Apple) -->
+                <!-- Google Sign-Up Button -->
                 <LinearLayout
+                    android:id="@+id/btnGoogle"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_social_button"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
                     android:orientation="horizontal">
 
-                    <!-- Google Button Container -->
-                    <LinearLayout
-                        android:id="@+id/btnGoogle"
-                        android:layout_width="0dp"
-                        android:layout_height="46dp"
-                        android:layout_marginEnd="4dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_social_button"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="horizontal"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Google"
+                        android:src="@drawable/ic_google_logo" />
 
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:contentDescription="Google"
-                            android:src="@drawable/ic_google_logo" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:fontFamily="sans-serif-medium"
-                            android:includeFontPadding="false"
-                            android:maxLines="1"
-                            android:text="Google"
-                            android:textColor="#111827"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <!-- Facebook Button Container -->
-                    <LinearLayout
-                        android:id="@+id/btnFacebook"
-                        android:layout_width="0dp"
-                        android:layout_height="46dp"
-                        android:layout_marginStart="3dp"
-                        android:layout_marginEnd="3dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_social_button"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="horizontal"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:contentDescription="Facebook"
-                            android:src="@drawable/ic_facebook" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:fontFamily="sans-serif-medium"
-                            android:includeFontPadding="false"
-                            android:maxLines="1"
-                            android:text="Facebook"
-                            android:textColor="#111827"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <!-- Apple Button Container -->
-                    <LinearLayout
-                        android:id="@+id/btnApple"
-                        android:layout_width="0dp"
-                        android:layout_height="46dp"
-                        android:layout_marginStart="4dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_social_button"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="horizontal"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp">
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:contentDescription="Apple"
-                            android:src="@drawable/ic_apple" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
-                            android:fontFamily="sans-serif-medium"
-                            android:includeFontPadding="false"
-                            android:maxLines="1"
-                            android:text="Apple"
-                            android:textColor="#111827"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:includeFontPadding="false"
+                        android:text="Sign up with Google"
+                        android:textColor="#111827"
+                        android:textSize="13.5sp" />
                 </LinearLayout>
 
                 <!-- Already have an account? Login -->
