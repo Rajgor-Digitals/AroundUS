@@ -53,17 +53,19 @@ data class Event(
 data class ChatItem(
     val id: String,
     val userName: String,
-    val avatarRes: Int,
-    val lastMessage: String,
-    val time: String,
-    val unreadCount: Int,
-    val isOnline: Boolean
+    val avatarRes: Int = 0,
+    val lastMessage: String = "",
+    val time: String = "",
+    val unreadCount: Int = 0,
+    val isOnline: Boolean = false,
+    val avatarUrl: String? = null
 )
 
 data class Message(
     val text: String,
     val isSent: Boolean,
-    val time: String
+    val time: String,
+    val id: String = ""
 )
 
 data class Notification(

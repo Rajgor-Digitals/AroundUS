@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -19,9 +20,11 @@ import com.aroundus.app.adapters.ChatAdapter
 import com.aroundus.app.databinding.FragmentChatListBinding
 import com.aroundus.app.models.ChatItem
 import com.aroundus.app.network.SupabaseClient
+import com.aroundus.app.repository.GroupRepository
 import com.aroundus.app.repository.MessageRepository
 import com.aroundus.app.repository.NetworkResult
-import com.aroundus.app.utils.CryptoManager
+import com.aroundus.app.repository.PostRepository
+import com.aroundus.app.repository.UserRepository
 import kotlinx.coroutines.launch
 
 class ChatListFragment : Fragment() {
@@ -29,6 +32,10 @@ class ChatListFragment : Fragment() {
     private var _binding: FragmentChatListBinding? = null
     private val binding get() = _binding!!
     private val messageRepository = MessageRepository()
+    private val userRepository = UserRepository()
+    private val groupRepository = GroupRepository()
+    private val postRepository = PostRepository()
+
     private val allChatsList = mutableListOf<ChatItem>()
     private val displayedChatsList = mutableListOf<ChatItem>()
     private lateinit var chatAdapter: ChatAdapter
@@ -54,103 +61,14 @@ class ChatListFragment : Fragment() {
         loadSupabaseConversations()
     }
 
+    override fun onResume() {
+        super.onResume()
+        loadSupabaseConversations()
+    }
+
     private fun initChatList() {
         allChatsList.clear()
-        allChatsList.addAll(
-            listOf(
-                ChatItem(
-                    id = "u_priya",
-                    userName = "Priya Sharma",
-                    avatarRes = R.drawable.img_avatar_priya_sharma,
-                    lastMessage = "Hey Gaurav, thanks for...",
-                    time = "9:40 AM",
-                    unreadCount = 2,
-                    isOnline = true
-                ),
-                ChatItem(
-                    id = "u_ramesh",
-                    userName = "Ramesh Patel",
-                    avatarRes = 0,
-                    lastMessage = "I found the electrician you...",
-                    time = "9:15 AM",
-                    unreadCount = 1,
-                    isOnline = true
-                ),
-                ChatItem(
-                    id = "u_amit",
-                    userName = "Amit Joshi",
-                    avatarRes = R.drawable.img_avatar_amit_joshi,
-                    lastMessage = "Let's meet tomorrow at the...",
-                    time = "Yesterday",
-                    unreadCount = 0,
-                    isOnline = false
-                ),
-                ChatItem(
-                    id = "g_bhujpur_residents",
-                    userName = "Bhujpur Residents",
-                    avatarRes = R.drawable.img_group_bhujpur_residents,
-                    lastMessage = "Meena: Garbage collection...",
-                    time = "Yesterday",
-                    unreadCount = 5,
-                    isOnline = false
-                ),
-                ChatItem(
-                    id = "u_neha",
-                    userName = "Neha Verma",
-                    avatarRes = R.drawable.img_avatar_priya_sharma,
-                    lastMessage = "Hey, is the yoga session still...",
-                    time = "Mon",
-                    unreadCount = 0,
-                    isOnline = false
-                ),
-                ChatItem(
-                    id = "u_sunil",
-                    userName = "Sunil Prajapati",
-                    avatarRes = 0,
-                    lastMessage = "Thanks for the update!",
-                    time = "Mon",
-                    unreadCount = 0,
-                    isOnline = false
-                ),
-                ChatItem(
-                    id = "g_milk_supply",
-                    userName = "Milk Supply Group",
-                    avatarRes = 0,
-                    lastMessage = "Mahesh: Tomorrow timings...",
-                    time = "Sun",
-                    unreadCount = 3,
-                    isOnline = false
-                ),
-                ChatItem(
-                    id = "g_help_each_other",
-                    userName = "Help Each Other",
-                    avatarRes = R.drawable.img_group_help_each_other,
-                    lastMessage = "Ravi: Need a ladder for home...",
-                    time = "Sun",
-                    unreadCount = 0,
-                    isOnline = false
-                ),
-                ChatItem(
-                    id = "u_pooja",
-                    userName = "Pooja Shah",
-                    avatarRes = 0,
-                    lastMessage = "Okay, will let you know.",
-                    time = "Sat",
-                    unreadCount = 0,
-                    isOnline = false
-                ),
-                ChatItem(
-                    id = "g_buy_sell",
-                    userName = "Buy & Sell Bhujpur",
-                    avatarRes = R.drawable.img_group_bhujpur_buysell,
-                    lastMessage = "Is this cycle still available?",
-                    time = "Sat",
-                    unreadCount = 0,
-                    isOnline = false
-                )
-            )
-        )
-        filterListByCurrentTab()
+        displayedChatsList.clear()
     }
 
     private fun setupRecyclerView() {
@@ -158,6 +76,7 @@ class ChatListFragment : Fragment() {
             val intent = Intent(requireContext(), ConversationActivity::class.java).apply {
                 putExtra("userId", chat.id)
                 putExtra("userName", chat.userName)
+                putExtra("avatarUrl", chat.avatarUrl)
                 putExtra("avatarRes", chat.avatarRes)
                 putExtra("isOnline", chat.isOnline)
             }
@@ -176,7 +95,7 @@ class ChatListFragment : Fragment() {
         }
 
         binding.btnCompose.setOnClickListener {
-            Toast.makeText(requireContext(), "Start a new conversation", Toast.LENGTH_SHORT).show()
+            showNewChatDialog()
         }
 
         binding.llFilterSelector.setOnClickListener {
@@ -197,6 +116,11 @@ class ChatListFragment : Fragment() {
                 chatAdapter.notifyDataSetChanged()
             }
         }
+    }
+
+    private fun showNewChatDialog() {
+        NewConversationBottomSheetFragment.newInstance()
+            .show(childFragmentManager, NewConversationBottomSheetFragment.TAG)
     }
 
     private fun setupSearchBar() {
@@ -263,37 +187,60 @@ class ChatListFragment : Fragment() {
         when (currentTab) {
             TabType.CHATS -> {
                 displayedChatsList.addAll(allChatsList)
+                if (::chatAdapter.isInitialized) {
+                    chatAdapter.notifyDataSetChanged()
+                }
             }
             TabType.GROUPS -> {
-                displayedChatsList.addAll(allChatsList.filter { it.id.startsWith("g_") })
+                lifecycleScope.launch {
+                    val groupRes = groupRepository.fetchGroups()
+                    if (groupRes is NetworkResult.Success && currentTab == TabType.GROUPS) {
+                        displayedChatsList.clear()
+                        displayedChatsList.addAll(groupRes.data.map {
+                            ChatItem(
+                                id = it.groupId,
+                                userName = it.name,
+                                avatarRes = R.drawable.img_group_bhujpur_residents,
+                                lastMessage = it.description.orEmpty().ifBlank { "Group conversation" },
+                                time = it.members.orEmpty().ifBlank { "Active" },
+                                unreadCount = 0,
+                                isOnline = false
+                            )
+                        })
+                        if (::chatAdapter.isInitialized) {
+                            chatAdapter.notifyDataSetChanged()
+                        }
+                    }
+                }
             }
             TabType.ANNOUNCEMENTS -> {
-                displayedChatsList.addAll(
-                    listOf(
-                        ChatItem(
-                            id = "a_panchayat",
-                            userName = "Bhujpur Gram Panchayat Notice",
-                            avatarRes = R.drawable.img_group_bhujpur_residents,
-                            lastMessage = "Water pipeline maintenance tomorrow 9 AM to 1 PM.",
-                            time = "Today",
-                            unreadCount = 1,
-                            isOnline = false
-                        ),
-                        ChatItem(
-                            id = "a_health",
-                            userName = "Community Health Camp",
-                            avatarRes = R.drawable.img_group_clean_green,
-                            lastMessage = "Free eye & dental checkup this Sunday at Community Hall.",
-                            time = "Yesterday",
-                            unreadCount = 0,
-                            isOnline = false
-                        )
-                    )
-                )
+                lifecycleScope.launch {
+                    val postRes = postRepository.fetchPostsWithAuthors(context?.applicationContext)
+                    if (postRes is NetworkResult.Success && currentTab == TabType.ANNOUNCEMENTS) {
+                        val announcementPosts = postRes.data.filter {
+                            it.category.equals("Announcement", ignoreCase = true) ||
+                            it.category.equals("Alert", ignoreCase = true) ||
+                            it.category.equals("Notice", ignoreCase = true)
+                        }
+                        displayedChatsList.clear()
+                        displayedChatsList.addAll(announcementPosts.map {
+                            ChatItem(
+                                id = it.id,
+                                userName = it.userName,
+                                avatarRes = it.userAvatar,
+                                lastMessage = it.text,
+                                time = it.timeAgo,
+                                unreadCount = 0,
+                                isOnline = false,
+                                avatarUrl = it.userAvatarPath
+                            )
+                        })
+                        if (::chatAdapter.isInitialized) {
+                            chatAdapter.notifyDataSetChanged()
+                        }
+                    }
+                }
             }
-        }
-        if (::chatAdapter.isInitialized) {
-            chatAdapter.notifyDataSetChanged()
         }
     }
 
@@ -314,33 +261,69 @@ class ChatListFragment : Fragment() {
     }
 
     private fun loadSupabaseConversations() {
-        val currentUserId = SupabaseClient.getCurrentUserId() ?: return
         lifecycleScope.launch {
-            when (val result = messageRepository.fetchConversationMessages("u_priya")) {
+            val currentUserId = userRepository.resolveValidAuthorId().ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
+            when (val result = messageRepository.fetchUserConversations()) {
                 is NetworkResult.Success -> {
-                    if (result.data.isNotEmpty()) {
-                        val lastEntity = result.data.last()
-                        val secretKey = CryptoManager.deriveKey(CryptoManager.generateSharedSecret(currentUserId, "u_priya"))
-                        val decryptedText = CryptoManager.decrypt(lastEntity.text, secretKey)
+                    allChatsList.clear()
+                    allChatsList.addAll(result.data)
 
-                        val priyaIndex = allChatsList.indexOfFirst { it.id == "u_priya" }
-                        if (priyaIndex != -1) {
-                            val updatedItem = allChatsList[priyaIndex].copy(
-                                lastMessage = decryptedText,
-                                time = "Now"
+                    // If user has no active chats yet, provide registered community neighbors to initiate conversations
+                    if (allChatsList.isEmpty()) {
+                        val usersResult = userRepository.getAllUsers()
+                        if (usersResult is NetworkResult.Success) {
+                            val neighbors = usersResult.data.filter { it.userId != currentUserId }
+                            val neighborChats = neighbors.map { user ->
+                                ChatItem(
+                                    id = user.userId,
+                                    userName = user.name.ifBlank { "Neighbor" },
+                                    avatarRes = 0,
+                                    lastMessage = "Tap to start conversation",
+                                    time = "New",
+                                    unreadCount = 0,
+                                    isOnline = true,
+                                    avatarUrl = user.profilePhoto
+                                )
+                            }
+                            allChatsList.addAll(neighborChats)
+                        }
+                    }
+
+                    if (currentTab == TabType.CHATS) {
+                        displayedChatsList.clear()
+                        displayedChatsList.addAll(allChatsList)
+                        if (::chatAdapter.isInitialized) {
+                            chatAdapter.notifyDataSetChanged()
+                        }
+                    }
+                }
+                is NetworkResult.Error -> {
+                    // Fallback to registered neighbors if conversations fetch fails
+                    val usersResult = userRepository.getAllUsers()
+                    if (usersResult is NetworkResult.Success) {
+                        allChatsList.clear()
+                        val neighbors = usersResult.data.filter { it.userId != currentUserId }
+                        allChatsList.addAll(neighbors.map { user ->
+                            ChatItem(
+                                id = user.userId,
+                                userName = user.name.ifBlank { "Neighbor" },
+                                avatarRes = 0,
+                                lastMessage = "Tap to start conversation",
+                                time = "New",
+                                unreadCount = 0,
+                                isOnline = true,
+                                avatarUrl = user.profilePhoto
                             )
-                            allChatsList[priyaIndex] = updatedItem
-                            if (currentTab == TabType.CHATS) {
-                                val dispIndex = displayedChatsList.indexOfFirst { it.id == "u_priya" }
-                                if (dispIndex != -1) {
-                                    displayedChatsList[dispIndex] = updatedItem
-                                    chatAdapter.notifyItemChanged(dispIndex)
-                                }
+                        })
+                        if (currentTab == TabType.CHATS) {
+                            displayedChatsList.clear()
+                            displayedChatsList.addAll(allChatsList)
+                            if (::chatAdapter.isInitialized) {
+                                chatAdapter.notifyDataSetChanged()
                             }
                         }
                     }
                 }
-                is NetworkResult.Error -> {}
             }
         }
     }

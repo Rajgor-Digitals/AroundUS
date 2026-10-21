@@ -212,4 +212,16 @@
         <item name="shapeAppearance">@style/ShapeAppearance.AroundUS.SmallComponent</item>
     </style>
 
+    <!-- Custom BottomSheet Dialog Theme -->
+    <style name="Theme.AroundUS.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/CustomBottomSheetModalStyle</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+    </style>
+
+    <style name="CustomBottomSheetModalStyle" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.AroundUS.BottomSheet</item>
+    </style>
+
 </resources>

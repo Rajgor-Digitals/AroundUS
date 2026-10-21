@@ -8,6 +8,8 @@ import com.aroundus.app.R
 import com.aroundus.app.databinding.ItemChatBinding
 import com.aroundus.app.models.ChatItem
 
+import com.aroundus.app.utils.loadUserAvatar
+
 class ChatAdapter(
     private var chats: List<ChatItem>,
     private val onChatClick: (ChatItem) -> Unit
@@ -26,7 +28,11 @@ class ChatAdapter(
             binding.tvLastMessage.text = chat.lastMessage
             binding.tvTime.text = chat.time
 
-            if (chat.avatarRes != 0) {
+            if (!chat.avatarUrl.isNullOrBlank()) {
+                binding.tvAvatarInitial.visibility = View.GONE
+                binding.ivAvatar.visibility = View.VISIBLE
+                binding.ivAvatar.loadUserAvatar(chat.avatarUrl)
+            } else if (chat.avatarRes != 0) {
                 binding.tvAvatarInitial.visibility = View.GONE
                 binding.ivAvatar.visibility = View.VISIBLE
                 binding.ivAvatar.setImageResource(chat.avatarRes)

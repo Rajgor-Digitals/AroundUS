@@ -273,6 +273,20 @@ class UserRepository {
             }
         }
 
+    suspend fun getAllUsers(): NetworkResult<List<UserEntity>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = service.getUsers()
+                if (resp.isSuccessful && resp.body() != null) {
+                    NetworkResult.Success(resp.body()!!)
+                } else {
+                    NetworkResult.Error("Failed to fetch users from database: ${resp.message()}")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            }
+        }
+
     suspend fun resolveValidAuthorId(): String =
         withContext(Dispatchers.IO) {
             val currentEmail = SupabaseClient.getCurrentUserEmail()?.trim()?.lowercase() ?: ""
@@ -1253,30 +1267,110 @@ class GroupRepository {
  */
 class MessageRepository {
     private val service get() = SupabaseClient.getService()
+    private val userRepo = UserRepository()
+
+    private fun formatMessageTimestamp(timestampStr: String?): String {
+        val millis = timestampStr?.toLongOrNull() ?: return "Just now"
+        val now = System.currentTimeMillis()
+        val diff = now - millis
+        val msgCal = java.util.Calendar.getInstance().apply { timeInMillis = millis }
+        val nowCal = java.util.Calendar.getInstance()
+        return when {
+            diff < 60_000L -> "Just now"
+            nowCal.get(java.util.Calendar.YEAR) == msgCal.get(java.util.Calendar.YEAR) &&
+            nowCal.get(java.util.Calendar.DAY_OF_YEAR) == msgCal.get(java.util.Calendar.DAY_OF_YEAR) -> {
+                java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault()).format(java.util.Date(millis))
+            }
+            nowCal.get(java.util.Calendar.YEAR) == msgCal.get(java.util.Calendar.YEAR) &&
+            nowCal.get(java.util.Calendar.DAY_OF_YEAR) - msgCal.get(java.util.Calendar.DAY_OF_YEAR) == 1 -> "Yesterday"
+            else -> java.text.SimpleDateFormat("MMM d", java.util.Locale.getDefault()).format(java.util.Date(millis))
+        }
+    }
 
     suspend fun fetchConversationMessages(otherUserId: String): NetworkResult<List<MessageEntity>> =
         withContext(Dispatchers.IO) {
             try {
-                val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
-                val filter = "(and(sender_id.eq.$currentUserId,receiver_id.eq.$otherUserId),and(sender_id.eq.$otherUserId,receiver_id.eq.$currentUserId))"
-                val resp = service.getMessagesForConversation(filter)
-
-                if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                    NetworkResult.Success(resp.body()!!)
+                val currentUserId = userRepo.resolveValidAuthorId().ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
+                val allResp = service.getAllMessages()
+                if (allResp.isSuccessful && allResp.body() != null) {
+                    val filtered = allResp.body()!!.filter {
+                        (it.senderId == currentUserId && it.receiverId == otherUserId) ||
+                        (it.senderId == otherUserId && it.receiverId == currentUserId)
+                    }.sortedBy { it.timestamp.toLongOrNull() ?: 0L }
+                    NetworkResult.Success(filtered)
                 } else {
-                    val allResp = service.getAllMessages()
-                    if (allResp.isSuccessful && allResp.body() != null) {
-                        val filtered = allResp.body()!!.filter {
-                            (it.senderId == currentUserId && it.receiverId == otherUserId) ||
-                            (it.senderId == otherUserId && it.receiverId == currentUserId)
-                        }
-                        NetworkResult.Success(filtered)
-                    } else {
-                        NetworkResult.Success(emptyList())
-                    }
+                    NetworkResult.Success(emptyList())
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            }
+        }
+
+    suspend fun fetchUserConversations(): NetworkResult<List<ChatItem>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val currentUserId = userRepo.resolveValidAuthorId().ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
+                val messagesResp = service.getAllMessages()
+                val usersResp = service.getUsers()
+
+                val allMessages = if (messagesResp.isSuccessful) messagesResp.body() ?: emptyList() else emptyList()
+                val allUsers = if (usersResp.isSuccessful) usersResp.body() ?: emptyList() else emptyList()
+                val usersMap = allUsers.associateBy { it.userId }
+
+                // Filter messages involving current user and not group messages
+                val userMessages = allMessages.filter {
+                    (it.senderId == currentUserId || it.receiverId == currentUserId) && it.groupId.isNullOrBlank()
+                }
+
+                // Group by conversation partner
+                val grouped = userMessages.groupBy {
+                    if (it.senderId == currentUserId) it.receiverId else it.senderId
+                }
+
+                val chatList = mutableListOf<ChatItem>()
+                for ((partnerId, msgs) in grouped) {
+                    if (partnerId.isNullOrBlank() || partnerId == currentUserId) continue
+
+                    val partnerUser = usersMap[partnerId]
+                    val partnerName = partnerUser?.name ?: "Neighbor"
+                    val partnerAvatar = partnerUser?.profilePhoto
+
+                    val latestMsg = msgs.maxByOrNull { it.timestamp.toLongOrNull() ?: 0L }
+                    val plainText = if (latestMsg != null) {
+                        if (latestMsg.text.startsWith("E2EE:")) {
+                            val sharedSecret = com.aroundus.app.utils.CryptoManager.generateSharedSecret(currentUserId, partnerId)
+                            val key = com.aroundus.app.utils.CryptoManager.deriveKey(sharedSecret)
+                            com.aroundus.app.utils.CryptoManager.decrypt(latestMsg.text, key)
+                        } else {
+                            latestMsg.text
+                        }
+                    } else ""
+
+                    val formattedTime = formatMessageTimestamp(latestMsg?.timestamp)
+
+                    chatList.add(
+                        ChatItem(
+                            id = partnerId,
+                            userName = partnerName,
+                            avatarRes = 0,
+                            lastMessage = plainText,
+                            time = formattedTime,
+                            unreadCount = 0,
+                            isOnline = true,
+                            avatarUrl = partnerAvatar
+                        )
+                    )
+                }
+
+                // Sort by most recent conversation first
+                val sortedList = chatList.sortedByDescending { chat ->
+                    val msgs = grouped[chat.id]
+                    msgs?.maxOfOrNull { it.timestamp.toLongOrNull() ?: 0L } ?: 0L
+                }
+
+                NetworkResult.Success(sortedList)
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to load conversations", e)
             }
         }
 
@@ -1290,13 +1384,13 @@ class MessageRepository {
                 if (text.isBlank()) {
                     return@withContext NetworkResult.Error("Message cannot be empty.")
                 }
-                val senderId = SupabaseClient.getCurrentUserId()
-                if (senderId.isNullOrBlank()) {
+                val senderId = userRepo.resolveValidAuthorId().ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
+                if (senderId.isBlank()) {
                     return@withContext NetworkResult.Error("User must be logged in to send messages.")
                 }
 
                 val newMsg = MessageEntity(
-                    messageId = "msg_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
+                    messageId = "msg_" + UUID.randomUUID().toString().replace("-", "").take(12),
                     senderId = senderId,
                     receiverId = receiverId,
                     groupId = groupId,
