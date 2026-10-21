@@ -112,6 +112,7 @@ CREATE POLICY "Allow public insert comments" ON public.comments FOR INSERT WITH 
 
 CREATE POLICY "Allow public read groups" ON public.groups FOR SELECT USING (true);
 CREATE POLICY "Allow public insert groups" ON public.groups FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update groups" ON public.groups FOR UPDATE USING (true) WITH CHECK (true);
 
 CREATE POLICY "Allow public read messages" ON public.messages FOR SELECT USING (true);
 CREATE POLICY "Allow public insert messages" ON public.messages FOR INSERT WITH CHECK (true);

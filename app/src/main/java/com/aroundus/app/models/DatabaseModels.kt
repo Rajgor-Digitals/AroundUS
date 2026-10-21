@@ -73,8 +73,75 @@ data class GroupEntity(
     @SerializedName("category")
     val category: String? = null,
     @SerializedName("members")
-    val members: String? = null // Can store count as string, comma-separated user IDs, or JSON string
-)
+    val members: String? = null, // Stores comma-separated user IDs or legacy count
+    @SerializedName(value = "created_at", alternate = ["createdAt"])
+    val createdAt: String? = null
+) {
+    /**
+     * Extracts individual member IDs.
+     */
+    fun getMemberList(): List<String> {
+        val raw = members?.trim().orEmpty()
+        if (raw.isBlank()) return emptyList()
+
+        // JSON array format: ["usr_1", "usr_2"]
+        if (raw.startsWith("[") && raw.endsWith("]")) {
+            val inner = raw.substring(1, raw.length - 1).trim()
+            if (inner.isBlank()) return emptyList()
+            return inner.split(",")
+                .map { it.trim().removeSurrounding("\"").removeSurrounding("'") }
+                .filter { it.isNotBlank() }
+        }
+
+        // Comma-separated format: usr_1,usr_2
+        if (raw.contains(",")) {
+            return raw.split(",")
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+        }
+
+        // Single ID or legacy text check (e.g. "1 Member" is not a user ID)
+        if (raw.matches(Regex("^\\d+\\s+Members?$", RegexOption.IGNORE_CASE))) {
+            return emptyList()
+        }
+
+        return listOf(raw)
+    }
+
+    /**
+     * Checks if a user is a member of this group.
+     */
+    fun isMember(userId: String?): Boolean {
+        if (userId.isNullOrBlank()) return false
+        val memberList = getMemberList()
+        if (memberList.isNotEmpty()) {
+            return memberList.contains(userId)
+        }
+        val raw = members.orEmpty()
+        return raw.contains(userId)
+    }
+
+    /**
+     * Returns the integer count of members.
+     */
+    fun getMemberCount(): Int {
+        val list = getMemberList()
+        if (list.isNotEmpty()) return list.size
+
+        val raw = members?.trim().orEmpty()
+        val digits = raw.filter { it.isDigit() }
+        val parsed = digits.toIntOrNull()
+        return if (parsed != null && parsed > 0) parsed else 1
+    }
+
+    /**
+     * Formats the member text for UI display.
+     */
+    fun formatMembersDisplay(): String {
+        val count = getMemberCount()
+        return if (count == 1) "1 Member" else "$count Members"
+    }
+}
 
 data class MessageEntity(
     @SerializedName(value = "message_id", alternate = ["messageId"])
@@ -220,14 +287,38 @@ fun CommentEntity.toUIModel(userName: String = "Neighbor", userAvatarPath: Strin
 }
 
 
-fun GroupEntity.toUIModel(): Group {
+fun resolveGroupCoverRes(category: String?, name: String?): Int {
+    val cat = category?.lowercase() ?: ""
+    val n = name?.lowercase() ?: ""
+    return when {
+        cat.contains("buy") || cat.contains("sell") || n.contains("buy") || n.contains("market") ->
+            R.drawable.img_group_bhujpur_buysell
+        cat.contains("help") || cat.contains("support") || n.contains("help") ->
+            R.drawable.img_group_help_each_other
+        cat.contains("activity") || cat.contains("activities") || cat.contains("sport") || n.contains("yoga") ->
+            R.drawable.img_group_yoga_wellness
+        n.contains("pet") || n.contains("animal") ->
+            R.drawable.img_group_pet_lovers
+        n.contains("student") || n.contains("study") || cat.contains("education") ->
+            R.drawable.img_group_students_hub
+        n.contains("green") || n.contains("clean") ->
+            R.drawable.img_group_clean_green
+        else ->
+            R.drawable.img_group_bhujpur_residents
+    }
+}
+
+fun GroupEntity.toUIModel(currentUserId: String? = null): Group {
+    val isJoined = if (currentUserId.isNullOrBlank()) false else isMember(currentUserId)
+    val displayMembers = if (getMemberList().isNotEmpty()) formatMembersDisplay() else (members ?: "1 Member")
     return Group(
         id = groupId,
         name = name,
         description = description ?: "",
-        coverRes = R.drawable.img_group_bhujpur_residents,
-        membersText = members ?: "1 Member",
-        category = category ?: "Local"
+        coverRes = resolveGroupCoverRes(category, name),
+        membersText = displayMembers,
+        category = category ?: "Local",
+        isJoined = isJoined
     )
 }
 

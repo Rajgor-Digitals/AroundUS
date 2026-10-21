@@ -19,9 +19,12 @@ import com.aroundus.app.adapters.MyGroupsAdapter
 import com.aroundus.app.databinding.FragmentCommunityBinding
 import com.aroundus.app.models.Group
 import com.aroundus.app.models.GroupCategory
+import com.aroundus.app.models.GroupEntity
 import com.aroundus.app.models.toUIModel
+import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.GroupRepository
 import com.aroundus.app.repository.NetworkResult
+import com.aroundus.app.repository.UserRepository
 import kotlinx.coroutines.launch
 
 class CommunityFragment : Fragment() {
@@ -34,9 +37,13 @@ class CommunityFragment : Fragment() {
     private lateinit var discoverGroupsAdapter: DiscoverGroupsAdapter
 
     private val groupRepository = GroupRepository()
+    private val userRepository = UserRepository()
+
+    private val allFetchedGroups = mutableListOf<GroupEntity>()
     private val myGroupsList = mutableListOf<Group>()
     private val discoverGroupsList = mutableListOf<Group>()
 
+    private var currentUserId: String = ""
     private var currentCategory = "All"
     private var searchQuery = ""
 
@@ -53,21 +60,76 @@ class CommunityFragment : Fragment() {
         setupMyGroups()
         setupDiscoverGroups()
         setupSearch()
+        setupCreateGroupActions()
+
         loadSupabaseGroups()
     }
 
+    override fun onResume() {
+        super.onResume()
+        loadSupabaseGroups()
+    }
+
+    private fun setupCreateGroupActions() {
+        val showCreateDialog = {
+            val bottomSheet = CreateGroupBottomSheetFragment.newInstance()
+            bottomSheet.onGroupCreated = { createdGroup ->
+                loadSupabaseGroups()
+            }
+            bottomSheet.show(childFragmentManager, CreateGroupBottomSheetFragment.TAG)
+        }
+
+        binding.btnHeaderCreateGroup.setOnClickListener {
+            showCreateDialog()
+        }
+
+        binding.fabCreateGroup.setOnClickListener {
+            showCreateDialog()
+        }
+    }
+
     private fun loadSupabaseGroups() {
+        binding.pbGroupsLoading.visibility = View.VISIBLE
         lifecycleScope.launch {
+            currentUserId = userRepository.resolveValidAuthorId().ifBlank {
+                SupabaseClient.getCurrentUserId() ?: ""
+            }
+
             when (val result = groupRepository.fetchGroups()) {
                 is NetworkResult.Success -> {
-                    val remote = result.data.map { it.toUIModel() }
-                    discoverGroupsList.clear()
-                    discoverGroupsList.addAll(remote)
-                    filterGroups()
+                    binding.pbGroupsLoading.visibility = View.GONE
+                    allFetchedGroups.clear()
+                    allFetchedGroups.addAll(result.data)
+
+                    processGroupsData(result.data)
                 }
-                is NetworkResult.Error -> {}
+                is NetworkResult.Error -> {
+                    binding.pbGroupsLoading.visibility = View.GONE
+                    if (allFetchedGroups.isEmpty()) {
+                        binding.layoutEmptyDiscover.visibility = View.VISIBLE
+                    }
+                }
             }
         }
+    }
+
+    private fun processGroupsData(groups: List<GroupEntity>) {
+        myGroupsList.clear()
+        discoverGroupsList.clear()
+
+        for (entity in groups) {
+            val uiModel = entity.toUIModel(currentUserId)
+            if (uiModel.isJoined) {
+                myGroupsList.add(uiModel)
+            } else {
+                discoverGroupsList.add(uiModel)
+            }
+        }
+
+        binding.tvMyGroupsTitle.text = "My Groups (${myGroupsList.size})"
+        binding.tvDiscoverGroupsTitle.text = "Discover Groups (${discoverGroupsList.size})"
+
+        filterGroups()
     }
 
     private fun setupHeader() {
@@ -80,15 +142,25 @@ class CommunityFragment : Fragment() {
         }
 
         binding.btnFilter.setOnClickListener {
-            Toast.makeText(requireContext(), "Filter options", Toast.LENGTH_SHORT).show()
+            binding.etSearchGroups.text?.clear()
+            categoryAdapter.setSelectedCategory("All")
+            currentCategory = "All"
+            filterGroups()
+            Toast.makeText(requireContext(), "Reset filters", Toast.LENGTH_SHORT).show()
         }
 
         binding.tvViewAllMyGroups.setOnClickListener {
-            Toast.makeText(requireContext(), "Viewing all My Groups", Toast.LENGTH_SHORT).show()
+            if (myGroupsList.isNotEmpty()) {
+                openGroupDetail(myGroupsList.first())
+            } else {
+                Toast.makeText(requireContext(), "Join groups from Discover below", Toast.LENGTH_SHORT).show()
+            }
         }
 
         binding.tvSeeAllDiscover.setOnClickListener {
-            Toast.makeText(requireContext(), "Viewing all Discover Groups", Toast.LENGTH_SHORT).show()
+            if (discoverGroupsList.isNotEmpty()) {
+                binding.rvDiscoverGroups.smoothScrollToPosition(0)
+            }
         }
     }
 
@@ -114,11 +186,14 @@ class CommunityFragment : Fragment() {
         myGroupsAdapter = MyGroupsAdapter(
             groups = myGroupsList,
             onGroupClick = { group ->
-                findNavController().navigate(R.id.action_community_to_groupDetail)
+                openGroupDetail(group)
             },
             onBellToggle = { group ->
                 val status = if (group.isNotificationOn) "enabled" else "muted"
                 Toast.makeText(requireContext(), "Notifications $status for ${group.name}", Toast.LENGTH_SHORT).show()
+            },
+            onLeaveClick = { group ->
+                handleLeaveGroup(group)
             }
         )
         binding.rvMyGroups.apply {
@@ -131,17 +206,59 @@ class CommunityFragment : Fragment() {
         discoverGroupsAdapter = DiscoverGroupsAdapter(
             groups = discoverGroupsList,
             onGroupClick = { group ->
-                findNavController().navigate(R.id.action_community_to_groupDetail)
+                openGroupDetail(group)
             },
             onJoinClick = { group ->
-                val status = if (group.isJoined) "Joined" else "Left"
-                Toast.makeText(requireContext(), "$status ${group.name}", Toast.LENGTH_SHORT).show()
+                handleJoinGroup(group)
             }
         )
         binding.rvDiscoverGroups.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = discoverGroupsAdapter
         }
+    }
+
+    private fun handleJoinGroup(group: Group) {
+        lifecycleScope.launch {
+            when (val res = groupRepository.joinGroup(group.id)) {
+                is NetworkResult.Success -> {
+                    Toast.makeText(requireContext(), "Joined ${group.name}!", Toast.LENGTH_SHORT).show()
+                    loadSupabaseGroups()
+                }
+                is NetworkResult.Error -> {
+                    Toast.makeText(requireContext(), res.message, Toast.LENGTH_LONG).show()
+                    loadSupabaseGroups()
+                }
+            }
+        }
+    }
+
+    private fun handleLeaveGroup(group: Group) {
+        lifecycleScope.launch {
+            when (val res = groupRepository.leaveGroup(group.id)) {
+                is NetworkResult.Success -> {
+                    Toast.makeText(requireContext(), "Left ${group.name}", Toast.LENGTH_SHORT).show()
+                    loadSupabaseGroups()
+                }
+                is NetworkResult.Error -> {
+                    Toast.makeText(requireContext(), res.message, Toast.LENGTH_LONG).show()
+                    loadSupabaseGroups()
+                }
+            }
+        }
+    }
+
+    private fun openGroupDetail(group: Group) {
+        val bundle = Bundle().apply {
+            putString("groupId", group.id)
+            putString("groupName", group.name)
+            putString("category", group.category)
+            putString("description", group.description)
+            putString("membersText", group.membersText)
+            putBoolean("isJoined", group.isJoined)
+            putInt("coverRes", group.coverRes)
+        }
+        findNavController().navigate(R.id.action_community_to_groupDetail, bundle)
     }
 
     private fun setupSearch() {
@@ -159,18 +276,41 @@ class CommunityFragment : Fragment() {
         // Filter My Groups
         val filteredMy = myGroupsList.filter { group ->
             val matchesCat = currentCategory == "All" || group.category.equals(currentCategory, ignoreCase = true)
-            val matchesSearch = searchQuery.isEmpty() || group.name.contains(searchQuery, ignoreCase = true) || group.description.contains(searchQuery, ignoreCase = true)
+            val matchesSearch = searchQuery.isEmpty() ||
+                group.name.contains(searchQuery, ignoreCase = true) ||
+                group.description.contains(searchQuery, ignoreCase = true)
             matchesCat && matchesSearch
         }
         myGroupsAdapter.updateList(filteredMy)
 
+        // Show/hide My Groups empty state
+        if (myGroupsList.isEmpty() && searchQuery.isEmpty()) {
+            binding.layoutEmptyMyGroups.visibility = View.VISIBLE
+            binding.rvMyGroups.visibility = View.GONE
+        } else if (filteredMy.isEmpty() && searchQuery.isNotEmpty()) {
+            binding.layoutEmptyMyGroups.visibility = View.GONE
+            binding.rvMyGroups.visibility = View.GONE
+        } else {
+            binding.layoutEmptyMyGroups.visibility = View.GONE
+            binding.rvMyGroups.visibility = View.VISIBLE
+        }
+
         // Filter Discover Groups
         val filteredDiscover = discoverGroupsList.filter { group ->
             val matchesCat = currentCategory == "All" || group.category.equals(currentCategory, ignoreCase = true)
-            val matchesSearch = searchQuery.isEmpty() || group.name.contains(searchQuery, ignoreCase = true) || group.description.contains(searchQuery, ignoreCase = true)
+            val matchesSearch = searchQuery.isEmpty() ||
+                group.name.contains(searchQuery, ignoreCase = true) ||
+                group.description.contains(searchQuery, ignoreCase = true)
             matchesCat && matchesSearch
         }
         discoverGroupsAdapter.updateList(filteredDiscover)
+
+        // Show/hide Discover Groups empty state
+        if (filteredDiscover.isEmpty() && filteredMy.isEmpty()) {
+            binding.layoutEmptyDiscover.visibility = View.VISIBLE
+        } else {
+            binding.layoutEmptyDiscover.visibility = View.GONE
+        }
     }
 
     override fun onDestroyView() {

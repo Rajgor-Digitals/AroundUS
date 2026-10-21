@@ -1,83 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
-    android:fillViewport="true"
-    android:scrollbars="none">
+    android:background="#FFFFFF">
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingBottom="90dp">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
-        <!-- Top Header Bar: Menu, Title & Subtitle, Notification Bell -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingTop="12dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="8dp">
+            android:orientation="vertical"
+            android:paddingBottom="100dp">
 
-            <!-- Hamburger Button -->
-            <FrameLayout
-                android:id="@+id/btnHeaderMenu"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/bg_circle_icon_button">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_menu_custom"
-                    app:tint="#1E293B" />
-            </FrameLayout>
-
-            <!-- Center Title and Subtitle -->
+            <!-- Top Header Bar: Menu, Title & Subtitle, Create Group, Notification Bell -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="12dp"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp">
 
-                <TextView
-                    android:id="@+id/tvHeaderTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-black"
-                    android:text="Groups"
-                    android:textColor="#1E293B"
-                    android:textSize="20sp" />
-
-                <TextView
-                    android:id="@+id/tvHeaderSubtitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:fontFamily="sans-serif"
-                    android:gravity="center"
-                    android:text="Connect with people who share your interests"
-                    android:textColor="#64748B"
-                    android:textSize="12sp" />
-
-            </LinearLayout>
-
-            <!-- Notification Bell with Counter -->
-            <FrameLayout
-                android:id="@+id/btnHeaderNotifications"
-                android:layout_width="40dp"
-                android:layout_height="40dp">
-
+                <!-- Hamburger Button -->
                 <FrameLayout
+                    android:id="@+id/btnHeaderMenu"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="@drawable/bg_circle_icon_button">
@@ -86,167 +40,337 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_gravity="center"
-                        android:src="@drawable/ic_bell_outline"
+                        android:src="@drawable/ic_menu_custom"
                         app:tint="#1E293B" />
                 </FrameLayout>
 
-                <!-- Badge 3 -->
-                <TextView
-                    android:id="@+id/tvNotificationBadge"
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:layout_gravity="top|end"
-                    android:background="@drawable/bg_notification_badge_green"
-                    android:fontFamily="sans-serif-bold"
+                <!-- Center Title and Subtitle -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="12dp"
+                    android:layout_weight="1"
                     android:gravity="center"
-                    android:text="3"
-                    android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:orientation="vertical">
 
-            </FrameLayout>
+                    <TextView
+                        android:id="@+id/tvHeaderTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
+                        android:text="Groups"
+                        android:textColor="#1E293B"
+                        android:textSize="20sp" />
+
+                    <TextView
+                        android:id="@+id/tvHeaderSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="sans-serif"
+                        android:gravity="center"
+                        android:text="Connect with people who share your interests"
+                        android:textColor="#64748B"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- Create Group Header Button -->
+                <FrameLayout
+                    android:id="@+id/btnHeaderCreateGroup"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/bg_circle_icon_button">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_add"
+                        app:tint="#0D8A3F" />
+                </FrameLayout>
+
+                <!-- Notification Bell with Counter -->
+                <FrameLayout
+                    android:id="@+id/btnHeaderNotifications"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp">
+
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_circle_icon_button">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_bell_outline"
+                            app:tint="#1E293B" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/tvNotificationBadge"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="top|end"
+                        android:background="@drawable/bg_notification_badge_green"
+                        android:fontFamily="sans-serif-bold"
+                        android:gravity="center"
+                        android:text="3"
+                        android:textColor="#FFFFFF"
+                        android:textSize="10sp" />
+
+                </FrameLayout>
+
+            </LinearLayout>
+
+            <!-- Search Bar with Filter Icon -->
+            <LinearLayout
+                android:id="@+id/searchContainer"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/bg_search_input_rounded"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_search"
+                    app:tint="#0D8A3F" />
+
+                <EditText
+                    android:id="@+id/etSearchGroups"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:fontFamily="sans-serif"
+                    android:hint="Search groups..."
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:textColor="#1E293B"
+                    android:textColorHint="#94A3B8"
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:id="@+id/btnFilter"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_tune_filter"
+                    app:tint="#0D8A3F" />
+
+            </LinearLayout>
+
+            <!-- Horizontal Category Selector Chips -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvGroupCategories"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:clipToPadding="false"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="8dp"
+                android:scrollbars="none" />
+
+            <!-- Loading Indicator -->
+            <ProgressBar
+                android:id="@+id/pbGroupsLoading"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="20dp"
+                android:indeterminateTint="#0D8A3F"
+                android:visibility="gone" />
+
+            <!-- My Groups Section Header -->
+            <LinearLayout
+                android:id="@+id/headerMyGroups"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvMyGroupsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-black"
+                    android:text="My Groups"
+                    android:textColor="#1E293B"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/tvViewAllMyGroups"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="View All >"
+                    android:textColor="#0D8A3F"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+            <!-- Empty state when no joined groups -->
+            <LinearLayout
+                android:id="@+id/layoutEmptyMyGroups"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/bg_search_input_rounded"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="You haven't joined any groups yet"
+                    android:textColor="#334155"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="sans-serif"
+                    android:text="Join an active neighborhood group from Discover below, or create your own space!"
+                    android:textColor="#64748B"
+                    android:textSize="12.5sp" />
+
+            </LinearLayout>
+
+            <!-- My Groups Horizontal RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvMyGroups"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:clipToPadding="false"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:scrollbars="none" />
+
+            <!-- Discover Groups Section Header -->
+            <LinearLayout
+                android:id="@+id/headerDiscoverGroups"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvDiscoverGroupsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-black"
+                    android:text="Discover Groups"
+                    android:textColor="#1E293B"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/tvSeeAllDiscover"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="See All >"
+                    android:textColor="#0D8A3F"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+            <!-- Discover Groups Vertical RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvDiscoverGroups"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="12dp"
+                android:nestedScrollingEnabled="false"
+                android:scrollbars="none" />
+
+            <!-- Empty Discover State -->
+            <LinearLayout
+                android:id="@+id/layoutEmptyDiscover"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="16dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_search"
+                    app:tint="#94A3B8" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="No groups found"
+                    android:textColor="#64748B"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:fontFamily="sans-serif"
+                    android:gravity="center"
+                    android:text="Try another search or category, or create a new group."
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Search Bar with Filter Icon -->
-        <LinearLayout
-            android:id="@+id/searchContainer"
-            android:layout_width="match_parent"
-            android:layout_height="46dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/bg_search_input_rounded"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp">
+    </androidx.core.widget.NestedScrollView>
 
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_search"
-                app:tint="#0D8A3F" />
+    <!-- Floating Action Button: Create Group -->
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabCreateGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="18dp"
+        android:layout_marginBottom="90dp"
+        android:fontFamily="sans-serif-bold"
+        android:text="Create Group"
+        android:textColor="#FFFFFF"
+        app:backgroundTint="#0D8A3F"
+        app:elevation="6dp"
+        app:icon="@drawable/ic_add"
+        app:iconTint="#FFFFFF" />
 
-            <EditText
-                android:id="@+id/etSearchGroups"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginStart="10dp"
-                android:layout_marginEnd="10dp"
-                android:layout_weight="1"
-                android:background="@null"
-                android:fontFamily="sans-serif"
-                android:hint="Search groups..."
-                android:imeOptions="actionSearch"
-                android:inputType="text"
-                android:textColor="#1E293B"
-                android:textColorHint="#94A3B8"
-                android:textSize="14sp" />
-
-            <ImageView
-                android:id="@+id/btnFilter"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:src="@drawable/ic_tune_filter"
-                app:tint="#0D8A3F" />
-
-        </LinearLayout>
-
-        <!-- Horizontal Category Selector Chips -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvGroupCategories"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:clipToPadding="false"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="8dp"
-            android:scrollbars="none" />
-
-        <!-- My Groups Section Header -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginEnd="16dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif-black"
-                android:text="My Groups"
-                android:textColor="#1E293B"
-                android:textSize="17sp" />
-
-            <TextView
-                android:id="@+id/tvViewAllMyGroups"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-bold"
-                android:text="View All >"
-                android:textColor="#0D8A3F"
-                android:textSize="13sp" />
-
-        </LinearLayout>
-
-        <!-- My Groups Horizontal RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvMyGroups"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:clipToPadding="false"
-            android:orientation="horizontal"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:scrollbars="none" />
-
-        <!-- Discover Groups Section Header -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif-black"
-                android:text="Discover Groups"
-                android:textColor="#1E293B"
-                android:textSize="17sp" />
-
-            <TextView
-                android:id="@+id/tvSeeAllDiscover"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-bold"
-                android:text="See All >"
-                android:textColor="#0D8A3F"
-                android:textSize="13sp" />
-
-        </LinearLayout>
-
-        <!-- Discover Groups Vertical RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvDiscoverGroups"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="12dp"
-            android:nestedScrollingEnabled="false"
-            android:scrollbars="none" />
-
-    </LinearLayout>
-
-</androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

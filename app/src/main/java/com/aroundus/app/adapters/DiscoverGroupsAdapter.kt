@@ -45,8 +45,6 @@ class DiscoverGroupsAdapter(
             }
 
             btnDiscoverJoin.setOnClickListener {
-                group.isJoined = !group.isJoined
-                notifyItemChanged(holder.bindingAdapterPosition)
                 onJoinClick(group)
             }
 

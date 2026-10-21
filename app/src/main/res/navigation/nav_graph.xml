@@ -144,7 +144,8 @@
     <fragment
         android:id="@+id/groupDetailFragment"
         android:name="com.aroundus.app.fragments.GroupDetailFragment"
-        android:label="Group" />
+        android:label="Group"
+        tools:layout="@layout/fragment_group_detail" />
 
     <!-- Notifications -->
     <fragment

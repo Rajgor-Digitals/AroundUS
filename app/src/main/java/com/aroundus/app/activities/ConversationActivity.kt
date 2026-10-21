@@ -51,6 +51,8 @@ class ConversationActivity : AppCompatActivity() {
     private var currentUserId: String = ""
     private var recipientUserId: String = ""
     private var recipientName: String = "Neighbor"
+    private var groupId: String = ""
+    private var isGroupChat: Boolean = false
     private var isPartnerOnline: Boolean = true
     private var originalStatusText: String = "Active now"
 
@@ -75,23 +77,34 @@ class ConversationActivity : AppCompatActivity() {
         binding = ActivityConversationBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        groupId = intent.getStringExtra("groupId") ?: ""
+        isGroupChat = groupId.isNotBlank() || intent.getBooleanExtra("isGroup", false)
+
         recipientUserId = intent.getStringExtra("userId") ?: ""
-        recipientName = intent.getStringExtra("userName") ?: "Neighbor"
+        recipientName = intent.getStringExtra("userName") ?: if (isGroupChat) "Group" else "Neighbor"
         val avatarUrl = intent.getStringExtra("avatarUrl")
         val avatarRes = intent.getIntExtra("avatarRes", 0)
 
         // Resolve initial presence & last active status
-        val knownOnline = UserPresenceManager.isUserOnline(recipientUserId)
-        val knownLastActive = UserPresenceManager.getUserLastActive(recipientUserId)
-        isPartnerOnline = if (knownLastActive > 0L) knownOnline else intent.getBooleanExtra("isOnline", true)
-        originalStatusText = UserPresenceManager.formatLastActive(knownLastActive, isPartnerOnline)
+        if (isGroupChat) {
+            isPartnerOnline = true
+            val membersText = intent.getStringExtra("members") ?: "Community members"
+            originalStatusText = "Group • $membersText"
+        } else {
+            val knownOnline = UserPresenceManager.isUserOnline(recipientUserId)
+            val knownLastActive = UserPresenceManager.getUserLastActive(recipientUserId)
+            isPartnerOnline = if (knownLastActive > 0L) knownOnline else intent.getBooleanExtra("isOnline", true)
+            originalStatusText = UserPresenceManager.formatLastActive(knownLastActive, isPartnerOnline)
+        }
 
         setupHeader(recipientName, avatarUrl, avatarRes)
         setupMessagesList()
         setupInputBar()
         loadInitialMessages()
         startAutoRefreshLoop()
-        setupRealtimeChat()
+        if (!isGroupChat) {
+            setupRealtimeChat()
+        }
     }
 
     private fun setupHeader(
@@ -272,7 +285,7 @@ class ConversationActivity : AppCompatActivity() {
 
         binding.btnSend.setOnClickListener {
             val text = binding.etMessage.text.toString().trim()
-            if (text.isNotEmpty() && recipientUserId.isNotBlank()) {
+            if (text.isNotEmpty() && (recipientUserId.isNotBlank() || (isGroupChat && groupId.isNotBlank()))) {
                 // Immediately cancel typing status when message is sent
                 typingDebounceHandler.removeCallbacks(stopTypingRunnable)
                 sendTypingBroadcast(false)
@@ -292,7 +305,11 @@ class ConversationActivity : AppCompatActivity() {
                 binding.etMessage.text?.clear()
 
                 lifecycleScope.launch {
-                    val result = messageRepository.sendMessage(receiverId = recipientUserId, text = text)
+                    val result = if (isGroupChat) {
+                        messageRepository.sendMessage(groupId = groupId, text = text)
+                    } else {
+                        messageRepository.sendMessage(receiverId = recipientUserId, text = text)
+                    }
                     if (result is NetworkResult.Error) {
                         Toast.makeText(this@ConversationActivity, "Failed to send: ${result.message}", Toast.LENGTH_SHORT).show()
                     }
@@ -555,7 +572,57 @@ class ConversationActivity : AppCompatActivity() {
                 SupabaseClient.getCurrentUserId() ?: ""
             }
         }
-        if (authorId.isBlank() || recipientUserId.isBlank()) return
+        if (authorId.isBlank()) return
+
+        if (isGroupChat) {
+            if (groupId.isBlank()) return
+            when (val result = messageRepository.fetchGroupMessages(groupId)) {
+                is NetworkResult.Success -> {
+                    val fetchedMessages = result.data.map { entity ->
+                        val timestampLong = entity.timestamp.toLongOrNull() ?: 0L
+                        val timeFormatted = if (timestampLong > 0L) timeFormat.format(Date(timestampLong)) else "Now"
+                        val isSentByMe = entity.senderId == authorId
+                        Message(
+                            text = entity.text,
+                            isSent = isSentByMe,
+                            time = timeFormatted,
+                            id = entity.messageId,
+                            isSeen = true,
+                            timestampMs = timestampLong
+                        )
+                    }
+
+                    if (isInitial || messages.isEmpty()) {
+                        if (fetchedMessages.isNotEmpty()) {
+                            messages.clear()
+                            messages.addAll(fetchedMessages)
+                            messageAdapter.notifyDataSetChanged()
+                            binding.rvMessages.scrollToPosition(messages.size - 1)
+                        }
+                    } else {
+                        var hasNew = false
+                        for (newMsg in fetchedMessages) {
+                            val alreadyExists = messages.any {
+                                (it.id.isNotBlank() && it.id == newMsg.id) ||
+                                (it.id.isBlank() && it.text == newMsg.text && it.isSent == newMsg.isSent)
+                            }
+                            if (!alreadyExists) {
+                                messages.add(newMsg)
+                                hasNew = true
+                            }
+                        }
+                        if (hasNew) {
+                            messageAdapter.notifyDataSetChanged()
+                            binding.rvMessages.scrollToPosition(messages.size - 1)
+                        }
+                    }
+                }
+                is NetworkResult.Error -> {}
+            }
+            return
+        }
+
+        if (recipientUserId.isBlank()) return
 
         val sharedSecret = CryptoManager.generateSharedSecret(authorId, recipientUserId)
         val secretKey = CryptoManager.deriveKey(sharedSecret)

@@ -13,7 +13,8 @@ import com.aroundus.app.models.Group
 class MyGroupsAdapter(
     private var groups: List<Group>,
     private val onGroupClick: (Group) -> Unit,
-    private val onBellToggle: (Group) -> Unit
+    private val onBellToggle: (Group) -> Unit,
+    private val onLeaveClick: (Group) -> Unit = {}
 ) : RecyclerView.Adapter<MyGroupsAdapter.MyGroupViewHolder>() {
 
     inner class MyGroupViewHolder(val binding: ItemMyGroupCardBinding) :
@@ -66,8 +67,7 @@ class MyGroupsAdapter(
             }
 
             btnJoined.setOnClickListener {
-                group.isJoined = !group.isJoined
-                notifyItemChanged(holder.bindingAdapterPosition)
+                onLeaveClick(group)
             }
 
             btnBell.setOnClickListener {

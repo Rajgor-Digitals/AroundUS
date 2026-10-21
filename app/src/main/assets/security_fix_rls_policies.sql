@@ -141,3 +141,34 @@ USING (
         (storage.foldername(name))[1] = (auth.jwt() ->> 'email')
     )
 );
+
+-- ---------------------------------------------------------------------
+-- 3. GROUPS TABLE ROW LEVEL SECURITY (RLS) POLICIES
+-- ---------------------------------------------------------------------
+
+-- Enable RLS on public.groups
+ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
+
+-- Allow reading all groups
+DROP POLICY IF EXISTS "Allow public read groups" ON public.groups;
+CREATE POLICY "Allow public read groups" 
+ON public.groups 
+FOR SELECT 
+USING (true);
+
+-- Allow authenticated users and anon to create groups
+DROP POLICY IF EXISTS "Allow public insert groups" ON public.groups;
+CREATE POLICY "Allow public insert groups" 
+ON public.groups 
+FOR INSERT 
+WITH CHECK (true);
+
+-- Allow users to update groups (required for joining and leaving groups)
+DROP POLICY IF EXISTS "Allow public update groups" ON public.groups;
+DROP POLICY IF EXISTS "Allow users to update groups" ON public.groups;
+CREATE POLICY "Allow public update groups" 
+ON public.groups 
+FOR UPDATE 
+TO public, anon, authenticated
+USING (true)
+WITH CHECK (true);

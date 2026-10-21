@@ -74,11 +74,18 @@ class ChatListFragment : Fragment() {
     private fun setupRecyclerView() {
         chatAdapter = ChatAdapter(displayedChatsList) { chat ->
             val intent = Intent(requireContext(), ConversationActivity::class.java).apply {
-                putExtra("userId", chat.id)
-                putExtra("userName", chat.userName)
-                putExtra("avatarUrl", chat.avatarUrl)
-                putExtra("avatarRes", chat.avatarRes)
-                putExtra("isOnline", chat.isOnline)
+                if (currentTab == TabType.GROUPS) {
+                    putExtra("groupId", chat.id)
+                    putExtra("userName", chat.userName)
+                    putExtra("avatarRes", chat.avatarRes)
+                    putExtra("isGroup", true)
+                } else {
+                    putExtra("userId", chat.id)
+                    putExtra("userName", chat.userName)
+                    putExtra("avatarUrl", chat.avatarUrl)
+                    putExtra("avatarRes", chat.avatarRes)
+                    putExtra("isOnline", chat.isOnline)
+                }
             }
             startActivity(intent)
         }

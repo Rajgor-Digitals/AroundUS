@@ -55,4 +55,14 @@ class GroupCategoryAdapter(
     }
 
     override fun getItemCount(): Int = categories.size
+
+    fun setSelectedCategory(categoryName: String) {
+        val index = categories.indexOfFirst { it.name.equals(categoryName, ignoreCase = true) }
+        if (index != -1 && index != selectedIndex) {
+            val prev = selectedIndex
+            selectedIndex = index
+            notifyItemChanged(prev)
+            notifyItemChanged(selectedIndex)
+        }
+    }
 }

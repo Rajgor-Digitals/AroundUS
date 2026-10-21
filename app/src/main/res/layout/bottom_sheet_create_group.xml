@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_bottom_sheet_new_convo"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="28dp">
+
+    <!-- Top Drag Handle -->
+    <View
+        android:layout_width="44dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_sheet_drag_handle" />
+
+    <!-- Header: Title, Subtitle, Close Button -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/btnCloseSheet"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-black"
+                android:text="Create Group"
+                android:textColor="#0F172A"
+                android:textSize="22sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:fontFamily="sans-serif"
+                android:text="Start a community space for your neighbors"
+                android:textColor="#64748B"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnCloseSheet"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/bg_circle_icon_button"
+            android:contentDescription="Close"
+            android:src="@drawable/ic_close"
+            app:tint="#64748B" />
+
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:background="#F1F5F9" />
+
+    <!-- Group Name Input -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="sans-serif-bold"
+        android:text="Group Name *"
+        android:textColor="#1E293B"
+        android:textSize="13sp" />
+
+    <EditText
+        android:id="@+id/etGroupName"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_search_input_rounded"
+        android:fontFamily="sans-serif"
+        android:hint="e.g. Bhujpur Runners Club"
+        android:inputType="textCapWords"
+        android:maxLength="60"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:textColor="#0F172A"
+        android:textColorHint="#94A3B8"
+        android:textSize="14sp" />
+
+    <!-- Category Selector -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="sans-serif-bold"
+        android:text="Category *"
+        android:textColor="#1E293B"
+        android:textSize="13sp" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:scrollbars="none">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupCategory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleLine="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipLocal"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="Local"
+                app:chipBackgroundColor="@color/chip_interest_background"
+                app:chipStrokeColor="@color/chip_interest_stroke"
+                android:textColor="@color/chip_interest_text"
+                app:chipStrokeWidth="1dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipActivities"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Activities"
+                app:chipBackgroundColor="@color/chip_interest_background"
+                app:chipStrokeColor="@color/chip_interest_stroke"
+                android:textColor="@color/chip_interest_text"
+                app:chipStrokeWidth="1dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipBuySell"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Buy / Sell"
+                app:chipBackgroundColor="@color/chip_interest_background"
+                app:chipStrokeColor="@color/chip_interest_stroke"
+                android:textColor="@color/chip_interest_text"
+                app:chipStrokeWidth="1dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipHelpSupport"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Help &amp; Support"
+                app:chipBackgroundColor="@color/chip_interest_background"
+                app:chipStrokeColor="@color/chip_interest_stroke"
+                android:textColor="@color/chip_interest_text"
+                app:chipStrokeWidth="1dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipGeneral"
+                style="@style/Widget.MaterialComponents.Chip.Choice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="General"
+                app:chipBackgroundColor="@color/chip_interest_background"
+                app:chipStrokeColor="@color/chip_interest_stroke"
+                android:textColor="@color/chip_interest_text"
+                app:chipStrokeWidth="1dp" />
+
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
+    <!-- Description Input -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="sans-serif-bold"
+        android:text="Description"
+        android:textColor="#1E293B"
+        android:textSize="13sp" />
+
+    <EditText
+        android:id="@+id/etGroupDescription"
+        android:layout_width="match_parent"
+        android:layout_height="96dp"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_search_input_rounded"
+        android:fontFamily="sans-serif"
+        android:gravity="top|start"
+        android:hint="What is this group about? Share guidelines, meet times, or purpose..."
+        android:inputType="textMultiLine|textCapSentences"
+        android:lines="4"
+        android:padding="12dp"
+        android:textColor="#0F172A"
+        android:textColorHint="#94A3B8"
+        android:textSize="14sp" />
+
+    <!-- Community Notice -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_community_guideline_banner"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_shield_check"
+            app:tint="#0D8A3F" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif"
+            android:text="Groups in AroundUS are public spaces for verified neighborhood members."
+            android:textColor="#065F46"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+    <!-- Submit Button & Progress -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnSubmitCreateGroup"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@drawable/bg_green_primary_button"
+            android:fontFamily="sans-serif-bold"
+            android:text="Create Group"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp" />
+
+        <ProgressBar
+            android:id="@+id/pbCreateGroupLoading"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center"
+            android:indeterminateTint="#FFFFFF"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+</LinearLayout>

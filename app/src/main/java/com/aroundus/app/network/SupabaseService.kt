@@ -141,6 +141,12 @@ interface SupabaseService {
         @Body groupMap: Map<String, String>
     ): Response<List<GroupEntity>>
 
+    @GET("rest/v1/groups")
+    suspend fun getGroupById(
+        @Query("group_id") queryFilter: String,
+        @Query("select") select: String = "*"
+    ): Response<List<GroupEntity>>
+
     // --- MESSAGES TABLE ---
 
     @GET("rest/v1/messages")

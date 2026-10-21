@@ -1425,6 +1425,7 @@ class CommentRepository {
  */
 class GroupRepository {
     private val service get() = SupabaseClient.getService()
+    private val userRepo = UserRepository()
 
     suspend fun fetchGroups(): NetworkResult<List<GroupEntity>> =
         withContext(Dispatchers.IO) {
@@ -1440,18 +1441,45 @@ class GroupRepository {
             }
         }
 
+    suspend fun fetchGroupById(groupId: String): NetworkResult<GroupEntity> =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = service.getGroupById("eq.$groupId")
+                if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                    NetworkResult.Success(resp.body()!!.first())
+                } else {
+                    val allResp = service.getGroups()
+                    val found = allResp.body()?.firstOrNull { it.groupId == groupId }
+                    if (found != null) {
+                        NetworkResult.Success(found)
+                    } else {
+                        NetworkResult.Error("Group not found.")
+                    }
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            }
+        }
+
     suspend fun createGroup(name: String, description: String, category: String): NetworkResult<GroupEntity> =
         withContext(Dispatchers.IO) {
             try {
                 if (name.isBlank()) {
                     return@withContext NetworkResult.Error("Group name is required.")
                 }
+                val currentUserId = userRepo.resolveValidAuthorId().ifBlank {
+                    SupabaseClient.getCurrentUserId() ?: ""
+                }
+                val initialMembers = if (currentUserId.isNotBlank()) currentUserId else "1 Member"
                 val newGroup = GroupEntity(
-                    groupId = "group_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
+                    groupId = "group_" + UUID.randomUUID().toString().replace("-", "").take(12),
                     name = name.trim(),
                     description = description.trim(),
-                    category = category,
-                    members = "1 Member"
+                    category = category.trim().ifBlank { "Local" },
+                    members = initialMembers,
+                    createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+                        timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    }.format(java.util.Date())
                 )
 
                 val resp = service.createGroup(group = newGroup)
@@ -1462,6 +1490,78 @@ class GroupRepository {
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Failed to create group", e)
+            }
+        }
+
+    suspend fun joinGroup(groupId: String): NetworkResult<GroupEntity> =
+        withContext(Dispatchers.IO) {
+            try {
+                val currentUserId = userRepo.resolveValidAuthorId().ifBlank {
+                    SupabaseClient.getCurrentUserId() ?: ""
+                }
+                if (currentUserId.isBlank()) {
+                    return@withContext NetworkResult.Error("User must be logged in to join group.")
+                }
+
+                val groupResult = fetchGroupById(groupId)
+                val currentGroup = when (groupResult) {
+                    is NetworkResult.Success -> groupResult.data
+                    is NetworkResult.Error -> return@withContext groupResult
+                }
+
+                val currentMembers = currentGroup.getMemberList().toMutableList()
+                if (!currentMembers.contains(currentUserId)) {
+                    currentMembers.add(currentUserId)
+                }
+
+                val updatedMembersStr = currentMembers.joinToString(",")
+                val updateMap = mapOf("members" to updatedMembersStr)
+                val resp = service.updateGroup(queryFilter = "eq.$groupId", groupMap = updateMap)
+                if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                    NetworkResult.Success(resp.body()!!.first())
+                } else if (!resp.isSuccessful) {
+                    val errorDetail = resp.errorBody()?.string() ?: resp.message()
+                    NetworkResult.Error("Failed to update group: $errorDetail")
+                } else {
+                    NetworkResult.Error("Database RLS permission denied for updating group. Run SQL migration script to enable group updates.")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to join group", e)
+            }
+        }
+
+    suspend fun leaveGroup(groupId: String): NetworkResult<GroupEntity> =
+        withContext(Dispatchers.IO) {
+            try {
+                val currentUserId = userRepo.resolveValidAuthorId().ifBlank {
+                    SupabaseClient.getCurrentUserId() ?: ""
+                }
+                if (currentUserId.isBlank()) {
+                    return@withContext NetworkResult.Error("User must be logged in to leave group.")
+                }
+
+                val groupResult = fetchGroupById(groupId)
+                val currentGroup = when (groupResult) {
+                    is NetworkResult.Success -> groupResult.data
+                    is NetworkResult.Error -> return@withContext groupResult
+                }
+
+                val currentMembers = currentGroup.getMemberList().toMutableList()
+                currentMembers.remove(currentUserId)
+
+                val updatedMembersStr = currentMembers.joinToString(",")
+                val updateMap = mapOf("members" to updatedMembersStr)
+                val resp = service.updateGroup(queryFilter = "eq.$groupId", groupMap = updateMap)
+                if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                    NetworkResult.Success(resp.body()!!.first())
+                } else if (!resp.isSuccessful) {
+                    val errorDetail = resp.errorBody()?.string() ?: resp.message()
+                    NetworkResult.Error("Failed to update group: $errorDetail")
+                } else {
+                    NetworkResult.Error("Database RLS permission denied for updating group. Run SQL migration script to enable group updates.")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to leave group", e)
             }
         }
 }
@@ -1498,8 +1598,27 @@ class MessageRepository {
                 val allResp = service.getAllMessages()
                 if (allResp.isSuccessful && allResp.body() != null) {
                     val filtered = allResp.body()!!.filter {
-                        (it.senderId == currentUserId && it.receiverId == otherUserId) ||
-                        (it.senderId == otherUserId && it.receiverId == currentUserId)
+                        it.groupId.isNullOrBlank() && (
+                            (it.senderId == currentUserId && it.receiverId == otherUserId) ||
+                            (it.senderId == otherUserId && it.receiverId == currentUserId)
+                        )
+                    }.sortedBy { it.timestamp.toLongOrNull() ?: 0L }
+                    NetworkResult.Success(filtered)
+                } else {
+                    NetworkResult.Success(emptyList())
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            }
+        }
+
+    suspend fun fetchGroupMessages(groupId: String): NetworkResult<List<MessageEntity>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val allResp = service.getAllMessages()
+                if (allResp.isSuccessful && allResp.body() != null) {
+                    val filtered = allResp.body()!!.filter {
+                        it.groupId == groupId
                     }.sortedBy { it.timestamp.toLongOrNull() ?: 0L }
                     NetworkResult.Success(filtered)
                 } else {
