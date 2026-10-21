@@ -8,6 +8,7 @@ import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.UnderlineSpan
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -42,6 +43,16 @@ class RegisterActivity : AppCompatActivity() {
             val termsEnd = termsStart + "Terms of Use".length
             spannable.setSpan(ForegroundColorSpan(greenColor), termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             spannable.setSpan(UnderlineSpan(), termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(object : android.text.style.ClickableSpan() {
+                override fun onClick(widget: View) {
+                    startActivity(Intent(this@RegisterActivity, TermsAndConditionsActivity::class.java))
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                }
+                override fun updateDrawState(ds: android.text.TextPaint) {
+                    super.updateDrawState(ds)
+                    ds.color = greenColor
+                }
+            }, termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
 
         val privacyStart = fullText.indexOf("Privacy Policy")
@@ -52,9 +63,7 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         binding.tvTerms.text = spannable
-        binding.tvTerms.setOnClickListener {
-            binding.cbTerms.isChecked = !binding.cbTerms.isChecked
-        }
+        binding.tvTerms.movementMethod = android.text.method.LinkMovementMethod.getInstance()
     }
 
     private fun setupPasswordToggles() {

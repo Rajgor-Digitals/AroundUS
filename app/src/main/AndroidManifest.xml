@@ -70,6 +70,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Terms and Conditions Activity -->
+        <activity
+            android:name=".activities.TermsAndConditionsActivity"
+            android:exported="true"
+            android:screenOrientation="portrait" />
+
     </application>
 
 </manifest>

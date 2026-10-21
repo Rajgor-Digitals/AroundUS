@@ -45,7 +45,11 @@ class SettingsFragment : Fragment() {
         binding.itemHelp.setOnClickListener { }
         binding.itemFeedback.setOnClickListener { }
         binding.itemAbout.setOnClickListener { }
-        binding.itemTerms.setOnClickListener { }
+        binding.itemTerms.setOnClickListener {
+            val intent = Intent(requireContext(), com.aroundus.app.activities.TermsAndConditionsActivity::class.java)
+            startActivity(intent)
+            activity?.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        }
     }
 
     override fun onDestroyView() {
