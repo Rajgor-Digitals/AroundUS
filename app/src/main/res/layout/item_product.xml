@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    style="@style/Widget.AroundUS.Card"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="6dp"
     app:cardBackgroundColor="#FFFFFF"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="3dp"
-    app:strokeColor="#F1F5F9"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="2dp"
+    app:strokeColor="#E2E8F0"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -16,77 +16,80 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Product Image -->
+        <!-- Product Image Container -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="165dp">
+            android:layout_height="170dp">
 
             <ImageView
                 android:id="@+id/ivProduct"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="@drawable/bg_image_placeholder"
                 android:contentDescription="Product"
-                android:scaleType="centerCrop" />
+                android:scaleType="centerCrop"
+                tools:src="@drawable/img_market_desk" />
 
-            <!-- Price badge -->
+            <!-- Price Badge (Top-Left) -->
             <TextView
                 android:id="@+id/tvPrice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|start"
                 android:layout_margin="10dp"
-                android:background="@drawable/bg_primary_button"
+                android:background="@drawable/bg_price_pill"
+                android:elevation="2dp"
                 android:fontFamily="sans-serif-bold"
                 android:paddingStart="12dp"
                 android:paddingTop="5dp"
                 android:paddingEnd="12dp"
                 android:paddingBottom="5dp"
-                android:text="₹1,200"
                 android:textColor="#FFFFFF"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                tools:text="₹2,400" />
 
-            <!-- Wishlist button -->
+            <!-- Wishlist Button (Top-Right) -->
             <ImageButton
                 android:id="@+id/btnWishlist"
                 android:layout_width="34dp"
                 android:layout_height="34dp"
                 android:layout_gravity="top|end"
                 android:layout_margin="10dp"
-                android:background="@drawable/shape_circle_primary"
-                android:backgroundTint="#EEFFFFFF"
-                android:contentDescription="Wishlist"
+                android:background="@drawable/bg_glass_circle"
+                android:elevation="2dp"
+                android:contentDescription="Save"
                 android:padding="7dp"
                 android:src="@drawable/ic_favorite_border"
-                app:tint="@color/text_primary" />
+                app:tint="#64748B" />
 
-            <!-- Condition chip -->
+            <!-- Category / Condition Tag (Bottom-Right) -->
             <TextView
                 android:id="@+id/tvCondition"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
-                android:layout_margin="10dp"
+                android:layout_margin="8dp"
                 android:background="@drawable/bg_location_pill"
-                android:backgroundTint="#EEFFFFFF"
+                android:backgroundTint="#F0FFFFFF"
+                android:elevation="1dp"
                 android:fontFamily="sans-serif-medium"
-                android:paddingStart="10dp"
+                android:paddingStart="9dp"
                 android:paddingTop="3dp"
-                android:paddingEnd="10dp"
+                android:paddingEnd="9dp"
                 android:paddingBottom="3dp"
-                android:text="Like New"
-                android:textColor="@color/text_primary"
-                android:textSize="11sp" />
+                android:textColor="#0F172A"
+                android:textSize="10.5sp"
+                tools:text="Like New" />
 
         </FrameLayout>
 
-        <!-- Product Info -->
+        <!-- Product Details Container -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="12dp">
 
+            <!-- Title -->
             <TextView
                 android:id="@+id/tvProductName"
                 android:layout_width="match_parent"
@@ -94,22 +97,26 @@
                 android:ellipsize="end"
                 android:fontFamily="sans-serif-bold"
                 android:maxLines="2"
-                android:text="Wooden Study Desk - Solid Oak"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:minLines="2"
+                android:lineSpacingExtra="2dp"
+                android:textColor="#0F172A"
+                android:textSize="13.5sp"
+                tools:text="Solid Teak Wood Study Desk" />
 
+            <!-- Location & Time Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="12dp"
                     android:layout_height="12dp"
+                    android:contentDescription="Location"
                     android:src="@drawable/ic_location"
-                    app:tint="#2563EB" />
+                    app:tint="#0D8A3F" />
 
                 <TextView
                     android:id="@+id/tvLocation"
@@ -120,18 +127,92 @@
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
                     android:maxLines="1"
-                    android:text="Maple Grove"
-                    android:textColor="#2563EB"
-                    android:textSize="11sp" />
+                    android:textColor="#0D8A3F"
+                    android:textSize="11sp"
+                    tools:text="Bhujpur Village" />
 
                 <TextView
                     android:id="@+id/tvTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif"
-                    android:text="3h ago"
-                    android:textColor="@color/text_tertiary"
-                    android:textSize="11sp" />
+                    android:textColor="#94A3B8"
+                    android:textSize="10.5sp"
+                    tools:text="1h ago" />
+
+            </LinearLayout>
+
+            <!-- Hairline Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="#F1F5F9" />
+
+            <!-- Seller & Quick Chat Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/ivSellerAvatar"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/shape_avatar_placeholder" />
+
+                <TextView
+                    android:id="@+id/tvSellerName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
+                    android:textColor="#334155"
+                    android:textSize="11sp"
+                    tools:text="Gaurav Rajgor" />
+
+                <ImageView
+                    android:id="@+id/ivVerifiedBadge"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_marginEnd="6dp"
+                    android:contentDescription="Verified"
+                    android:src="@drawable/ic_verified_badge"
+                    app:tint="#0D8A3F" />
+
+                <!-- Quick Chat Action Pill -->
+                <LinearLayout
+                    android:id="@+id/btnQuickChat"
+                    android:layout_width="wrap_content"
+                    android:layout_height="24dp"
+                    android:background="@drawable/bg_chat_button_pill"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp">
+
+                    <ImageView
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:contentDescription="Chat"
+                        android:src="@drawable/ic_message"
+                        app:tint="#0D8A3F" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="3dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Chat"
+                        android:textColor="#0D8A3F"
+                        android:textSize="10.5sp" />
+
+                </LinearLayout>
 
             </LinearLayout>
 

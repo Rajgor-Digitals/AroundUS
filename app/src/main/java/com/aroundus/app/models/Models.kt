@@ -34,7 +34,13 @@ data class Product(
     val location: String,
     val timeAgo: String,
     val condition: String,
-    var isSaved: Boolean = false
+    var isSaved: Boolean = false,
+    val category: String = "All",
+    val sellerName: String = "Neighbor",
+    val sellerAvatarRes: Int = 0,
+    val sellerId: String = "",
+    val isVerifiedSeller: Boolean = true,
+    val description: String = ""
 )
 
 data class Event(
