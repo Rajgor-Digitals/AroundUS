@@ -88,10 +88,20 @@ ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 
--- Grant public read and write policies for development
+-- Grant public read and write policies
 CREATE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
-CREATE POLICY "Allow public insert users" ON public.users FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update users" ON public.users FOR UPDATE USING (true);
+CREATE POLICY "Allow users to insert own profile" ON public.users FOR INSERT WITH CHECK (
+    auth.uid() IS NULL OR
+    (auth.uid())::text = user_id OR
+    (auth.jwt() ->> 'email' IS NOT NULL AND auth.jwt() ->> 'email' = email)
+);
+CREATE POLICY "Allow users to update own profile" ON public.users FOR UPDATE TO authenticated USING (
+    (auth.uid())::text = user_id OR
+    (auth.jwt() ->> 'email' IS NOT NULL AND auth.jwt() ->> 'email' = email)
+) WITH CHECK (
+    (auth.uid())::text = user_id OR
+    (auth.jwt() ->> 'email' IS NOT NULL AND auth.jwt() ->> 'email' = email)
+);
 
 CREATE POLICY "Allow public read posts" ON public.posts FOR SELECT USING (true);
 CREATE POLICY "Allow public insert posts" ON public.posts FOR INSERT WITH CHECK (true);

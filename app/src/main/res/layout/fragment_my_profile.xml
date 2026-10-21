@@ -166,7 +166,8 @@
                         android:background="@drawable/shape_circle_primary"
                         android:backgroundTint="#008A3C"
                         android:clickable="true"
-                        android:focusable="true">
+                        android:focusable="true"
+                        android:visibility="gone">
 
                         <ImageView
                             android:layout_width="11dp"
@@ -287,6 +288,7 @@
                     android:orientation="horizontal"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
+                    android:visibility="gone"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvBio">
@@ -485,6 +487,7 @@
 
         <!-- 4. Menu Navigation Card (6 Rows) -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardNavigationMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"

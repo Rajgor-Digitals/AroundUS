@@ -142,7 +142,10 @@ class MainActivity : AppCompatActivity() {
             closeDrawer()
             resetNavTabs()
             highlightProfileTab()
-            navController.navigate(R.id.myProfileFragment)
+            val bundle = Bundle().apply {
+                putString("userId", SupabaseClient.getCurrentUserId() ?: "")
+            }
+            navController.navigate(R.id.myProfileFragment, bundle)
         }
 
         binding.navigationDrawer.menuDrawerSettings.setOnClickListener {
@@ -236,7 +239,10 @@ class MainActivity : AppCompatActivity() {
         binding.navProfile.setOnClickListener {
             resetNavTabs()
             highlightProfileTab()
-            navController.navigate(R.id.myProfileFragment)
+            val bundle = Bundle().apply {
+                putString("userId", SupabaseClient.getCurrentUserId() ?: "")
+            }
+            navController.navigate(R.id.myProfileFragment, bundle)
         }
     }
 

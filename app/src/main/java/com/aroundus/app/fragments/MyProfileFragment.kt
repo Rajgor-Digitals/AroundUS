@@ -51,17 +51,32 @@ class MyProfileFragment : Fragment() {
 
     private val myPostList = mutableListOf<Post>()
     private lateinit var postAdapter: PostAdapter
-    private var currentUserEntity: UserEntity? = null
+
+    // Separated state: Current authenticated user vs. profile currently viewed on screen
+    private var myOwnUserEntity: UserEntity? = null
+    private var viewedUserEntity: UserEntity? = null
+    private var currentUserEntity: UserEntity? get() = viewedUserEntity ?: myOwnUserEntity
+        set(value) {
+            viewedUserEntity = value
+        }
 
     private var selectedRemoteAvatarUrl: String? = null
     private var activeDialogAvatarView: CircleImageView? = null
 
-    // Photo picker launcher for avatar updates
+    // Photo picker launcher for avatar updates - Strictly restricted to authorized profile owner
     private val pickAvatarLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
-            val uId = SupabaseClient.getCurrentUserId() ?: currentUserEntity?.userId ?: ""
-            if (uId.isBlank()) {
-                Toast.makeText(requireContext(), "User session required.", Toast.LENGTH_SHORT).show()
+            val loggedInUid = SupabaseClient.getCurrentUserId() ?: ""
+            val loggedInEmail = SupabaseClient.getCurrentUserEmail() ?: ""
+            val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: loggedInUid
+
+            val isOwnProfile = SupabaseClient.isLoggedIn() && loggedInUid.isNotBlank() && (
+                targetUserId == loggedInUid ||
+                (loggedInEmail.isNotBlank() && targetUserId.equals(loggedInEmail, ignoreCase = true))
+            )
+
+            if (!isOwnProfile) {
+                Toast.makeText(requireContext(), "Security Error: You can only update your own profile photo.", Toast.LENGTH_SHORT).show()
                 return@registerForActivityResult
             }
 
@@ -71,18 +86,19 @@ class MyProfileFragment : Fragment() {
             Toast.makeText(requireContext(), "Uploading profile photo to Supabase Storage...", Toast.LENGTH_SHORT).show()
 
             viewLifecycleOwner.lifecycleScope.launch {
-                when (val uploadRes = userRepository.uploadProfilePhotoToStorage(requireContext(), uri, uId)) {
+                when (val uploadRes = userRepository.uploadProfilePhotoToStorage(requireContext(), uri, loggedInUid)) {
                     is NetworkResult.Success -> {
                         val remoteUrl = uploadRes.data
                         selectedRemoteAvatarUrl = remoteUrl
 
-                        val email = SupabaseClient.getCurrentUserEmail() ?: currentUserEntity?.email ?: ""
-                        when (val dbRes = userRepository.updateProfilePhotoUrl(uId, email, remoteUrl)) {
+                        val email = SupabaseClient.getCurrentUserEmail() ?: ""
+                        when (val dbRes = userRepository.updateProfilePhotoUrl(loggedInUid, email, remoteUrl)) {
                             is NetworkResult.Success -> {
-                                currentUserEntity = currentUserEntity?.copy(profilePhoto = remoteUrl)
-                                SupabaseClient.saveAvatarPath(uId, remoteUrl)
+                                myOwnUserEntity = myOwnUserEntity?.copy(profilePhoto = remoteUrl)
+                                viewedUserEntity = viewedUserEntity?.copy(profilePhoto = remoteUrl)
+                                SupabaseClient.saveAvatarPath(loggedInUid, remoteUrl)
                                 if (email.isNotBlank()) SupabaseClient.saveAvatarPath(email, remoteUrl)
-                                PostRepository.updateAuthorAvatar(uId, remoteUrl)
+                                PostRepository.updateAuthorAvatar(loggedInUid, remoteUrl)
                                 displayAvatar(remoteUrl)
                                 activeDialogAvatarView?.loadUserAvatar(remoteUrl)
                                 Toast.makeText(requireContext(), "Profile photo updated & synced!", Toast.LENGTH_SHORT).show()
@@ -94,7 +110,7 @@ class MyProfileFragment : Fragment() {
                     }
                     is NetworkResult.Error -> {
                         Toast.makeText(requireContext(), "Photo upload failed: ${uploadRes.message}", Toast.LENGTH_LONG).show()
-                        displayAvatar(currentUserEntity?.profilePhoto)
+                        displayAvatar(myOwnUserEntity?.profilePhoto)
                     }
                 }
             }
@@ -109,6 +125,7 @@ class MyProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        updateOwnershipUI(false)
         setupRecyclerView()
         setupListeners()
         loadUserProfile()
@@ -163,19 +180,6 @@ class MyProfileFragment : Fragment() {
             findNavController().navigate(R.id.notificationsFragment)
         }
 
-        // Profile Photo & Edit Profile
-        binding.btnChangeAvatar.setOnClickListener {
-            pickAvatarLauncher.launch("image/*")
-        }
-
-        binding.ivAvatar.setOnClickListener {
-            pickAvatarLauncher.launch("image/*")
-        }
-
-        binding.btnEditProfile.setOnClickListener {
-            showEditProfileDialog()
-        }
-
         // 4 Metric Cards
         binding.cardPosts.setOnClickListener {
             togglePostsVisibility()
@@ -190,8 +194,8 @@ class MyProfileFragment : Fragment() {
         }
 
         binding.cardSaved.setOnClickListener {
-            val targetUserId = currentUserEntity?.userId ?: SupabaseClient.getCurrentUserId() ?: ""
-            val savedCount = SupabaseClient.getSavedPostIds(targetUserId).size
+            val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
+            val savedCount = SupabaseClient.getSavedPostIds(loggedInUserId).size
             Toast.makeText(requireContext(), "Viewing $savedCount Saved Posts", Toast.LENGTH_SHORT).show()
         }
 
@@ -205,8 +209,8 @@ class MyProfileFragment : Fragment() {
         }
 
         binding.rowSavedPosts.setOnClickListener {
-            val targetUserId = currentUserEntity?.userId ?: SupabaseClient.getCurrentUserId() ?: ""
-            val savedCount = SupabaseClient.getSavedPostIds(targetUserId).size
+            val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
+            val savedCount = SupabaseClient.getSavedPostIds(loggedInUserId).size
             Toast.makeText(requireContext(), "Viewing $savedCount Saved Posts", Toast.LENGTH_SHORT).show()
         }
 
@@ -342,7 +346,67 @@ class MyProfileFragment : Fragment() {
             .show()
     }
 
+    private fun updateOwnershipUI(isOwnProfile: Boolean) {
+        val b = _binding ?: return
+        if (isOwnProfile) {
+            b.btnEditProfile.visibility = View.VISIBLE
+            b.btnEditProfile.isEnabled = true
+            b.btnEditProfile.setOnClickListener {
+                showEditProfileDialog()
+            }
+
+            b.btnChangeAvatar.visibility = View.VISIBLE
+            b.btnChangeAvatar.isEnabled = true
+            b.btnChangeAvatar.setOnClickListener {
+                pickAvatarLauncher.launch("image/*")
+            }
+
+            b.ivAvatar.isClickable = true
+            b.ivAvatar.setOnClickListener {
+                pickAvatarLauncher.launch("image/*")
+            }
+
+            b.cardNavigationMenu.visibility = View.VISIBLE
+            b.cardSaved.visibility = View.VISIBLE
+            b.cardInviteNeighbors.visibility = View.VISIBLE
+        } else {
+            b.btnEditProfile.visibility = View.GONE
+            b.btnEditProfile.isEnabled = false
+            b.btnEditProfile.setOnClickListener(null)
+
+            b.btnChangeAvatar.visibility = View.GONE
+            b.btnChangeAvatar.isEnabled = false
+            b.btnChangeAvatar.setOnClickListener(null)
+
+            b.ivAvatar.isClickable = false
+            b.ivAvatar.setOnClickListener(null)
+
+            b.cardNavigationMenu.visibility = View.GONE
+            b.cardSaved.visibility = View.GONE
+            b.cardInviteNeighbors.visibility = View.GONE
+            b.rvPosts.visibility = View.VISIBLE
+        }
+    }
+
     private fun showEditProfileDialog() {
+        val loggedInUserId = SupabaseClient.getCurrentUserId()
+        val loggedInEmail = SupabaseClient.getCurrentUserEmail()
+
+        if (!SupabaseClient.isLoggedIn() || loggedInUserId.isNullOrBlank()) {
+            Toast.makeText(requireContext(), "You must be signed in to edit your profile.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: loggedInUserId
+        val isOwnProfile = loggedInUserId.isNotBlank() && (
+            targetUserId == loggedInUserId ||
+            (loggedInEmail != null && targetUserId.equals(loggedInEmail, ignoreCase = true))
+        )
+        if (!isOwnProfile) {
+            Toast.makeText(requireContext(), "Security Error: You are not authorized to edit this profile.", Toast.LENGTH_LONG).show()
+            return
+        }
+
         val dialogView = layoutInflater.inflate(R.layout.dialog_edit_profile, null)
         val etName = dialogView.findViewById<TextInputEditText>(R.id.etEditName)
         val etBio = dialogView.findViewById<TextInputEditText>(R.id.etEditBio)
@@ -355,18 +419,19 @@ class MyProfileFragment : Fragment() {
 
         activeDialogAvatarView = ivEditAvatar
 
-        val currentName = currentUserEntity?.name ?: binding.tvUserName.text.toString()
-        val currentBio = currentUserEntity?.bio ?: binding.tvBio.text.toString()
-        val currentLocation = currentUserEntity?.location ?: binding.tvUserLocation.text.toString()
-        val currentPhone = currentUserEntity?.phone ?: ""
+        // CRITICAL: Always use the authenticated user's own data, never viewed user's data
+        val userToEdit = myOwnUserEntity
+        val currentName = userToEdit?.name ?: SupabaseClient.getCurrentUserName() ?: ""
+        val currentBio = userToEdit?.bio ?: ""
+        val currentLocation = userToEdit?.location ?: "Bhujpur, Kutch, Gujarat"
+        val currentPhone = userToEdit?.phone ?: ""
 
         etName.setText(currentName)
         etBio.setText(currentBio)
         etLocation.setText(currentLocation)
         etPhone.setText(currentPhone)
 
-        val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
-        val currentAvatarUrl = selectedRemoteAvatarUrl ?: currentUserEntity?.profilePhoto ?: SupabaseClient.getAvatarPath(currentUserId)
+        val currentAvatarUrl = selectedRemoteAvatarUrl ?: userToEdit?.profilePhoto ?: SupabaseClient.getAvatarPath(loggedInUserId)
         if (!currentAvatarUrl.isNullOrBlank()) {
             ivEditAvatar.loadUserAvatar(currentAvatarUrl)
         } else {
@@ -394,35 +459,40 @@ class MyProfileFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            val userId = SupabaseClient.getCurrentUserId() ?: currentUserEntity?.userId ?: ""
-            val email = SupabaseClient.getCurrentUserEmail() ?: currentUserEntity?.email ?: ""
-            val photoToSave = selectedRemoteAvatarUrl ?: currentUserEntity?.profilePhoto?.takeIf {
+            // CRITICAL: Force the authenticated user's ID and email
+            val authUserId = SupabaseClient.getCurrentUserId() ?: ""
+            val authEmail = SupabaseClient.getCurrentUserEmail() ?: ""
+            if (authUserId.isBlank()) {
+                Toast.makeText(requireContext(), "Active user session required.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val photoToSave = selectedRemoteAvatarUrl ?: userToEdit?.profilePhoto?.takeIf {
                 it.startsWith("http://") || it.startsWith("https://")
             }
 
-            if (!photoToSave.isNullOrBlank() && userId.isNotBlank()) {
-                SupabaseClient.saveAvatarPath(userId, photoToSave)
+            if (!photoToSave.isNullOrBlank()) {
+                SupabaseClient.saveAvatarPath(authUserId, photoToSave)
             }
 
             val updatedUser = UserEntity(
-                userId = userId,
+                userId = authUserId, // Strictly enforced: NEVER another user's ID
                 name = newName,
-                email = email,
+                email = authEmail,
                 phone = newPhone,
                 location = newLocation,
                 bio = newBio,
                 profilePhoto = photoToSave,
-                usernameLastChanged = currentUserEntity?.usernameLastChanged
+                usernameLastChanged = userToEdit?.usernameLastChanged
             )
 
             btnSave.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
                 when (val result = userRepository.updateUserProfile(updatedUser)) {
                     is NetworkResult.Success -> {
-                        currentUserEntity = result.data
-                        if (userId.isNotBlank()) {
-                            PostRepository.updateAuthorAvatar(userId, photoToSave)
-                        }
+                        myOwnUserEntity = result.data
+                        viewedUserEntity = result.data
+                        PostRepository.updateAuthorAvatar(authUserId, photoToSave)
                         Toast.makeText(requireContext(), "Profile updated successfully!", Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
                         loadUserProfile()
@@ -440,34 +510,44 @@ class MyProfileFragment : Fragment() {
 
     private fun loadUserProfile() {
         val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
+        val loggedInEmail = SupabaseClient.getCurrentUserEmail() ?: ""
         val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: loggedInUserId
-        val isOwnProfile = targetUserId.isBlank() || targetUserId == loggedInUserId
 
-        if (!isOwnProfile) {
-            binding.btnEditProfile.visibility = View.GONE
-            binding.btnChangeAvatar.visibility = View.GONE
-        } else {
-            binding.btnEditProfile.visibility = View.VISIBLE
-            binding.btnChangeAvatar.visibility = View.VISIBLE
-        }
+        val isOwnProfile = SupabaseClient.isLoggedIn() && loggedInUserId.isNotBlank() && (
+            targetUserId == loggedInUserId ||
+            (loggedInEmail.isNotBlank() && targetUserId.equals(loggedInEmail, ignoreCase = true))
+        )
 
-        val email = if (isOwnProfile) SupabaseClient.getCurrentUserEmail() ?: "user@aroundus.app" else ""
+        updateOwnershipUI(isOwnProfile)
+
+        // Clear viewed entity to prevent cross-profile leakage
+        viewedUserEntity = null
+        selectedRemoteAvatarUrl = null
+
         val fallbackName = if (isOwnProfile) SupabaseClient.getCurrentUserName() ?: "Neighbor" else "Neighbor"
+        val fallbackEmail = if (isOwnProfile) loggedInEmail.ifBlank { "user@aroundus.app" } else ""
 
-        // Set initial / cached state
-        val initialName = currentUserEntity?.name?.takeIf { it.isNotBlank() } ?: fallbackName
-        val initialEmail = currentUserEntity?.email?.takeIf { it.isNotBlank() } ?: email
-        val initialLocation = currentUserEntity?.location?.takeIf { it.isNotBlank() } ?: "Bhujpur, Kutch, Gujarat"
-        val initialBio = currentUserEntity?.bio?.takeIf {
-            it.isNotBlank() && !it.startsWith("/") && !it.startsWith("content://") && !it.startsWith("file://")
-        } ?: "Passionate about building a better community. Let's connect and create a positive impact together."
+        // Reset UI to clean state or cached data
+        if (isOwnProfile) {
+            val initialName = myOwnUserEntity?.name?.takeIf { it.isNotBlank() } ?: fallbackName
+            val initialEmail = myOwnUserEntity?.email?.takeIf { it.isNotBlank() } ?: fallbackEmail
+            val initialLocation = myOwnUserEntity?.location?.takeIf { it.isNotBlank() } ?: "Bhujpur, Kutch, Gujarat"
+            val initialBio = myOwnUserEntity?.bio?.takeIf {
+                it.isNotBlank() && !it.startsWith("/") && !it.startsWith("content://") && !it.startsWith("file://")
+            } ?: "Passionate about building a better community. Let's connect and create a positive impact together."
 
-        binding.tvUserName.text = initialName
-        binding.tvUsername.text = "@${emailToHandle(initialEmail, initialName)}"
-        binding.tvUserLocation.text = initialLocation
-        binding.tvBio.text = initialBio
-
-        displayAvatar(currentUserEntity?.profilePhoto)
+            binding.tvUserName.text = initialName
+            binding.tvUsername.text = "@${emailToHandle(initialEmail, initialName)}"
+            binding.tvUserLocation.text = initialLocation
+            binding.tvBio.text = initialBio
+            displayAvatar(myOwnUserEntity?.profilePhoto ?: SupabaseClient.getAvatarPath(loggedInUserId))
+        } else {
+            binding.tvUserName.text = "Loading..."
+            binding.tvUsername.text = ""
+            binding.tvUserLocation.text = "Bhujpur, Kutch, Gujarat"
+            binding.tvBio.text = ""
+            displayAvatar(null)
+        }
 
         // Query fresh real user details from Supabase database
         viewLifecycleOwner.lifecycleScope.launch {
@@ -475,10 +555,13 @@ class MyProfileFragment : Fragment() {
                 is NetworkResult.Success -> {
                     val b = _binding ?: return@launch
                     val profile = result.data
-                    currentUserEntity = profile
+                    viewedUserEntity = profile
+                    if (isOwnProfile) {
+                        myOwnUserEntity = profile
+                    }
 
                     val realName = profile.name.ifBlank { fallbackName }
-                    val realEmail = profile.email.ifBlank { email }
+                    val realEmail = profile.email.ifBlank { fallbackEmail }
                     val realLocation = profile.location?.takeIf { it.isNotBlank() } ?: "Bhujpur, Kutch, Gujarat"
                     val realBio = profile.bio?.takeIf {
                         it.isNotBlank() && !it.startsWith("/") && !it.startsWith("content://") && !it.startsWith("file://")
@@ -501,22 +584,30 @@ class MyProfileFragment : Fragment() {
                             val migResult = userRepository.migrateLegacyProfilePhotoIfNeeded(requireContext(), profile)
                             if (migResult is NetworkResult.Success) {
                                 val newUrl = migResult.data
-                                currentUserEntity = currentUserEntity?.copy(profilePhoto = newUrl)
+                                myOwnUserEntity = myOwnUserEntity?.copy(profilePhoto = newUrl)
                                 displayAvatar(newUrl)
                                 PostRepository.updateAuthorAvatar(targetUserId, newUrl)
                             }
                         }
                     }
                 }
-                is NetworkResult.Error -> {}
+                is NetworkResult.Error -> {
+                    val b = _binding ?: return@launch
+                    if (!isOwnProfile) {
+                        b.tvUserName.text = "Neighbor"
+                        b.tvBio.text = "AroundUS Community Member"
+                    }
+                }
             }
         }
     }
 
     private fun loadUserPostsAndMetrics() {
         val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
-        val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: currentUserEntity?.userId ?: loggedInUserId
-        val targetUserName = currentUserEntity?.name ?: SupabaseClient.getCurrentUserName() ?: ""
+        val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: loggedInUserId
+        val isOwnProfile = targetUserId == loggedInUserId
+        val targetUserName = (if (isOwnProfile) myOwnUserEntity?.name else viewedUserEntity?.name)
+            ?: SupabaseClient.getCurrentUserName() ?: ""
 
         val b = _binding ?: return
 
@@ -533,7 +624,11 @@ class MyProfileFragment : Fragment() {
             // 1. Fetch user posts from Supabase database (Real count)
             when (val result = postRepository.fetchPosts()) {
                 is NetworkResult.Success -> {
-                    val currentAvatar = currentUserEntity?.profilePhoto ?: SupabaseClient.getAvatarPath(targetUserId) ?: selectedRemoteAvatarUrl
+                    val currentAvatar = if (isOwnProfile) {
+                        myOwnUserEntity?.profilePhoto ?: SupabaseClient.getAvatarPath(targetUserId) ?: selectedRemoteAvatarUrl
+                    } else {
+                        viewedUserEntity?.profilePhoto
+                    }
 
                     val onlyUserPosts = result.data
                         .filter { postEntity ->
@@ -574,8 +669,8 @@ class MyProfileFragment : Fragment() {
                 _binding?.tvConnectionsCount?.text = "0"
             }
 
-            // 4. Fetch saved posts count (Real count)
-            val savedCount = SupabaseClient.getSavedPostIds(targetUserId).size
+            // 4. Fetch personal saved posts count
+            val savedCount = SupabaseClient.getSavedPostIds(loggedInUserId).size
             _binding?.tvSavedCount?.text = savedCount.toString()
         }
     }
@@ -598,27 +693,37 @@ class MyProfileFragment : Fragment() {
 
     private fun displayAvatar(pathOrUri: String? = null) {
         try {
-            val uId = SupabaseClient.getCurrentUserId() ?: "user"
-            val email = SupabaseClient.getCurrentUserEmail() ?: ""
+            val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
+            val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: loggedInUserId
+            val isOwnProfile = SupabaseClient.isLoggedIn() && loggedInUserId.isNotBlank() && (
+                targetUserId == loggedInUserId ||
+                (SupabaseClient.getCurrentUserEmail()?.equals(targetUserId, ignoreCase = true) == true)
+            )
 
-            val savedPath = pathOrUri
-                ?: currentUserEntity?.profilePhoto
-                ?: selectedRemoteAvatarUrl
-                ?: SupabaseClient.getAvatarPath(uId)
-                ?: SupabaseClient.getAvatarPath(email)
+            val savedPath = if (isOwnProfile) {
+                pathOrUri
+                    ?: myOwnUserEntity?.profilePhoto
+                    ?: selectedRemoteAvatarUrl
+                    ?: SupabaseClient.getAvatarPath(loggedInUserId)
+                    ?: SupabaseClient.getCurrentUserEmail()?.let { SupabaseClient.getAvatarPath(it) }
+            } else {
+                pathOrUri ?: viewedUserEntity?.profilePhoto
+            }
 
             if (!savedPath.isNullOrBlank()) {
                 binding.ivAvatar.loadUserAvatar(savedPath, R.drawable.img_avatar_gaurav_rajgor)
                 return
             }
 
-            val localAvatarFile = File(requireContext().filesDir, "avatar_${uId}.jpg")
-            if (localAvatarFile.exists() && localAvatarFile.length() > 0L) {
-                binding.ivAvatar.loadUserAvatar(localAvatarFile.absolutePath, R.drawable.img_avatar_gaurav_rajgor)
-                return
+            if (isOwnProfile && loggedInUserId.isNotBlank()) {
+                val localAvatarFile = File(requireContext().filesDir, "avatar_${loggedInUserId}.jpg")
+                if (localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+                    binding.ivAvatar.loadUserAvatar(localAvatarFile.absolutePath, R.drawable.img_avatar_gaurav_rajgor)
+                    return
+                }
             }
 
-            // Fallback to reference design avatar
+            // Fallback to placeholder avatar
             binding.ivAvatar.setImageResource(R.drawable.img_avatar_gaurav_rajgor)
         } catch (e: Exception) {
             binding.ivAvatar.setImageResource(R.drawable.img_avatar_gaurav_rajgor)

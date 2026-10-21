@@ -461,25 +461,41 @@ class UserRepository {
     suspend fun updateUserProfile(updatedUser: UserEntity): NetworkResult<UserEntity> =
         withContext(Dispatchers.IO) {
             try {
-                if (updatedUser.email.isBlank() && updatedUser.userId.isBlank()) {
-                    return@withContext NetworkResult.Error("Invalid user session.")
+                // 1. Session Authorization Check
+                val sessionUserId = SupabaseClient.getCurrentUserId()?.trim()
+                val sessionEmail = SupabaseClient.getCurrentUserEmail()?.trim()?.lowercase()
+
+                if (sessionUserId.isNullOrBlank() && sessionEmail.isNullOrBlank()) {
+                    return@withContext NetworkResult.Error("Unauthorized: Active user session required.")
                 }
 
-                // 1. Fetch current profile from Supabase
+                // Security Check: updatedUser.userId must match authenticated sessionUserId
+                if (updatedUser.userId.isNotBlank() && !sessionUserId.isNullOrBlank() && updatedUser.userId != sessionUserId) {
+                    return@withContext NetworkResult.Error("Security Violation: You are not authorized to update another user's profile.")
+                }
+                if (updatedUser.email.isNotBlank() && !sessionEmail.isNullOrBlank() && !updatedUser.email.trim().lowercase().equals(sessionEmail, ignoreCase = true)) {
+                    return@withContext NetworkResult.Error("Security Violation: Updating user email address is prohibited.")
+                }
+
+                val authorizedUserId = sessionUserId ?: updatedUser.userId
+                val authorizedEmail = sessionEmail ?: updatedUser.email.trim().lowercase()
+                val sanitizedUser = updatedUser.copy(userId = authorizedUserId, email = authorizedEmail)
+
+                // 2. Fetch current profile from Supabase
                 var currentProfile: UserEntity? = null
-                if (updatedUser.userId.isNotBlank()) {
-                    val resp = service.getUserById("eq.${updatedUser.userId}")
+                if (authorizedUserId.isNotBlank()) {
+                    val resp = service.getUserById("eq.$authorizedUserId")
                     currentProfile = resp.body()?.firstOrNull()
                 }
-                if (currentProfile == null && updatedUser.email.isNotBlank()) {
-                    val resp = service.getUserByEmail("eq.${updatedUser.email.trim().lowercase()}")
+                if (currentProfile == null && authorizedEmail.isNotBlank()) {
+                    val resp = service.getUserByEmail("eq.$authorizedEmail")
                     currentProfile = resp.body()?.firstOrNull()
                 }
 
-                var finalUser = updatedUser
+                var finalUser = sanitizedUser
 
-                // 2. Enforce 21-day username change restriction if name was modified
-                if (currentProfile != null && !currentProfile.name.isBlank() && !currentProfile.name.equals(updatedUser.name.trim(), ignoreCase = true)) {
+                // 3. Enforce 21-day username change restriction if name was modified
+                if (currentProfile != null && !currentProfile.name.isBlank() && !currentProfile.name.equals(sanitizedUser.name.trim(), ignoreCase = true)) {
                     val lastChanged = currentProfile.usernameLastChanged ?: 0L
                     val now = System.currentTimeMillis()
                     val days21Ms = 21L * 24L * 60L * 60L * 1000L
@@ -489,11 +505,11 @@ class UserRepository {
                         val daysLeft = (millisLeft / (24 * 60 * 60 * 1000L)).coerceAtLeast(1)
                         return@withContext NetworkResult.Error("Username can only be changed once every 21 days. Please wait $daysLeft day(s).")
                     } else {
-                        finalUser = updatedUser.copy(usernameLastChanged = now)
+                        finalUser = sanitizedUser.copy(usernameLastChanged = now)
                     }
                 }
 
-                // 3. Build update payload map
+                // 4. Build update payload map - strictly permitted fields only (no user_id, role, or created_at tampering)
                 val updateMap = mutableMapOf<String, String>()
                 updateMap["name"] = finalUser.name
                 finalUser.location?.takeIf { it.isNotBlank() }?.let { updateMap["location"] = it }
@@ -510,39 +526,35 @@ class UserRepository {
                     updateMap["username_last_changed"] = finalUser.usernameLastChanged.toString()
                 }
 
-                // 4. Update row in Supabase users table
+                // 5. Update row in Supabase users table ONLY for the authorized user
                 var isUpdated = false
                 var savedUser: UserEntity? = null
 
-                if (finalUser.userId.isNotBlank()) {
-                    val resp = service.updateUser("eq.${finalUser.userId}", userMap = updateMap)
+                if (authorizedUserId.isNotBlank()) {
+                    val resp = service.updateUser("eq.$authorizedUserId", userMap = updateMap)
                     if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
                         savedUser = resp.body()!!.first()
                         isUpdated = true
                     }
                 }
 
-                if (!isUpdated && finalUser.email.isNotBlank()) {
-                    val resp = service.updateUserByEmail("eq.${finalUser.email.trim().lowercase()}", userMap = updateMap)
+                if (!isUpdated && authorizedEmail.isNotBlank()) {
+                    val resp = service.updateUserByEmail("eq.$authorizedEmail", userMap = updateMap)
                     if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
                         savedUser = resp.body()!!.first()
                         isUpdated = true
                     }
                 }
 
-                // Fallback upsert
                 if (!isUpdated) {
-                    val resp = service.createUser(user = finalUser)
-                    if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                        savedUser = resp.body()!!.first()
-                    }
+                    return@withContext NetworkResult.Error("Failed to update profile: Profile not found or update unauthorized.")
                 }
 
                 val resultUser = savedUser ?: finalUser
                 SupabaseClient.saveSession(
                     SupabaseClient.getAccessToken(),
-                    resultUser.userId.ifBlank { finalUser.userId },
-                    resultUser.email.ifBlank { finalUser.email },
+                    resultUser.userId.ifBlank { authorizedUserId },
+                    resultUser.email.ifBlank { authorizedEmail },
                     resultUser.name.ifBlank { finalUser.name }
                 )
 
@@ -563,9 +575,15 @@ class UserRepository {
         userId: String
     ): NetworkResult<String> = withContext(Dispatchers.IO) {
         try {
-            if (userId.isBlank()) {
-                return@withContext NetworkResult.Error("Valid user session required.")
+            val sessionUserId = SupabaseClient.getCurrentUserId()
+            if (sessionUserId.isNullOrBlank()) {
+                return@withContext NetworkResult.Error("Unauthorized: Active user session required.")
             }
+            if (userId.isNotBlank() && userId != sessionUserId) {
+                return@withContext NetworkResult.Error("Security Violation: You cannot upload photos for another user.")
+            }
+            val authorizedUserId = sessionUserId
+
             val contentResolver = context.contentResolver
             val mimeType = contentResolver.getType(imageUri) ?: "image/jpeg"
             val validTypes = listOf("image/jpeg", "image/png", "image/webp", "image/jpg")
@@ -615,7 +633,7 @@ class UserRepository {
                 ext = if (mimeType.contains("png")) "png" else if (mimeType.contains("webp")) "webp" else "jpg"
             }
 
-            uploadRawBytesToStorage(uploadBytes, finalMime, ext, userId)
+            uploadRawBytesToStorage(uploadBytes, finalMime, ext, authorizedUserId)
         } catch (e: Exception) {
             NetworkResult.Error(e.localizedMessage ?: "Failed to upload image.", e)
         }
@@ -631,10 +649,19 @@ class UserRepository {
         userId: String
     ): NetworkResult<String> = withContext(Dispatchers.IO) {
         try {
+            val sessionUserId = SupabaseClient.getCurrentUserId()
+            if (sessionUserId.isNullOrBlank()) {
+                return@withContext NetworkResult.Error("Unauthorized: Active user session required.")
+            }
+            if (userId.isNotBlank() && userId != sessionUserId) {
+                return@withContext NetworkResult.Error("Security Violation: You cannot upload photos for another user.")
+            }
+            val authorizedUserId = sessionUserId
+
             val timestamp = System.currentTimeMillis()
             val uniqueToken = UUID.randomUUID().toString().take(8)
             val filename = "avatar_${timestamp}_${uniqueToken}.$ext"
-            val objectPath = "$userId/$filename"
+            val objectPath = "$authorizedUserId/$filename"
 
             val baseUrl = SupabaseConfig.SUPABASE_URL.trimEnd('/')
             val uploadUrl = "$baseUrl/storage/v1/object/avatars/$objectPath"
@@ -681,29 +708,43 @@ class UserRepository {
     suspend fun updateProfilePhotoUrl(userId: String, email: String, remoteUrl: String): NetworkResult<Boolean> =
         withContext(Dispatchers.IO) {
             try {
+                val sessionUserId = SupabaseClient.getCurrentUserId()
+                val sessionEmail = SupabaseClient.getCurrentUserEmail()?.trim()?.lowercase()
+                if (sessionUserId.isNullOrBlank() && sessionEmail.isNullOrBlank()) {
+                    return@withContext NetworkResult.Error("Unauthorized: Active user session required.")
+                }
+                if (userId.isNotBlank() && !sessionUserId.isNullOrBlank() && userId != sessionUserId) {
+                    return@withContext NetworkResult.Error("Security Violation: Cannot modify another user's profile photo.")
+                }
+                if (email.isNotBlank() && !sessionEmail.isNullOrBlank() && !email.trim().lowercase().equals(sessionEmail, ignoreCase = true)) {
+                    return@withContext NetworkResult.Error("Security Violation: Email mismatch during photo update.")
+                }
+                val authorizedUserId = sessionUserId ?: userId
+                val authorizedEmail = sessionEmail ?: email.trim().lowercase()
+
                 if (remoteUrl.isBlank() || (!remoteUrl.startsWith("http://") && !remoteUrl.startsWith("https://"))) {
                     return@withContext NetworkResult.Error("Invalid remote URL.")
                 }
                 val updateMap = mapOf("profile_photo" to remoteUrl)
                 var updated = false
 
-                if (userId.isNotBlank()) {
-                    val resp = service.updateUser("eq.$userId", userMap = updateMap)
+                if (authorizedUserId.isNotBlank()) {
+                    val resp = service.updateUser("eq.$authorizedUserId", userMap = updateMap)
                     if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
                         updated = true
                     }
                 }
-                if (!updated && email.isNotBlank()) {
-                    val resp = service.updateUserByEmail("eq.${email.trim().lowercase()}", userMap = updateMap)
+                if (!updated && authorizedEmail.isNotBlank()) {
+                    val resp = service.updateUserByEmail("eq.$authorizedEmail", userMap = updateMap)
                     if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
                         updated = true
                     }
                 }
 
                 if (updated) {
-                    SupabaseClient.saveAvatarPath(userId, remoteUrl)
-                    if (email.isNotBlank()) {
-                        SupabaseClient.saveAvatarPath(email, remoteUrl)
+                    SupabaseClient.saveAvatarPath(authorizedUserId, remoteUrl)
+                    if (authorizedEmail.isNotBlank()) {
+                        SupabaseClient.saveAvatarPath(authorizedEmail, remoteUrl)
                     }
                     NetworkResult.Success(true)
                 } else {

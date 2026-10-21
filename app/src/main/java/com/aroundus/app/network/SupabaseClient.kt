@@ -198,12 +198,32 @@ object SupabaseClient {
         return isNowSaved
     }
 
-    fun getAccessToken(): String? = prefs?.getString(KEY_ACCESS_TOKEN, null)
-    fun getCurrentUserId(): String? = prefs?.getString(KEY_USER_ID, null)
-    fun getCurrentUserEmail(): String? = prefs?.getString(KEY_USER_EMAIL, null)
-    fun getCurrentUserName(): String? = prefs?.getString(KEY_USER_NAME, null)
+    private var testUserId: String? = null
+    private var testUserEmail: String? = null
+    private var testUserName: String? = null
+    private var testAccessToken: String? = null
+
+    fun setTestSession(userId: String?, email: String?, name: String? = null, token: String? = null) {
+        testUserId = userId
+        testUserEmail = email?.trim()?.lowercase()
+        testUserName = name?.trim()
+        testAccessToken = token
+    }
+
+    fun clearTestSession() {
+        testUserId = null
+        testUserEmail = null
+        testUserName = null
+        testAccessToken = null
+    }
+
+    fun getAccessToken(): String? = testAccessToken ?: prefs?.getString(KEY_ACCESS_TOKEN, null)
+    fun getCurrentUserId(): String? = testUserId ?: prefs?.getString(KEY_USER_ID, null)
+    fun getCurrentUserEmail(): String? = testUserEmail ?: prefs?.getString(KEY_USER_EMAIL, null)
+    fun getCurrentUserName(): String? = testUserName ?: prefs?.getString(KEY_USER_NAME, null)
 
     fun clearSession() {
+        clearTestSession()
         prefs?.edit()?.remove(KEY_ACCESS_TOKEN)?.remove(KEY_USER_ID)?.remove(KEY_USER_EMAIL)?.remove(KEY_USER_NAME)?.apply()
     }
 
