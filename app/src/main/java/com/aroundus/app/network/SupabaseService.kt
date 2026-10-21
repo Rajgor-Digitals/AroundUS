@@ -94,6 +94,13 @@ interface SupabaseService {
         @Query("post_id") queryFilter: String
     ): Response<Unit>
 
+    @PATCH("rest/v1/posts")
+    suspend fun updatePost(
+        @Query("post_id") queryFilter: String,
+        @Header("Prefer") prefer: String = "return=representation",
+        @Body postMap: Map<String, String>
+    ): Response<List<PostEntity>>
+
     // --- COMMENTS TABLE ---
 
     @GET("rest/v1/comments")

@@ -21,6 +21,7 @@ import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
 import com.aroundus.app.utils.loadUserAvatar
+import com.aroundus.app.utils.loadPostImage
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
 import java.io.File
@@ -290,17 +291,7 @@ class PostDetailFragment : Fragment() {
         val media = post.mediaUrl
         if (!media.isNullOrBlank()) {
             binding.ivPostImage.visibility = View.VISIBLE
-            if (media.startsWith("http://") || media.startsWith("https://") || media.startsWith("content://") || media.startsWith("/") || media.startsWith("file://")) {
-                Glide.with(this)
-                    .load(media)
-                    .placeholder(R.drawable.bg_image_placeholder)
-                    .error(R.drawable.bg_image_placeholder)
-                    .into(binding.ivPostImage)
-            } else if (post.imageRes != null) {
-                binding.ivPostImage.setImageResource(post.imageRes)
-            } else {
-                binding.ivPostImage.setImageResource(R.drawable.bg_image_placeholder)
-            }
+            binding.ivPostImage.loadPostImage(media)
         } else if (post.imageRes != null) {
             binding.ivPostImage.visibility = View.VISIBLE
             binding.ivPostImage.setImageResource(post.imageRes)

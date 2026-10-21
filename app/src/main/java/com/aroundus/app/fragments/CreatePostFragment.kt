@@ -35,7 +35,7 @@ class CreatePostFragment : Fragment() {
     private var selectedCategory = "General"
     private var selectedAudience = "Public"
     private var selectedLocation = "Bhujpur, Kutch"
-    private var attachedMediaUri: String? = null
+    private var selectedMediaUri: Uri? = null
 
     private val postRepository = PostRepository()
     private val userRepository = UserRepository()
@@ -43,18 +43,7 @@ class CreatePostFragment : Fragment() {
     // ActivityResult Launchers for Photo & Video selection
     private val pickPhotoLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
-            val localMediaFile = try {
-                val input = requireContext().contentResolver.openInputStream(uri)
-                val dest = File(requireContext().filesDir, "post_media_${System.currentTimeMillis()}.jpg")
-                val output = java.io.FileOutputStream(dest)
-                input?.copyTo(output)
-                input?.close()
-                output.close()
-                dest.absolutePath
-            } catch (_: Exception) {
-                uri.toString()
-            }
-            attachedMediaUri = localMediaFile
+            selectedMediaUri = uri
             binding.imagePreviewContainer.visibility = View.VISIBLE
             binding.ivSelectedImage.setImageURI(uri)
             Toast.makeText(requireContext(), "Photo attached successfully!", Toast.LENGTH_SHORT).show()
@@ -63,10 +52,11 @@ class CreatePostFragment : Fragment() {
 
     private val pickVideoLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
-            attachedMediaUri = uri.toString()
+            selectedMediaUri = uri
             Toast.makeText(requireContext(), "Video attached successfully!", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCreatePostBinding.inflate(inflater, container, false)
@@ -141,27 +131,62 @@ class CreatePostFragment : Fragment() {
 
         binding.btnPostHeader.setOnClickListener {
             val content = binding.etPostContent.text.toString().trim()
-            if (content.isEmpty() && attachedMediaUri == null) {
+            val mediaUri = selectedMediaUri
+            if (content.isEmpty() && mediaUri == null) {
                 Toast.makeText(requireContext(), "Please write something or attach media before posting", Toast.LENGTH_SHORT).show()
-            } else {
-                lifecycleScope.launch {
-                    binding.btnPostHeader.isEnabled = false
-                    val result = postRepository.createPost(
-                        text = content,
-                        type = selectedCategory,
-                        media = attachedMediaUri,
-                        location = selectedLocation,
-                        context = requireContext().applicationContext
-                    )
-                    binding.btnPostHeader.isEnabled = true
-                    when (result) {
+                return@setOnClickListener
+            }
+
+            lifecycleScope.launch {
+                binding.btnPostHeader.isEnabled = false
+                val originalButtonText = binding.btnPostHeader.text
+                binding.btnPostHeader.text = "Uploading..."
+
+                var remoteMediaUrl: String? = null
+
+                // 1. If media is attached, upload directly to Supabase Storage bucket 'post-media'
+                if (mediaUri != null) {
+                    val authorId = userRepository.resolveValidAuthorId()
+                    when (val uploadResult = postRepository.uploadPostMediaToStorage(
+                        context = requireContext().applicationContext,
+                        mediaUri = mediaUri,
+                        userId = authorId
+                    )) {
                         is NetworkResult.Success -> {
-                            Toast.makeText(requireContext(), "Post shared with your neighborhood!", Toast.LENGTH_SHORT).show()
-                            findNavController().popBackStack()
+                            remoteMediaUrl = uploadResult.data
                         }
                         is NetworkResult.Error -> {
-                            Toast.makeText(requireContext(), result.message, Toast.LENGTH_SHORT).show()
+                            // Safe error handling: Do not insert post, preserve user draft, allow retry
+                            binding.btnPostHeader.isEnabled = true
+                            binding.btnPostHeader.text = originalButtonText
+                            Toast.makeText(requireContext(), "Media upload failed: ${uploadResult.message}", Toast.LENGTH_LONG).show()
+                            return@launch
                         }
+                    }
+                }
+
+                binding.btnPostHeader.text = "Publishing..."
+
+                // 2. Insert post metadata into Supabase posts table with the permanent remote URL
+                val result = postRepository.createPost(
+                    text = content,
+                    type = selectedCategory,
+                    media = remoteMediaUrl,
+                    location = selectedLocation,
+                    context = requireContext().applicationContext
+                )
+
+                binding.btnPostHeader.isEnabled = true
+                binding.btnPostHeader.text = originalButtonText
+
+                when (result) {
+                    is NetworkResult.Success -> {
+                        Toast.makeText(requireContext(), "Post shared with your neighborhood!", Toast.LENGTH_SHORT).show()
+                        findNavController().popBackStack()
+                    }
+                    is NetworkResult.Error -> {
+                        // Safe error handling: preserve draft, allow retry
+                        Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -228,7 +253,7 @@ class CreatePostFragment : Fragment() {
         }
 
         binding.btnRemoveImage.setOnClickListener {
-            attachedMediaUri = null
+            selectedMediaUri = null
             binding.imagePreviewContainer.visibility = View.GONE
         }
 

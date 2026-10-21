@@ -11,6 +11,7 @@ import com.aroundus.app.databinding.ItemPostBinding
 import com.aroundus.app.models.Post
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.utils.loadUserAvatar
+import com.aroundus.app.utils.loadPostImage
 import android.widget.Toast
 import java.io.File
 
@@ -81,17 +82,7 @@ class PostAdapter(
             val media = post.mediaUrl
             if (!media.isNullOrBlank()) {
                 binding.cardImageContainer.visibility = View.VISIBLE
-                if (media.startsWith("http://") || media.startsWith("https://") || media.startsWith("content://") || media.startsWith("/") || media.startsWith("file://")) {
-                    Glide.with(binding.ivPostImage.context)
-                        .load(media)
-                        .placeholder(R.drawable.bg_image_placeholder)
-                        .error(R.drawable.bg_image_placeholder)
-                        .into(binding.ivPostImage)
-                } else if (post.imageRes != null) {
-                    binding.ivPostImage.setImageResource(post.imageRes)
-                } else {
-                    binding.ivPostImage.setImageResource(R.drawable.bg_image_placeholder)
-                }
+                binding.ivPostImage.loadPostImage(media)
             } else if (post.imageRes != null) {
                 binding.cardImageContainer.visibility = View.VISIBLE
                 binding.ivPostImage.setImageResource(post.imageRes)

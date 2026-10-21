@@ -1102,7 +1102,170 @@ class PostRepository {
                 NetworkResult.Error(e.localizedMessage ?: "Failed to post", e)
             }
         }
+
+    /**
+     * Uploads media bytes (compressed image or video) directly to Supabase Storage in the 'post-media' bucket.
+     * Returns permanent, remote public URL accessible across all authorized devices worldwide.
+     */
+    suspend fun uploadPostMediaToStorage(
+        context: Context,
+        mediaUri: Uri,
+        userId: String
+    ): NetworkResult<String> = withContext(Dispatchers.IO) {
+        try {
+            val contentResolver = context.contentResolver
+            val detectedMime = contentResolver.getType(mediaUri) ?: "image/jpeg"
+            val isImage = detectedMime.startsWith("image/")
+
+            val (bytes, mimeType, ext) = if (isImage) {
+                val compressed = com.aroundus.app.utils.ImageUtils.uriToCompressedBytes(context, mediaUri, maxDimension = 1280, quality = 85)
+                if (compressed != null) {
+                    Triple(compressed, "image/jpeg", "jpg")
+                } else {
+                    val raw = contentResolver.openInputStream(mediaUri)?.use { it.readBytes() }
+                        ?: return@withContext NetworkResult.Error("Unable to read image media from device.")
+                    Triple(raw, detectedMime, if (detectedMime.contains("png")) "png" else "jpg")
+                }
+            } else {
+                val raw = contentResolver.openInputStream(mediaUri)?.use { it.readBytes() }
+                    ?: return@withContext NetworkResult.Error("Unable to read media file from device.")
+                val extension = if (detectedMime.contains("mp4")) "mp4" else if (detectedMime.contains("webm")) "webm" else "mp4"
+                Triple(raw, detectedMime, extension)
+            }
+
+            val timestamp = System.currentTimeMillis()
+            val uniqueToken = UUID.randomUUID().toString().take(8)
+            val filename = "post_${timestamp}_${uniqueToken}.$ext"
+            val objectPath = "$userId/$filename"
+
+            val baseUrl = SupabaseConfig.SUPABASE_URL.trimEnd('/')
+            val uploadUrl = "$baseUrl/storage/v1/object/post-media/$objectPath"
+
+            val token = SupabaseClient.getAccessToken()
+            val authHeaderValue = if (!token.isNullOrBlank() && token.startsWith("eyJ")) {
+                "Bearer $token"
+            } else {
+                "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
+            }
+
+            val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+
+            val request = okhttp3.Request.Builder()
+                .url(uploadUrl)
+                .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
+                .addHeader("Authorization", authHeaderValue)
+                .addHeader("Content-Type", mimeType)
+                .post(requestBody)
+                .build()
+
+            val client = okhttp3.OkHttpClient.Builder()
+                .connectTimeout(25, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(45, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(25, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val publicUrl = "$baseUrl/storage/v1/object/public/post-media/$objectPath"
+                NetworkResult.Success(publicUrl)
+            } else {
+                val errBody = response.body?.string() ?: response.message
+                NetworkResult.Error("Media upload failed (${response.code}): $errBody")
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.localizedMessage ?: "Storage upload error", e)
+        }
+    }
+
+    /**
+     * Safely migrates legacy local file post media to permanent Supabase Storage URL
+     * if the post belongs to the current user and the local file is still physically accessible on this device.
+     */
+    suspend fun migrateLegacyPostMediaIfNeeded(
+        postId: String,
+        authorId: String,
+        currentMedia: String
+    ): NetworkResult<String> = withContext(Dispatchers.IO) {
+        val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
+        if (currentUserId.isBlank() || currentUserId != authorId) {
+            return@withContext NetworkResult.Error("Not authorized or not post author.")
+        }
+
+        if (currentMedia.startsWith("http://") || currentMedia.startsWith("https://")) {
+            return@withContext NetworkResult.Success(currentMedia)
+        }
+
+        var imageBytes: ByteArray? = null
+        val mimeType = "image/jpeg"
+        val ext = "jpg"
+
+        // 1. Detect Base64
+        if (currentMedia.startsWith("data:image/") || (currentMedia.length > 200 && !currentMedia.startsWith("/"))) {
+            try {
+                val base64Data = if (currentMedia.contains(",")) currentMedia.substringAfter(",") else currentMedia
+                imageBytes = android.util.Base64.decode(base64Data.trim(), android.util.Base64.DEFAULT)
+            } catch (_: Exception) {}
+        }
+
+        // 2. Detect local file path
+        if (imageBytes == null && (currentMedia.startsWith("/") || currentMedia.startsWith("file://"))) {
+            val file = File(currentMedia.removePrefix("file://"))
+            if (file.exists() && file.length() > 0L) {
+                try {
+                    imageBytes = file.readBytes()
+                } catch (_: Exception) {}
+            }
+        }
+
+        if (imageBytes == null || imageBytes.isEmpty()) {
+            return@withContext NetworkResult.Error("Media not accessible on this device.")
+        }
+
+        val timestamp = System.currentTimeMillis()
+        val uniqueToken = UUID.randomUUID().toString().take(8)
+        val filename = "migrated_post_${timestamp}_${uniqueToken}.$ext"
+        val objectPath = "$authorId/$filename"
+
+        val baseUrl = SupabaseConfig.SUPABASE_URL.trimEnd('/')
+        val uploadUrl = "$baseUrl/storage/v1/object/post-media/$objectPath"
+
+        val token = SupabaseClient.getAccessToken()
+        val authHeaderValue = if (!token.isNullOrBlank() && token.startsWith("eyJ")) {
+            "Bearer $token"
+        } else {
+            "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
+        }
+
+        val requestBody = imageBytes.toRequestBody(mimeType.toMediaTypeOrNull())
+        val request = okhttp3.Request.Builder()
+            .url(uploadUrl)
+            .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
+            .addHeader("Authorization", authHeaderValue)
+            .addHeader("Content-Type", mimeType)
+            .post(requestBody)
+            .build()
+
+        val client = okhttp3.OkHttpClient.Builder()
+            .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+
+        try {
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val publicUrl = "$baseUrl/storage/v1/object/public/post-media/$objectPath"
+                service.updatePost("eq.$postId", postMap = mapOf("media" to publicUrl))
+                NetworkResult.Success(publicUrl)
+            } else {
+                NetworkResult.Error("Upload failed")
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.localizedMessage ?: "Migration error", e)
+        }
+    }
 }
+
 
 /**
  * Dynamic Repository for Comments table

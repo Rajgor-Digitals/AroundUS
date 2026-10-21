@@ -13,6 +13,7 @@ import com.bumptech.glide.Glide
 
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.utils.loadUserAvatar
+import com.aroundus.app.utils.loadPostImage
 
 class AnnouncementAdapter(
     private val announcements: MutableList<Announcement>,
@@ -97,17 +98,13 @@ class AnnouncementAdapter(
 
             // 5. Attached Image
             when {
+                !announcement.imageUrl.isNullOrBlank() -> {
+                    binding.cardImageContainer.visibility = View.VISIBLE
+                    binding.ivAnnouncementImage.loadPostImage(announcement.imageUrl)
+                }
                 announcement.imageRes != null && announcement.imageRes != 0 -> {
                     binding.cardImageContainer.visibility = View.VISIBLE
                     binding.ivAnnouncementImage.setImageResource(announcement.imageRes)
-                }
-                !announcement.imageUrl.isNullOrBlank() -> {
-                    binding.cardImageContainer.visibility = View.VISIBLE
-                    Glide.with(context)
-                        .load(announcement.imageUrl)
-                        .placeholder(R.drawable.bg_image_placeholder)
-                        .error(R.drawable.bg_image_placeholder)
-                        .into(binding.ivAnnouncementImage)
                 }
                 else -> {
                     binding.cardImageContainer.visibility = View.GONE
