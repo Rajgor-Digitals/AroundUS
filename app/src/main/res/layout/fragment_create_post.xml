@@ -323,13 +323,11 @@
                     android:orientation="horizontal">
 
                     <!-- Avatar -->
-                    <com.google.android.material.imageview.ShapeableImageView
+                    <de.hdodenhof.circleimageview.CircleImageView
                         android:id="@+id/ivAuthorAvatar"
                         android:layout_width="46dp"
                         android:layout_height="46dp"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/shape_avatar_placeholder"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+                        android:src="@drawable/shape_avatar_placeholder" />
 
                     <!-- User Name and Location -->
                     <LinearLayout

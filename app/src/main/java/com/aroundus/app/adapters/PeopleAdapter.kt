@@ -8,6 +8,7 @@ import com.bumptech.glide.Glide
 import com.aroundus.app.R
 import com.aroundus.app.databinding.ItemUserSearchBinding
 import com.aroundus.app.models.UserEntity
+import com.aroundus.app.utils.loadUserAvatar
 import java.io.File
 
 class PeopleAdapter(
@@ -28,39 +29,8 @@ class PeopleAdapter(
             binding.tvUserHandle.text = "@$handle"
             binding.tvUserLocation.text = if (!user.location.isNullOrBlank()) user.location else "Bhujpur, Kutch"
 
-            var loadedPhoto = false
             val userPath = user.profilePhoto ?: user.profile
-            if (!userPath.isNullOrBlank()) {
-                try {
-                    val path = userPath
-                    if (path.startsWith("http://") || path.startsWith("https://")) {
-                        Glide.with(binding.ivUserAvatar.context)
-                            .load(path)
-                            .placeholder(R.drawable.shape_avatar_placeholder)
-                            .into(binding.ivUserAvatar)
-                        loadedPhoto = true
-                    } else if (path.startsWith("/")) {
-                        val file = File(path)
-                        if (file.exists() && file.length() > 0) {
-                            Glide.with(binding.ivUserAvatar.context)
-                                .load(file)
-                                .placeholder(R.drawable.shape_avatar_placeholder)
-                                .into(binding.ivUserAvatar)
-                            loadedPhoto = true
-                        }
-                    } else if (path.startsWith("content://") || path.startsWith("file://")) {
-                        Glide.with(binding.ivUserAvatar.context)
-                            .load(Uri.parse(path))
-                            .placeholder(R.drawable.shape_avatar_placeholder)
-                            .into(binding.ivUserAvatar)
-                        loadedPhoto = true
-                    }
-                } catch (_: Exception) {}
-            }
-
-            if (!loadedPhoto) {
-                binding.ivUserAvatar.setImageResource(R.drawable.shape_avatar_placeholder)
-            }
+            binding.ivUserAvatar.loadUserAvatar(userPath, R.drawable.shape_avatar_placeholder)
 
             val isFollowed = followedUserIds.contains(user.userId)
             if (isFollowed) {

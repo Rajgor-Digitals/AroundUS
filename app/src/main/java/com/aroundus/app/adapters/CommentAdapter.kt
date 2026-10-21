@@ -29,12 +29,16 @@ class CommentAdapter(
                 File(binding.ivAvatar.context.filesDir, "avatar_${currentUserId}.jpg")
             } else null
 
-            val avatarPath = if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
-                localAvatarFile.absolutePath
-            } else if (!comment.avatarPath.isNullOrBlank()) {
-                comment.avatarPath
-            } else if (!comment.userId.isNullOrBlank()) {
+            val cachedAvatar = if (!comment.userId.isNullOrBlank()) {
                 SupabaseClient.getAvatarPath(comment.userId)
+            } else null
+
+            val avatarPath = if (!comment.avatarPath.isNullOrBlank()) {
+                comment.avatarPath
+            } else if (!cachedAvatar.isNullOrBlank()) {
+                cachedAvatar
+            } else if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+                localAvatarFile.absolutePath
             } else null
 
             binding.ivAvatar.loadUserAvatar(avatarPath, comment.avatarRes)

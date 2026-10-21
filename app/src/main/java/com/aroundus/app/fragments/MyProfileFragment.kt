@@ -37,6 +37,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import com.aroundus.app.utils.ImageUtils
+import com.aroundus.app.utils.loadUserAvatar
+
 class MyProfileFragment : Fragment() {
 
     private var _binding: FragmentMyProfileBinding? = null
@@ -50,29 +53,48 @@ class MyProfileFragment : Fragment() {
     private lateinit var postAdapter: PostAdapter
     private var currentUserEntity: UserEntity? = null
 
-    private var selectedAvatarPath: String? = null
+    private var selectedRemoteAvatarUrl: String? = null
     private var activeDialogAvatarView: CircleImageView? = null
 
     // Photo picker launcher for avatar updates
     private val pickAvatarLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
-            val permanentPath = saveImageToInternalStorage(uri)
-            if (permanentPath != null) {
-                selectedAvatarPath = permanentPath
-                val userId = SupabaseClient.getCurrentUserId() ?: ""
-                if (userId.isNotBlank()) {
-                    SupabaseClient.saveAvatarPath(userId, permanentPath)
-                }
-                activeDialogAvatarView?.setImageURI(null)
-                activeDialogAvatarView?.setImageURI(Uri.fromFile(File(permanentPath)))
-                binding.ivAvatar.setImageURI(null)
-                binding.ivAvatar.setImageURI(Uri.fromFile(File(permanentPath)))
-                Toast.makeText(requireContext(), "Profile photo updated!", Toast.LENGTH_SHORT).show()
+            val uId = SupabaseClient.getCurrentUserId() ?: currentUserEntity?.userId ?: ""
+            if (uId.isBlank()) {
+                Toast.makeText(requireContext(), "User session required.", Toast.LENGTH_SHORT).show()
+                return@registerForActivityResult
+            }
 
-                // Persist new avatar path to Supabase user profile
-                currentUserEntity?.let { user ->
-                    lifecycleScope.launch {
-                        userRepository.updateUserProfile(user.copy(profilePhoto = permanentPath))
+            // Immediately display local preview while uploading
+            binding.ivAvatar.setImageURI(uri)
+            activeDialogAvatarView?.setImageURI(uri)
+            Toast.makeText(requireContext(), "Uploading profile photo to Supabase Storage...", Toast.LENGTH_SHORT).show()
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                when (val uploadRes = userRepository.uploadProfilePhotoToStorage(requireContext(), uri, uId)) {
+                    is NetworkResult.Success -> {
+                        val remoteUrl = uploadRes.data
+                        selectedRemoteAvatarUrl = remoteUrl
+
+                        val email = SupabaseClient.getCurrentUserEmail() ?: currentUserEntity?.email ?: ""
+                        when (val dbRes = userRepository.updateProfilePhotoUrl(uId, email, remoteUrl)) {
+                            is NetworkResult.Success -> {
+                                currentUserEntity = currentUserEntity?.copy(profilePhoto = remoteUrl)
+                                SupabaseClient.saveAvatarPath(uId, remoteUrl)
+                                if (email.isNotBlank()) SupabaseClient.saveAvatarPath(email, remoteUrl)
+                                PostRepository.updateAuthorAvatar(uId, remoteUrl)
+                                displayAvatar(remoteUrl)
+                                activeDialogAvatarView?.loadUserAvatar(remoteUrl)
+                                Toast.makeText(requireContext(), "Profile photo updated & synced!", Toast.LENGTH_SHORT).show()
+                            }
+                            is NetworkResult.Error -> {
+                                Toast.makeText(requireContext(), "Upload succeeded, but database update failed: ${dbRes.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                    is NetworkResult.Error -> {
+                        Toast.makeText(requireContext(), "Photo upload failed: ${uploadRes.message}", Toast.LENGTH_LONG).show()
+                        displayAvatar(currentUserEntity?.profilePhoto)
                     }
                 }
             }
@@ -344,11 +366,9 @@ class MyProfileFragment : Fragment() {
         etPhone.setText(currentPhone)
 
         val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
-        val currentAvatarPath = selectedAvatarPath ?: SupabaseClient.getAvatarPath(currentUserId)
-        if (!currentAvatarPath.isNullOrBlank()) {
-            try {
-                ivEditAvatar.setImageURI(Uri.fromFile(File(currentAvatarPath)))
-            } catch (_: Exception) {}
+        val currentAvatarUrl = selectedRemoteAvatarUrl ?: currentUserEntity?.profilePhoto ?: SupabaseClient.getAvatarPath(currentUserId)
+        if (!currentAvatarUrl.isNullOrBlank()) {
+            ivEditAvatar.loadUserAvatar(currentAvatarUrl)
         } else {
             ivEditAvatar.setImageResource(R.drawable.img_avatar_gaurav_rajgor)
         }
@@ -376,9 +396,12 @@ class MyProfileFragment : Fragment() {
 
             val userId = SupabaseClient.getCurrentUserId() ?: currentUserEntity?.userId ?: ""
             val email = SupabaseClient.getCurrentUserEmail() ?: currentUserEntity?.email ?: ""
+            val photoToSave = selectedRemoteAvatarUrl ?: currentUserEntity?.profilePhoto?.takeIf {
+                it.startsWith("http://") || it.startsWith("https://")
+            }
 
-            if (!selectedAvatarPath.isNullOrBlank() && userId.isNotBlank()) {
-                SupabaseClient.saveAvatarPath(userId, selectedAvatarPath!!)
+            if (!photoToSave.isNullOrBlank() && userId.isNotBlank()) {
+                SupabaseClient.saveAvatarPath(userId, photoToSave)
             }
 
             val updatedUser = UserEntity(
@@ -388,15 +411,18 @@ class MyProfileFragment : Fragment() {
                 phone = newPhone,
                 location = newLocation,
                 bio = newBio,
-                profilePhoto = selectedAvatarPath ?: currentUserEntity?.profilePhoto,
+                profilePhoto = photoToSave,
                 usernameLastChanged = currentUserEntity?.usernameLastChanged
             )
 
             btnSave.isEnabled = false
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 when (val result = userRepository.updateUserProfile(updatedUser)) {
                     is NetworkResult.Success -> {
                         currentUserEntity = result.data
+                        if (userId.isNotBlank()) {
+                            PostRepository.updateAuthorAvatar(userId, photoToSave)
+                        }
                         Toast.makeText(requireContext(), "Profile updated successfully!", Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
                         loadUserProfile()
@@ -413,9 +439,20 @@ class MyProfileFragment : Fragment() {
     }
 
     private fun loadUserProfile() {
-        val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
-        val email = SupabaseClient.getCurrentUserEmail() ?: "user@aroundus.app"
-        val fallbackName = SupabaseClient.getCurrentUserName() ?: "Gaurav Rajgor"
+        val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
+        val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: loggedInUserId
+        val isOwnProfile = targetUserId.isBlank() || targetUserId == loggedInUserId
+
+        if (!isOwnProfile) {
+            binding.btnEditProfile.visibility = View.GONE
+            binding.btnChangeAvatar.visibility = View.GONE
+        } else {
+            binding.btnEditProfile.visibility = View.VISIBLE
+            binding.btnChangeAvatar.visibility = View.VISIBLE
+        }
+
+        val email = if (isOwnProfile) SupabaseClient.getCurrentUserEmail() ?: "user@aroundus.app" else ""
+        val fallbackName = if (isOwnProfile) SupabaseClient.getCurrentUserName() ?: "Neighbor" else "Neighbor"
 
         // Set initial / cached state
         val initialName = currentUserEntity?.name?.takeIf { it.isNotBlank() } ?: fallbackName
@@ -433,9 +470,10 @@ class MyProfileFragment : Fragment() {
         displayAvatar(currentUserEntity?.profilePhoto)
 
         // Query fresh real user details from Supabase database
-        lifecycleScope.launch {
-            when (val result = userRepository.getUserProfile(currentUserId)) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            when (val result = userRepository.getUserProfile(targetUserId)) {
                 is NetworkResult.Success -> {
+                    val b = _binding ?: return@launch
                     val profile = result.data
                     currentUserEntity = profile
 
@@ -446,13 +484,28 @@ class MyProfileFragment : Fragment() {
                         it.isNotBlank() && !it.startsWith("/") && !it.startsWith("content://") && !it.startsWith("file://")
                     } ?: "Passionate about building a better community. Let's connect and create a positive impact together."
 
-                    binding.tvUserName.text = realName
-                    binding.tvUsername.text = "@${emailToHandle(realEmail, realName)}"
-                    binding.tvUserLocation.text = realLocation
-                    binding.tvBio.text = realBio
+                    b.tvUserName.text = realName
+                    b.tvUsername.text = "@${emailToHandle(realEmail, realName)}"
+                    b.tvUserLocation.text = realLocation
+                    b.tvBio.text = realBio
 
                     if (!profile.profilePhoto.isNullOrBlank()) {
                         displayAvatar(profile.profilePhoto)
+                    }
+
+                    // Check if current user's profile photo needs migration from legacy Base64 or local path
+                    if (isOwnProfile && !profile.profilePhoto.isNullOrBlank() &&
+                        !profile.profilePhoto.startsWith("http://") && !profile.profilePhoto.startsWith("https://")
+                    ) {
+                        launch {
+                            val migResult = userRepository.migrateLegacyProfilePhotoIfNeeded(requireContext(), profile)
+                            if (migResult is NetworkResult.Success) {
+                                val newUrl = migResult.data
+                                currentUserEntity = currentUserEntity?.copy(profilePhoto = newUrl)
+                                displayAvatar(newUrl)
+                                PostRepository.updateAuthorAvatar(targetUserId, newUrl)
+                            }
+                        }
                     }
                 }
                 is NetworkResult.Error -> {}
@@ -461,23 +514,26 @@ class MyProfileFragment : Fragment() {
     }
 
     private fun loadUserPostsAndMetrics() {
-        val targetUserId = currentUserEntity?.userId ?: SupabaseClient.getCurrentUserId() ?: ""
+        val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
+        val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: currentUserEntity?.userId ?: loggedInUserId
         val targetUserName = currentUserEntity?.name ?: SupabaseClient.getCurrentUserName() ?: ""
+
+        val b = _binding ?: return
 
         // Notification badge with real unread count
         val unreadNotifs = com.aroundus.app.utils.DummyData.notifications.count { it.isUnread }
         if (unreadNotifs > 0) {
-            binding.tvNotificationBadge.visibility = View.VISIBLE
-            binding.tvNotificationBadge.text = unreadNotifs.toString()
+            b.tvNotificationBadge.visibility = View.VISIBLE
+            b.tvNotificationBadge.text = unreadNotifs.toString()
         } else {
-            binding.tvNotificationBadge.visibility = View.GONE
+            b.tvNotificationBadge.visibility = View.GONE
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             // 1. Fetch user posts from Supabase database (Real count)
             when (val result = postRepository.fetchPosts()) {
                 is NetworkResult.Success -> {
-                    val currentAvatar = SupabaseClient.getAvatarPath(targetUserId) ?: currentUserEntity?.profilePhoto ?: selectedAvatarPath
+                    val currentAvatar = currentUserEntity?.profilePhoto ?: SupabaseClient.getAvatarPath(targetUserId) ?: selectedRemoteAvatarUrl
 
                     val onlyUserPosts = result.data
                         .filter { postEntity ->
@@ -488,21 +544,21 @@ class MyProfileFragment : Fragment() {
 
                     myPostList.clear()
                     myPostList.addAll(onlyUserPosts)
-                    binding.tvPostsCount.text = onlyUserPosts.size.toString()
+                    _binding?.tvPostsCount?.text = onlyUserPosts.size.toString()
                     postAdapter.notifyDataSetChanged()
                 }
                 is NetworkResult.Error -> {
-                    binding.tvPostsCount.text = myPostList.size.toString()
+                    _binding?.tvPostsCount?.text = myPostList.size.toString()
                 }
             }
 
             // 2. Fetch groups count from Supabase database (Real count)
             when (val groupResult = groupRepository.fetchGroups()) {
                 is NetworkResult.Success -> {
-                    binding.tvGroupsCount.text = groupResult.data.size.toString()
+                    _binding?.tvGroupsCount?.text = groupResult.data.size.toString()
                 }
                 is NetworkResult.Error -> {
-                    binding.tvGroupsCount.text = "0"
+                    _binding?.tvGroupsCount?.text = "0"
                 }
             }
 
@@ -513,14 +569,14 @@ class MyProfileFragment : Fragment() {
                 val followers = (fResult as? NetworkResult.Success)?.data ?: 0
                 val following = (fngResult as? NetworkResult.Success)?.data ?: 0
                 val totalConnections = followers + following
-                binding.tvConnectionsCount.text = totalConnections.toString()
+                _binding?.tvConnectionsCount?.text = totalConnections.toString()
             } else {
-                binding.tvConnectionsCount.text = "0"
+                _binding?.tvConnectionsCount?.text = "0"
             }
 
             // 4. Fetch saved posts count (Real count)
             val savedCount = SupabaseClient.getSavedPostIds(targetUserId).size
-            binding.tvSavedCount.text = savedCount.toString()
+            _binding?.tvSavedCount?.text = savedCount.toString()
         }
     }
 
@@ -545,40 +601,21 @@ class MyProfileFragment : Fragment() {
             val uId = SupabaseClient.getCurrentUserId() ?: "user"
             val email = SupabaseClient.getCurrentUserEmail() ?: ""
 
-            // 1. Local camera-captured or internal file
-            val localAvatarFile = File(requireContext().filesDir, "avatar_${uId}.jpg")
-            if (localAvatarFile.exists() && localAvatarFile.length() > 0L) {
-                binding.ivAvatar.setImageURI(null)
-                binding.ivAvatar.setImageURI(Uri.fromFile(localAvatarFile))
+            val savedPath = pathOrUri
+                ?: currentUserEntity?.profilePhoto
+                ?: selectedRemoteAvatarUrl
+                ?: SupabaseClient.getAvatarPath(uId)
+                ?: SupabaseClient.getAvatarPath(email)
+
+            if (!savedPath.isNullOrBlank()) {
+                binding.ivAvatar.loadUserAvatar(savedPath, R.drawable.img_avatar_gaurav_rajgor)
                 return
             }
 
-            val savedPath = pathOrUri
-                ?: SupabaseClient.getAvatarPath(uId)
-                ?: SupabaseClient.getAvatarPath(email)
-                ?: currentUserEntity?.profilePhoto
-                ?: selectedAvatarPath
-
-            if (!savedPath.isNullOrBlank()) {
-                if (savedPath.startsWith("http://") || savedPath.startsWith("https://")) {
-                    Glide.with(this)
-                        .load(savedPath)
-                        .placeholder(R.drawable.img_avatar_gaurav_rajgor)
-                        .error(R.drawable.img_avatar_gaurav_rajgor)
-                        .into(binding.ivAvatar)
-                    return
-                } else if (savedPath.startsWith("/")) {
-                    val file = File(savedPath)
-                    if (file.exists() && file.length() > 0L) {
-                        binding.ivAvatar.setImageURI(null)
-                        binding.ivAvatar.setImageURI(Uri.fromFile(file))
-                        return
-                    }
-                } else if (savedPath.startsWith("content://") || savedPath.startsWith("file://")) {
-                    binding.ivAvatar.setImageURI(null)
-                    binding.ivAvatar.setImageURI(Uri.parse(savedPath))
-                    return
-                }
+            val localAvatarFile = File(requireContext().filesDir, "avatar_${uId}.jpg")
+            if (localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+                binding.ivAvatar.loadUserAvatar(localAvatarFile.absolutePath, R.drawable.img_avatar_gaurav_rajgor)
+                return
             }
 
             // Fallback to reference design avatar

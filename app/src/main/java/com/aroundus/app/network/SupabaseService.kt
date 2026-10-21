@@ -9,6 +9,10 @@ import retrofit2.http.*
  */
 interface SupabaseService {
 
+    // --- SUPABASE STORAGE ---
+    // Storage uploads use raw OkHttp calls (binary PUT) instead of Retrofit/Gson.
+    // See UserRepository.uploadProfilePhotoToStorage() for implementation.
+
     // --- AUTHENTICATION ---
 
     @POST("auth/v1/signup")

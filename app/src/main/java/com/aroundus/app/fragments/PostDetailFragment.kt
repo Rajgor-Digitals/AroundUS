@@ -249,14 +249,18 @@ class PostDetailFragment : Fragment() {
             File(requireContext().filesDir, "avatar_${currentUserId}.jpg")
         } else null
 
-        val avatarPath = if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
-            localAvatarFile.absolutePath
-        } else if (!post.userAvatarPath.isNullOrBlank()) {
-            post.userAvatarPath
-        } else if (!post.authorId.isNullOrBlank()) {
+        val cachedAvatar = if (!post.authorId.isNullOrBlank()) {
             SupabaseClient.getAvatarPath(post.authorId)
-        } else if (isCurrentAuthor) {
+        } else if (isCurrentAuthor && currentUserId.isNotBlank()) {
             SupabaseClient.getAvatarPath(currentUserId)
+        } else null
+
+        val avatarPath = if (!post.userAvatarPath.isNullOrBlank()) {
+            post.userAvatarPath
+        } else if (!cachedAvatar.isNullOrBlank()) {
+            cachedAvatar
+        } else if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+            localAvatarFile.absolutePath
         } else {
             null
         }

@@ -151,12 +151,17 @@ class MainActivity : AppCompatActivity() {
             binding.navigationDrawer.tvDrawerHandle.text = "@$handle"
             binding.navigationDrawer.tvDrawerLocation.text = "Bhujpur, Kutch"
 
-            // Set Avatar
-            val localAvatarFile = File(filesDir, "avatar_${currentUserId}.jpg")
-            val avatarPath = if (localAvatarFile.exists() && localAvatarFile.length() > 0L) {
-                localAvatarFile.absolutePath
+            // Set Avatar - prioritize remote URL from Supabase Storage
+            val cachedAvatar = SupabaseClient.getAvatarPath(currentUserId)
+            val avatarPath = if (!cachedAvatar.isNullOrBlank() && (cachedAvatar.startsWith("http://") || cachedAvatar.startsWith("https://"))) {
+                cachedAvatar
             } else {
-                SupabaseClient.getAvatarPath(currentUserId)
+                val localAvatarFile = File(filesDir, "avatar_${currentUserId}.jpg")
+                if (localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+                    localAvatarFile.absolutePath
+                } else {
+                    cachedAvatar
+                }
             }
             binding.navigationDrawer.ivDrawerAvatar.loadUserAvatar(avatarPath)
         } catch (_: Exception) {}

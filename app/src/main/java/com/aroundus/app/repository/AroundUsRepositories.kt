@@ -1,6 +1,9 @@
 package com.aroundus.app.repository
 
 import android.content.Context
+import android.net.Uri
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import com.aroundus.app.models.*
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.network.SupabaseConfig
@@ -9,6 +12,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -480,7 +484,13 @@ class UserRepository {
                 updateMap["name"] = finalUser.name
                 finalUser.location?.takeIf { it.isNotBlank() }?.let { updateMap["location"] = it }
                 finalUser.bio?.takeIf { it.isNotBlank() }?.let { updateMap["bio"] = it }
-                finalUser.profilePhoto?.takeIf { it.isNotBlank() }?.let { updateMap["profile_photo"] = it }
+
+                val photoValue = finalUser.profilePhoto?.takeIf { it.isNotBlank() }
+                // Only allow valid remote URLs to be updated in the database
+                if (photoValue != null && (photoValue.startsWith("http://") || photoValue.startsWith("https://"))) {
+                    updateMap["profile_photo"] = photoValue
+                }
+
                 finalUser.phone?.takeIf { it.isNotBlank() }?.let { updateMap["phone"] = it }
                 if (finalUser.usernameLastChanged != null) {
                     updateMap["username_last_changed"] = finalUser.usernameLastChanged.toString()
@@ -527,6 +537,257 @@ class UserRepository {
                 NetworkResult.Error(e.localizedMessage ?: "Failed to update profile", e)
             }
         }
+
+    /**
+     * Uploads a selected image Uri directly to Supabase Storage in the 'avatars' bucket.
+     * Generates a unique filename per upload to prevent stale cache issues.
+     * Returns the permanent, public remote URL.
+     */
+    suspend fun uploadProfilePhotoToStorage(
+        context: Context,
+        imageUri: Uri,
+        userId: String
+    ): NetworkResult<String> = withContext(Dispatchers.IO) {
+        try {
+            if (userId.isBlank()) {
+                return@withContext NetworkResult.Error("Valid user session required.")
+            }
+            val contentResolver = context.contentResolver
+            val mimeType = contentResolver.getType(imageUri) ?: "image/jpeg"
+            val validTypes = listOf("image/jpeg", "image/png", "image/webp", "image/jpg")
+            if (!validTypes.any { mimeType.equals(it, ignoreCase = true) }) {
+                return@withContext NetworkResult.Error("Unsupported image format. Please select JPEG, PNG, or WEBP.")
+            }
+
+            // Read bytes and validate file size (5MB limit)
+            val inputStream = contentResolver.openInputStream(imageUri)
+                ?: return@withContext NetworkResult.Error("Could not read selected image.")
+            val rawBytes = inputStream.use { it.readBytes() }
+
+            if (rawBytes.isEmpty()) {
+                return@withContext NetworkResult.Error("Selected image file is empty.")
+            }
+            if (rawBytes.size > 5 * 1024 * 1024) {
+                return@withContext NetworkResult.Error("Image size exceeds 5MB limit.")
+            }
+
+            // Compress / scale to high quality (max dimension 1080px, 85% JPEG) for fast cross-device loading
+            val uploadBytes: ByteArray
+            val finalMime: String
+            val ext: String
+            val bmp = android.graphics.BitmapFactory.decodeByteArray(rawBytes, 0, rawBytes.size)
+            if (bmp != null) {
+                val maxDim = 1080f
+                val scale = (maxDim / maxOf(bmp.width, bmp.height)).coerceAtMost(1.0f)
+                val scaledBmp = if (scale < 1.0f) {
+                    android.graphics.Bitmap.createScaledBitmap(
+                        bmp,
+                        (bmp.width * scale).toInt().coerceAtLeast(1),
+                        (bmp.height * scale).toInt().coerceAtLeast(1),
+                        true
+                    )
+                } else bmp
+
+                val baos = java.io.ByteArrayOutputStream()
+                scaledBmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, baos)
+                uploadBytes = baos.toByteArray()
+                finalMime = "image/jpeg"
+                ext = "jpg"
+                if (scaledBmp != bmp) scaledBmp.recycle()
+                bmp.recycle()
+            } else {
+                uploadBytes = rawBytes
+                finalMime = mimeType
+                ext = if (mimeType.contains("png")) "png" else if (mimeType.contains("webp")) "webp" else "jpg"
+            }
+
+            uploadRawBytesToStorage(uploadBytes, finalMime, ext, userId)
+        } catch (e: Exception) {
+            NetworkResult.Error(e.localizedMessage ?: "Failed to upload image.", e)
+        }
+    }
+
+    /**
+     * Uploads binary image bytes directly to Supabase Storage in the 'avatars' bucket.
+     */
+    suspend fun uploadRawBytesToStorage(
+        bytes: ByteArray,
+        mimeType: String,
+        ext: String,
+        userId: String
+    ): NetworkResult<String> = withContext(Dispatchers.IO) {
+        try {
+            val timestamp = System.currentTimeMillis()
+            val uniqueToken = UUID.randomUUID().toString().take(8)
+            val filename = "avatar_${timestamp}_${uniqueToken}.$ext"
+            val objectPath = "$userId/$filename"
+
+            val baseUrl = SupabaseConfig.SUPABASE_URL.trimEnd('/')
+            val uploadUrl = "$baseUrl/storage/v1/object/avatars/$objectPath"
+
+            val token = SupabaseClient.getAccessToken()
+            val authHeaderValue = if (!token.isNullOrBlank() && token.startsWith("eyJ")) {
+                "Bearer $token"
+            } else {
+                "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
+            }
+
+            val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+
+            val request = okhttp3.Request.Builder()
+                .url(uploadUrl)
+                .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
+                .addHeader("Authorization", authHeaderValue)
+                .addHeader("Content-Type", mimeType)
+                .post(requestBody)
+                .build()
+
+            val client = okhttp3.OkHttpClient.Builder()
+                .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val publicUrl = "$baseUrl/storage/v1/object/public/avatars/$objectPath"
+                NetworkResult.Success(publicUrl)
+            } else {
+                val errBody = response.body?.string() ?: response.message
+                NetworkResult.Error("Upload failed (${response.code}): $errBody")
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.localizedMessage ?: "Storage upload error", e)
+        }
+    }
+
+    /**
+     * Updates only the 'profile_photo' column in the users table for the given user.
+     */
+    suspend fun updateProfilePhotoUrl(userId: String, email: String, remoteUrl: String): NetworkResult<Boolean> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (remoteUrl.isBlank() || (!remoteUrl.startsWith("http://") && !remoteUrl.startsWith("https://"))) {
+                    return@withContext NetworkResult.Error("Invalid remote URL.")
+                }
+                val updateMap = mapOf("profile_photo" to remoteUrl)
+                var updated = false
+
+                if (userId.isNotBlank()) {
+                    val resp = service.updateUser("eq.$userId", userMap = updateMap)
+                    if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                        updated = true
+                    }
+                }
+                if (!updated && email.isNotBlank()) {
+                    val resp = service.updateUserByEmail("eq.${email.trim().lowercase()}", userMap = updateMap)
+                    if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                        updated = true
+                    }
+                }
+
+                if (updated) {
+                    SupabaseClient.saveAvatarPath(userId, remoteUrl)
+                    if (email.isNotBlank()) {
+                        SupabaseClient.saveAvatarPath(email, remoteUrl)
+                    }
+                    NetworkResult.Success(true)
+                } else {
+                    NetworkResult.Error("Could not update user record in database.")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Database update error", e)
+            }
+        }
+
+    /**
+     * Migrates legacy profile photos stored as Base64 or local paths into permanent Supabase Storage URLs.
+     */
+    suspend fun migrateLegacyProfilePhotoIfNeeded(
+        context: Context,
+        user: UserEntity
+    ): NetworkResult<String> = withContext(Dispatchers.IO) {
+        val currentPhoto = user.profilePhoto?.trim() ?: ""
+        if (currentPhoto.startsWith("http://") || currentPhoto.startsWith("https://")) {
+            return@withContext NetworkResult.Success(currentPhoto)
+        }
+
+        val userId = user.userId.ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
+        if (userId.isBlank()) {
+            return@withContext NetworkResult.Error("User ID missing for migration.")
+        }
+
+        var imageBytes: ByteArray? = null
+        var mimeType = "image/jpeg"
+        var ext = "jpg"
+
+        // 1. Detect Base64
+        if (currentPhoto.startsWith("data:image/") || (currentPhoto.length > 200 && !currentPhoto.startsWith("/"))) {
+            try {
+                val base64Data = if (currentPhoto.contains(",")) currentPhoto.substringAfter(",") else currentPhoto
+                imageBytes = android.util.Base64.decode(base64Data.trim(), android.util.Base64.DEFAULT)
+                if (currentPhoto.contains("png")) {
+                    mimeType = "image/png"
+                    ext = "png"
+                } else if (currentPhoto.contains("webp")) {
+                    mimeType = "image/webp"
+                    ext = "webp"
+                }
+            } catch (_: Exception) {
+                imageBytes = null
+            }
+        }
+
+        // 2. Detect local file path
+        if (imageBytes == null && (currentPhoto.startsWith("/") || currentPhoto.startsWith("file://"))) {
+            val filePath = currentPhoto.removePrefix("file://")
+            val localFile = File(filePath)
+            if (localFile.exists() && localFile.length() > 0L) {
+                try {
+                    imageBytes = localFile.readBytes()
+                    if (localFile.extension.equals("png", ignoreCase = true)) {
+                        mimeType = "image/png"
+                        ext = "png"
+                    } else if (localFile.extension.equals("webp", ignoreCase = true)) {
+                        mimeType = "image/webp"
+                        ext = "webp"
+                    }
+                } catch (_: Exception) {
+                    imageBytes = null
+                }
+            }
+        }
+
+        // 3. Fallback: check app's internal filesDir for avatar_${userId}.jpg
+        if (imageBytes == null) {
+            val fallbackFile = File(context.filesDir, "avatar_${userId}.jpg")
+            if (fallbackFile.exists() && fallbackFile.length() > 0L) {
+                try {
+                    imageBytes = fallbackFile.readBytes()
+                } catch (_: Exception) {}
+            }
+        }
+
+        if (imageBytes == null || imageBytes.isEmpty()) {
+            return@withContext NetworkResult.Error("Local photo data not available on this device. Please select a new photo.")
+        }
+
+        // 4. Upload to Supabase Storage
+        when (val uploadResult = uploadRawBytesToStorage(imageBytes, mimeType, ext, userId)) {
+            is NetworkResult.Success -> {
+                val remoteUrl = uploadResult.data
+                val updateResult = updateProfilePhotoUrl(userId, user.email, remoteUrl)
+                if (updateResult is NetworkResult.Success) {
+                    NetworkResult.Success(remoteUrl)
+                } else {
+                    NetworkResult.Error("Uploaded to Storage, but failed to update database.")
+                }
+            }
+            is NetworkResult.Error -> {
+                uploadResult
+            }
+        }
+    }
 
     private fun parseErrorMessage(raw: String): String {
         return if (raw.contains("Invalid login credentials")) "Invalid email or password."
@@ -580,6 +841,20 @@ class PostRepository {
         private var memoryCachedPosts: List<Post>? = null
         private const val PREFS_CACHE = "aroundus_posts_cache"
         private const val KEY_POSTS_JSON = "cached_posts_json"
+
+        fun updateAuthorAvatar(authorId: String, newAvatar: String?) {
+            if (authorId.isBlank()) return
+            val currentPair = globalAuthorCache[authorId]
+            val currentName = currentPair?.first ?: "Neighbor"
+            globalAuthorCache[authorId] = Pair(currentName, newAvatar)
+            memoryCachedPosts = memoryCachedPosts?.map { post ->
+                if (post.authorId == authorId) {
+                    post.copy(userAvatarPath = newAvatar)
+                } else {
+                    post
+                }
+            }
+        }
     }
 
     fun getCachedPosts(context: Context?): List<Post> {

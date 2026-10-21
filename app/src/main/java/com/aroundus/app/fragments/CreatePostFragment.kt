@@ -98,29 +98,33 @@ class CreatePostFragment : Fragment() {
             File(requireContext().filesDir, "avatar_${currentUserId}.jpg")
         } else null
 
-        val localAvatarPath = if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+        val cachedPath = SupabaseClient.getAvatarPath(currentUserId) ?: SupabaseClient.getAvatarPath(currentEmail)
+        val localAvatarPath = if (!cachedPath.isNullOrBlank()) {
+            cachedPath
+        } else if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
             localAvatarFile.absolutePath
         } else {
-            SupabaseClient.getAvatarPath(currentUserId) ?: SupabaseClient.getAvatarPath(currentEmail)
+            null
         }
         binding.ivAuthorAvatar.loadUserAvatar(localAvatarPath)
 
         // 2. Fetch original profile photo & fresh details directly from Supabase database
         if (currentUserId.isNotBlank()) {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 when (val result = userRepository.getUserProfile(currentUserId)) {
                     is NetworkResult.Success -> {
+                        val b = _binding ?: return@launch
                         val profile = result.data
                         if (profile.name.isNotBlank()) {
-                            binding.tvAuthorName.text = profile.name
-                            binding.etPostContent.hint = "What's on your mind, ${profile.name}?"
+                            b.tvAuthorName.text = profile.name
+                            b.etPostContent.hint = "What's on your mind, ${profile.name}?"
                         }
                         if (!profile.location.isNullOrBlank()) {
                             selectedLocation = profile.location
-                            binding.tvAuthorLocation.text = selectedLocation
+                            b.tvAuthorLocation.text = selectedLocation
                         }
                         if (!profile.profilePhoto.isNullOrBlank()) {
-                            binding.ivAuthorAvatar.loadUserAvatar(profile.profilePhoto)
+                            b.ivAuthorAvatar.loadUserAvatar(profile.profilePhoto)
                             SupabaseClient.saveAvatarPath(currentUserId, profile.profilePhoto)
                         }
                     }

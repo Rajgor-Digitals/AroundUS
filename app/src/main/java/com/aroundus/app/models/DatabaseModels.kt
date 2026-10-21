@@ -23,6 +23,10 @@ data class UserEntity(
     val bio: String? = null,
     @SerializedName(value = "profile_photo", alternate = ["profilePhoto", "avatar_url", "profile_image", "avatar", "profile", "image"])
     val profilePhoto: String? = null,
+    @SerializedName(value = "isVerified", alternate = ["is_verified"])
+    val isVerified: Boolean? = null,
+    @SerializedName(value = "created_at", alternate = ["createdAt"])
+    val createdAt: String? = null,
     @SerializedName(value = "username_last_changed", alternate = ["usernameLastChanged"])
     val usernameLastChanged: Long? = null
 ) {
