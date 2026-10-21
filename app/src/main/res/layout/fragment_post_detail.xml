@@ -70,10 +70,11 @@
                     android:tint="@color/text_tertiary" />
 
                 <TextView
+                    android:id="@+id/tvLocationTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="3dp"
-                    android:text="Maple Grove · 3h ago"
+                    android:text="Bhujpur, Kutch · Just now"
                     android:textColor="@color/text_tertiary"
                     android:textSize="12sp" />
 
@@ -249,10 +250,11 @@
             android:padding="16dp">
 
             <TextView
+                android:id="@+id/tvCommentsTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
-                android:text="Comments (32)"
+                android:text="Comments (0)"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
@@ -266,7 +268,56 @@
             android:nestedScrollingEnabled="false"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="16dp" />
+            android:paddingBottom="8dp" />
+
+        <!-- Add Comment Input Box -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="24dp">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/ivCommentUserAvatar"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/shape_avatar_placeholder" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.AroundUS.TextInputLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:hint="Add a comment..."
+                app:boxCornerRadiusBottomEnd="24dp"
+                app:boxCornerRadiusBottomStart="24dp"
+                app:boxCornerRadiusTopEnd="24dp"
+                app:boxCornerRadiusTopStart="24dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCommentInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapSentences"
+                    android:textSize="13.5sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageButton
+                android:id="@+id/btnSubmitComment"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_primary_button"
+                android:padding="10dp"
+                android:src="@drawable/ic_send"
+                app:tint="@color/on_primary" />
+        </LinearLayout>
 
     </LinearLayout>
 

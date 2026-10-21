@@ -24,6 +24,9 @@ import com.aroundus.app.repository.UserRepository
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
+import com.aroundus.app.utils.loadUserAvatar
+import java.io.File
+
 class CreatePostFragment : Fragment() {
 
     private var _binding: FragmentCreatePostBinding? = null
@@ -40,7 +43,18 @@ class CreatePostFragment : Fragment() {
     // ActivityResult Launchers for Photo & Video selection
     private val pickPhotoLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
-            attachedMediaUri = uri.toString()
+            val localMediaFile = try {
+                val input = requireContext().contentResolver.openInputStream(uri)
+                val dest = File(requireContext().filesDir, "post_media_${System.currentTimeMillis()}.jpg")
+                val output = java.io.FileOutputStream(dest)
+                input?.copyTo(output)
+                input?.close()
+                output.close()
+                dest.absolutePath
+            } catch (_: Exception) {
+                uri.toString()
+            }
+            attachedMediaUri = localMediaFile
             binding.imagePreviewContainer.visibility = View.VISIBLE
             binding.ivSelectedImage.setImageURI(uri)
             Toast.makeText(requireContext(), "Photo attached successfully!", Toast.LENGTH_SHORT).show()
@@ -72,13 +86,27 @@ class CreatePostFragment : Fragment() {
 
     private fun setupUserProfile() {
         val userName = SupabaseClient.getCurrentUserName() ?: "Neighbor"
-        val currentUserId = SupabaseClient.getCurrentUserId()
+        val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
+        val currentEmail = SupabaseClient.getCurrentUserEmail() ?: ""
 
         binding.tvAuthorName.text = userName
         binding.etPostContent.hint = "What's on your mind, $userName?"
         binding.tvAuthorLocation.text = selectedLocation
 
-        if (!currentUserId.isNullOrBlank()) {
+        // 1. Instant 0ms local avatar preview
+        val localAvatarFile = if (currentUserId.isNotBlank()) {
+            File(requireContext().filesDir, "avatar_${currentUserId}.jpg")
+        } else null
+
+        val localAvatarPath = if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+            localAvatarFile.absolutePath
+        } else {
+            SupabaseClient.getAvatarPath(currentUserId) ?: SupabaseClient.getAvatarPath(currentEmail)
+        }
+        binding.ivAuthorAvatar.loadUserAvatar(localAvatarPath)
+
+        // 2. Fetch original profile photo & fresh details directly from Supabase database
+        if (currentUserId.isNotBlank()) {
             lifecycleScope.launch {
                 when (val result = userRepository.getUserProfile(currentUserId)) {
                     is NetworkResult.Success -> {
@@ -90,6 +118,10 @@ class CreatePostFragment : Fragment() {
                         if (!profile.location.isNullOrBlank()) {
                             selectedLocation = profile.location
                             binding.tvAuthorLocation.text = selectedLocation
+                        }
+                        if (!profile.profilePhoto.isNullOrBlank()) {
+                            binding.ivAuthorAvatar.loadUserAvatar(profile.profilePhoto)
+                            SupabaseClient.saveAvatarPath(currentUserId, profile.profilePhoto)
                         }
                     }
                     is NetworkResult.Error -> {}
@@ -114,7 +146,8 @@ class CreatePostFragment : Fragment() {
                         text = content,
                         type = selectedCategory,
                         media = attachedMediaUri,
-                        location = selectedLocation
+                        location = selectedLocation,
+                        context = requireContext().applicationContext
                     )
                     binding.btnPostHeader.isEnabled = true
                     when (result) {

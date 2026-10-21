@@ -1,3 +1,4 @@
+
 package com.aroundus.app.fragments
 
 import android.graphics.Color
@@ -54,6 +55,22 @@ class HomeFragment : Fragment() {
         setupFilterTabs()
 
         // 1. Instant 0ms cache-first rendering so app opens without delay
+        loadPostsFromCache()
+
+        // 2. Start background refresh with 5s interval
+        startAutoRefreshLoop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh feed immediately from cache when returning from CreatePostFragment (0ms)
+        loadPostsFromCache()
+        viewLifecycleOwner.lifecycleScope.launch {
+            fetchPostsAndCheckUpdate()
+        }
+    }
+
+    private fun loadPostsFromCache() {
         val cached = postRepository.getCachedPosts(context)
         if (cached.isNotEmpty()) {
             postList.clear()
@@ -70,9 +87,6 @@ class HomeFragment : Fragment() {
                 announcementAdapter.notifyDataSetChanged()
             }
         }
-
-        // 2. Start background refresh with 5s interval instead of 500ms
-        startAutoRefreshLoop()
     }
 
     private fun setupPostRecyclerView() {
@@ -91,7 +105,8 @@ class HomeFragment : Fragment() {
                 Toast.makeText(requireContext(), "Post link copied!", Toast.LENGTH_SHORT).show()
             },
             onAuthorClick = { post ->
-                val bundle = Bundle().apply { putString("userId", post.id) }
+                val targetId = if (!post.authorId.isNullOrBlank()) post.authorId else post.id
+                val bundle = Bundle().apply { putString("userId", targetId) }
                 findNavController().navigate(R.id.myProfileFragment, bundle)
             }
         )

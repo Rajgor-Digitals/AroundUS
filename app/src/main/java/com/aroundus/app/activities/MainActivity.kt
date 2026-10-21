@@ -12,6 +12,7 @@ import androidx.navigation.fragment.NavHostFragment
 import com.aroundus.app.R
 import com.aroundus.app.databinding.ActivityMainBinding
 import com.aroundus.app.network.SupabaseClient
+import com.aroundus.app.utils.loadUserAvatar
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -152,21 +153,12 @@ class MainActivity : AppCompatActivity() {
 
             // Set Avatar
             val localAvatarFile = File(filesDir, "avatar_${currentUserId}.jpg")
-            if (localAvatarFile.exists() && localAvatarFile.length() > 0L) {
-                binding.navigationDrawer.ivDrawerAvatar.setImageURI(null)
-                binding.navigationDrawer.ivDrawerAvatar.setImageURI(Uri.fromFile(localAvatarFile))
+            val avatarPath = if (localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+                localAvatarFile.absolutePath
             } else {
-                val savedAvatarPath = SupabaseClient.getAvatarPath(currentUserId)
-                if (!savedAvatarPath.isNullOrBlank()) {
-                    val file = File(savedAvatarPath)
-                    if (file.exists()) {
-                        binding.navigationDrawer.ivDrawerAvatar.setImageURI(null)
-                        binding.navigationDrawer.ivDrawerAvatar.setImageURI(Uri.fromFile(file))
-                        return
-                    }
-                }
-                binding.navigationDrawer.ivDrawerAvatar.setImageResource(R.drawable.shape_avatar_placeholder)
+                SupabaseClient.getAvatarPath(currentUserId)
             }
+            binding.navigationDrawer.ivDrawerAvatar.loadUserAvatar(avatarPath)
         } catch (_: Exception) {}
     }
 

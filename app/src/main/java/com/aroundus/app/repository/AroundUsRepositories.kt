@@ -250,7 +250,16 @@ class UserRepository {
                 if (!currentEmail.isNullOrBlank()) {
                     val emailResp = service.getUserByEmail("eq.${currentEmail.trim().lowercase()}")
                     if (emailResp.isSuccessful && !emailResp.body().isNullOrEmpty()) {
-                        return@withContext NetworkResult.Success(emailResp.body()!!.first())
+                        val user = emailResp.body()!!.first()
+                        if (user.userId.isNotBlank()) {
+                            SupabaseClient.saveSession(
+                                accessToken = SupabaseClient.getAccessToken(),
+                                userId = user.userId,
+                                email = currentEmail,
+                                name = user.name
+                            )
+                        }
+                        return@withContext NetworkResult.Success(user)
                     }
                 }
 
@@ -258,6 +267,64 @@ class UserRepository {
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Network error", e)
             }
+        }
+
+    suspend fun resolveValidAuthorId(): String =
+        withContext(Dispatchers.IO) {
+            val currentEmail = SupabaseClient.getCurrentUserEmail()?.trim()?.lowercase() ?: ""
+            val cachedUid = SupabaseClient.getCurrentUserId() ?: ""
+
+            // 1. If cachedUid exists in public.users table, use it
+            if (cachedUid.isNotBlank() && cachedUid.startsWith("usr_")) {
+                try {
+                    val userResp = service.getUserById("eq.$cachedUid")
+                    if (userResp.isSuccessful && !userResp.body().isNullOrEmpty()) {
+                        return@withContext cachedUid
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 2. Lookup public.users table by email
+            if (currentEmail.isNotBlank()) {
+                try {
+                    val emailResp = service.getUserByEmail("eq.$currentEmail")
+                    if (emailResp.isSuccessful && !emailResp.body().isNullOrEmpty()) {
+                        val realUser = emailResp.body()!!.first()
+                        if (realUser.userId.isNotBlank()) {
+                            SupabaseClient.saveSession(
+                                accessToken = SupabaseClient.getAccessToken(),
+                                userId = realUser.userId,
+                                email = currentEmail,
+                                name = realUser.name
+                            )
+                            return@withContext realUser.userId
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 3. Fallback: generate deterministic usr_<hash> and ensure record exists in public.users
+            val fallbackId = if (cachedUid.startsWith("usr_")) cachedUid else ("usr_" + Math.abs(currentEmail.ifBlank { "user" }.hashCode()))
+            val currentName = SupabaseClient.getCurrentUserName() ?: currentEmail.substringBefore("@").ifBlank { "Neighbor" }
+            val currentAvatar = SupabaseClient.getAvatarPath(fallbackId) ?: SupabaseClient.getAvatarPath(currentEmail)
+            val userEntity = UserEntity(
+                userId = fallbackId,
+                name = currentName,
+                email = currentEmail.ifBlank { "$fallbackId@aroundus.app" },
+                location = "Bhujpur, Kutch",
+                profilePhoto = currentAvatar
+            )
+            try {
+                service.createUser(user = userEntity)
+            } catch (_: Exception) {}
+
+            SupabaseClient.saveSession(
+                accessToken = SupabaseClient.getAccessToken(),
+                userId = fallbackId,
+                email = currentEmail,
+                name = currentName
+            )
+            return@withContext fallbackId
         }
 
     suspend fun getFollowersCount(userId: String): NetworkResult<Int> =
@@ -526,10 +593,29 @@ class PostRepository {
             val json = prefs.getString(KEY_POSTS_JSON, null)
             if (!json.isNullOrBlank()) {
                 val type = object : com.google.gson.reflect.TypeToken<List<Post>>() {}.type
-                val diskList: List<Post> = com.google.gson.Gson().fromJson(json, type)
-                if (diskList.isNotEmpty()) {
-                    memoryCachedPosts = diskList
-                    return diskList
+                val diskList: List<Post>? = com.google.gson.Gson().fromJson(json, type)
+                if (!diskList.isNullOrEmpty()) {
+                    val sanitized = diskList.map { p ->
+                        Post(
+                            id = p.id ?: "",
+                            userName = if (p.userName.isNullOrBlank()) "Neighbor" else p.userName,
+                            userAvatar = p.userAvatar,
+                            neighborhood = if (p.neighborhood.isNullOrBlank()) "Bhujpur, Kutch" else p.neighborhood,
+                            timeAgo = if (p.timeAgo.isNullOrBlank()) "Just now" else p.timeAgo,
+                            category = if (p.category.isNullOrBlank()) "General" else p.category,
+                            text = p.text ?: "",
+                            imageRes = p.imageRes,
+                            likesCount = p.likesCount,
+                            commentsCount = p.commentsCount,
+                            isLiked = p.isLiked,
+                            isSaved = p.isSaved,
+                            userAvatarPath = p.userAvatarPath,
+                            authorId = p.authorId ?: "",
+                            mediaUrl = p.mediaUrl
+                        )
+                    }
+                    memoryCachedPosts = sanitized
+                    return sanitized
                 }
             }
         } catch (_: Exception) {}
@@ -571,8 +657,8 @@ class PostRepository {
 
                     // 1. Identify all unknown author IDs
                     val unknownAuthorIds = posts
-                        .map { it.authorId }
-                        .filter { it.isNotBlank() && !globalAuthorCache.containsKey(it) }
+                        .mapNotNull { it.authorId.takeIf { id -> !id.isNullOrBlank() } }
+                        .filter { !globalAuthorCache.containsKey(it) || globalAuthorCache[it]?.second.isNullOrBlank() }
                         .distinct()
 
                     // 2. Fetch unknown authors in parallel concurrently (300ms total instead of N * 500ms)
@@ -584,10 +670,14 @@ class PostRepository {
                                         val userResp = service.getUserById("eq.$authorId")
                                         val user = userResp.body()?.firstOrNull()
                                         val name = if (!user?.name.isNullOrBlank()) user!!.name else "Neighbor"
-                                        val avatar = user?.profilePhoto ?: user?.profile ?: SupabaseClient.getAvatarPath(authorId)
+                                        val avatar = user?.profilePhoto?.takeIf { !it.isNullOrBlank() } ?: SupabaseClient.getAvatarPath(authorId)
                                         globalAuthorCache[authorId] = Pair(name, avatar)
+                                        if (!avatar.isNullOrBlank()) {
+                                            SupabaseClient.saveAvatarPath(authorId, avatar)
+                                        }
                                     } catch (_: Exception) {
-                                        globalAuthorCache[authorId] = Pair("Neighbor", null)
+                                        val cachedAvatar = SupabaseClient.getAvatarPath(authorId)
+                                        globalAuthorCache[authorId] = Pair("Neighbor", cachedAvatar)
                                     }
                                 }
                             }.awaitAll()
@@ -596,8 +686,9 @@ class PostRepository {
 
                     // 3. Assemble UI models using fast O(1) in-memory author lookup
                     val uiPosts = posts.map { p ->
-                        val (authorName, avatarPath) = if (p.authorId.isNotBlank()) {
-                            globalAuthorCache[p.authorId] ?: Pair("Neighbor", null)
+                        val pAuthorId = p.authorId ?: ""
+                        val (authorName, avatarPath) = if (pAuthorId.isNotBlank()) {
+                            globalAuthorCache[pAuthorId] ?: Pair("Neighbor", SupabaseClient.getAvatarPath(pAuthorId))
                         } else {
                             Pair("Neighbor", null)
                         }
@@ -616,35 +707,71 @@ class PostRepository {
             }
         }
 
+    suspend fun getPostById(postId: String, context: Context? = null): NetworkResult<Post> =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Check memory / disk cache first
+                val cached = getCachedPosts(context).find { it.id == postId }
+                if (cached != null) {
+                    return@withContext NetworkResult.Success(cached)
+                }
+
+                // 2. Query Supabase posts table
+                val resp = service.getPostById("eq.$postId")
+                if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                    val p = resp.body()!!.first()
+                    var authorName = "Neighbor"
+                    var authorAvatar: String? = null
+                    val pAuthorId = p.authorId ?: ""
+                    if (pAuthorId.isNotBlank()) {
+                        val authorEntry = globalAuthorCache[pAuthorId]
+                        if (authorEntry != null && !authorEntry.second.isNullOrBlank()) {
+                            authorName = authorEntry.first
+                            authorAvatar = authorEntry.second
+                        } else {
+                            try {
+                                val userResp = service.getUserById("eq.$pAuthorId")
+                                val user = userResp.body()?.firstOrNull()
+                                if (user != null) {
+                                    authorName = user.name?.ifBlank { "Neighbor" } ?: "Neighbor"
+                                    authorAvatar = user.profilePhoto?.takeIf { !it.isNullOrBlank() } ?: SupabaseClient.getAvatarPath(pAuthorId)
+                                    globalAuthorCache[pAuthorId] = Pair(authorName, authorAvatar)
+                                    if (!authorAvatar.isNullOrBlank()) {
+                                        SupabaseClient.saveAvatarPath(pAuthorId, authorAvatar)
+                                    }
+                                }
+                            } catch (_: Exception) {}
+                        }
+                    }
+                    val postUI = p.toUIModel(userName = authorName, userAvatarPath = authorAvatar)
+                    return@withContext NetworkResult.Success(postUI)
+                }
+                NetworkResult.Error("Post not found.")
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to fetch post", e)
+            }
+        }
+
     suspend fun createPost(
         text: String,
         type: String = "General",
         media: String? = null,
-        location: String? = "Bhujpur, Kutch"
-    ): NetworkResult<PostEntity> =
+        location: String? = "Bhujpur, Kutch",
+        context: Context? = null
+    ): NetworkResult<Post> =
         withContext(Dispatchers.IO) {
             try {
-                if (text.isBlank()) {
+                if (text.isBlank() && media.isNullOrBlank()) {
                     return@withContext NetworkResult.Error("Post content cannot be empty.")
                 }
-                var authorId = SupabaseClient.getCurrentUserId()
+
+                // 1. Resolve authorId matching public.users table (prevents foreign key constraint 23503)
+                val authorId = UserRepository().resolveValidAuthorId()
                 val currentEmail = SupabaseClient.getCurrentUserEmail() ?: "user@aroundus.app"
-                val currentName = SupabaseClient.getCurrentUserName() ?: currentEmail.substringBefore("@")
+                val currentName = SupabaseClient.getCurrentUserName() ?: currentEmail.substringBefore("@").ifBlank { "Neighbor" }
+                val currentAvatar = SupabaseClient.getAvatarPath(authorId) ?: SupabaseClient.getAvatarPath(currentEmail)
 
-                if (authorId.isNullOrBlank()) {
-                    authorId = "usr_" + Math.abs(currentEmail.hashCode())
-                }
-
-                // 1. Ensure author exists in public.users table to prevent foreign key violation
-                val userEntity = UserEntity(
-                    userId = authorId,
-                    name = currentName,
-                    email = currentEmail,
-                    location = location ?: "Bhujpur, Kutch"
-                )
-                try {
-                    service.createUser(user = userEntity)
-                } catch (_: Exception) {}
+                globalAuthorCache[authorId] = Pair(currentName, currentAvatar)
 
                 // 2. Create the post entity
                 val newPost = PostEntity(
@@ -654,15 +781,29 @@ class PostRepository {
                     text = text.trim(),
                     media = media,
                     timestamp = System.currentTimeMillis().toString(),
-                    location = location
+                    location = location ?: "Bhujpur, Kutch"
                 )
 
                 val resp = service.createPost(post = newPost)
-                if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                    NetworkResult.Success(resp.body()!!.first())
+                val finalEntity = if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                    resp.body()!!.first()
+                } else if (resp.code() in 200..299) {
+                    newPost
                 } else {
-                    NetworkResult.Success(newPost)
+                    val errorMsg = resp.errorBody()?.string() ?: resp.message()
+                    return@withContext NetworkResult.Error("Failed to create post: $errorMsg")
                 }
+
+                val uiPost = finalEntity.toUIModel(userName = currentName, userAvatarPath = currentAvatar)
+
+                // 3. Immediately update memory & disk cache so new post appears in feed with 0ms delay
+                val currentList = (memoryCachedPosts ?: getCachedPosts(context)).toMutableList()
+                currentList.removeAll { it.id == uiPost.id }
+                currentList.add(0, uiPost)
+                memoryCachedPosts = currentList
+                savePostsToCache(context, currentList)
+
+                NetworkResult.Success(uiPost)
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Failed to post", e)
             }
@@ -689,16 +830,60 @@ class CommentRepository {
             }
         }
 
+    suspend fun fetchCommentsWithAuthors(postId: String): NetworkResult<List<Comment>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = service.getCommentsForPost("eq.$postId")
+                if (resp.isSuccessful && resp.body() != null) {
+                    val entities = resp.body()!!
+                    val userIds = entities.map { it.userId }.filter { it.isNotBlank() }.distinct()
+                    val userMap = mutableMapOf<String, Pair<String, String?>>()
+
+                    if (userIds.isNotEmpty()) {
+                        coroutineScope {
+                            userIds.map { uid ->
+                                async(Dispatchers.IO) {
+                                    try {
+                                        val uResp = service.getUserById("eq.$uid")
+                                        val u = uResp.body()?.firstOrNull()
+                                        val name = u?.name?.ifBlank { "Neighbor" } ?: "Neighbor"
+                                        val avatar = u?.profilePhoto?.takeIf { it.isNotBlank() } ?: SupabaseClient.getAvatarPath(uid)
+                                        synchronized(userMap) {
+                                            userMap[uid] = Pair(name, avatar)
+                                        }
+                                        if (!avatar.isNullOrBlank()) {
+                                            SupabaseClient.saveAvatarPath(uid, avatar)
+                                        }
+                                    } catch (_: Exception) {
+                                        synchronized(userMap) {
+                                            userMap[uid] = Pair("Neighbor", SupabaseClient.getAvatarPath(uid))
+                                        }
+                                    }
+                                }
+                            }.awaitAll()
+                        }
+                    }
+
+                    val comments = entities.map { entity ->
+                        val (authorName, avatar) = userMap[entity.userId] ?: Pair("Neighbor", SupabaseClient.getAvatarPath(entity.userId))
+                        entity.toUIModel(userName = authorName, userAvatarPath = avatar)
+                    }
+                    NetworkResult.Success(comments)
+                } else {
+                    NetworkResult.Error("Failed to fetch comments.")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            }
+        }
+
     suspend fun addComment(postId: String, text: String): NetworkResult<CommentEntity> =
         withContext(Dispatchers.IO) {
             try {
                 if (text.isBlank()) {
                     return@withContext NetworkResult.Error("Comment text cannot be empty.")
                 }
-                val userId = SupabaseClient.getCurrentUserId()
-                if (userId.isNullOrBlank()) {
-                    return@withContext NetworkResult.Error("User must be logged in to comment.")
-                }
+                val userId = UserRepository().resolveValidAuthorId()
 
                 val comment = CommentEntity(
                     commentId = "comment_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
@@ -711,8 +896,11 @@ class CommentRepository {
                 val resp = service.createComment(comment = comment)
                 if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
                     NetworkResult.Success(resp.body()!!.first())
-                } else {
+                } else if (resp.code() in 200..299) {
                     NetworkResult.Success(comment)
+                } else {
+                    val errorMsg = resp.errorBody()?.string() ?: resp.message()
+                    NetworkResult.Error("Failed to add comment: $errorMsg")
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Failed to add comment", e)

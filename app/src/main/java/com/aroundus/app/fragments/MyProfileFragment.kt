@@ -113,6 +113,11 @@ class MyProfileFragment : Fragment() {
             },
             onShareClick = {
                 Toast.makeText(requireContext(), "Post link copied!", Toast.LENGTH_SHORT).show()
+            },
+            onAuthorClick = { post ->
+                val targetId = if (!post.authorId.isNullOrBlank()) post.authorId else post.id
+                val bundle = Bundle().apply { putString("userId", targetId) }
+                findNavController().navigate(R.id.myProfileFragment, bundle)
             }
         )
 
@@ -472,12 +477,12 @@ class MyProfileFragment : Fragment() {
             // 1. Fetch user posts from Supabase database (Real count)
             when (val result = postRepository.fetchPosts()) {
                 is NetworkResult.Success -> {
-                    val currentAvatar = SupabaseClient.getAvatarPath(targetUserId) ?: selectedAvatarPath
+                    val currentAvatar = SupabaseClient.getAvatarPath(targetUserId) ?: currentUserEntity?.profilePhoto ?: selectedAvatarPath
 
                     val onlyUserPosts = result.data
                         .filter { postEntity ->
-                            (targetUserId.isNotBlank() && postEntity.authorId == targetUserId) ||
-                            (targetUserName.isNotBlank() && postEntity.authorId.equals(targetUserName, ignoreCase = true))
+                            (!targetUserId.isNullOrBlank() && postEntity.authorId == targetUserId) ||
+                            (!targetUserName.isNullOrBlank() && postEntity.authorId.equals(targetUserName, ignoreCase = true))
                         }
                         .map { it.toUIModel(userName = targetUserName.ifBlank { "Neighbor" }, userAvatarPath = currentAvatar) }
 

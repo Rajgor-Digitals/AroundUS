@@ -1,19 +1,21 @@
 package com.aroundus.app.models
 
 data class Post(
-    val id: String,
-    val userName: String,
-    val userAvatar: Int,
-    val neighborhood: String,
-    val timeAgo: String,
-    val category: String,
-    val text: String,
+    val id: String = "",
+    val userName: String = "Neighbor",
+    val userAvatar: Int = 0,
+    val neighborhood: String = "Bhujpur, Kutch",
+    val timeAgo: String = "Just now",
+    val category: String = "General",
+    val text: String = "",
     val imageRes: Int? = null,
-    val likesCount: Int,
-    val commentsCount: Int,
+    val likesCount: Int = 0,
+    val commentsCount: Int = 0,
     var isLiked: Boolean = false,
     var isSaved: Boolean = false,
-    val userAvatarPath: String? = null
+    val userAvatarPath: String? = null,
+    val authorId: String? = null,
+    val mediaUrl: String? = null
 )
 
 data class Story(
@@ -109,5 +111,7 @@ data class Comment(
     val avatarRes: Int,
     val text: String,
     val time: String,
-    val likeCount: Int
+    val likeCount: Int,
+    val avatarPath: String? = null,
+    val userId: String = ""
 )

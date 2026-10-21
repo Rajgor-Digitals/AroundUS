@@ -10,6 +10,7 @@ import com.aroundus.app.R
 import com.aroundus.app.databinding.ItemPostBinding
 import com.aroundus.app.models.Post
 import com.aroundus.app.network.SupabaseClient
+import com.aroundus.app.utils.loadUserAvatar
 import android.widget.Toast
 import java.io.File
 
@@ -28,60 +29,36 @@ class PostAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(post: Post) {
-            binding.tvUserName.text = post.userName
-            binding.tvNeighborhood.text = post.neighborhood
-            binding.tvTime.text = post.timeAgo
-            binding.chipCategory.text = post.category
-            binding.tvPostText.text = post.text
+            binding.tvUserName.text = post.userName ?: "Neighbor"
+            binding.tvNeighborhood.text = post.neighborhood ?: "Bhujpur, Kutch"
+            binding.tvTime.text = post.timeAgo ?: "Just now"
+            binding.chipCategory.text = post.category ?: "General"
+            binding.tvPostText.text = post.text ?: ""
             binding.tvCommentsCount.text = post.commentsCount.toString()
 
-            // Multi-Stage Avatar Resolution
-            var loadedPhoto = false
+            // Original Author Avatar Resolution from Database / Cache
             val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
-            val currentEmail = SupabaseClient.getCurrentUserEmail() ?: ""
             val currentName = SupabaseClient.getCurrentUserName() ?: ""
+            val isCurrentAuthor = (!post.authorId.isNullOrBlank() && post.authorId == currentUserId) ||
+                    (!post.userName.isNullOrBlank() && post.userName.equals(currentName, ignoreCase = true))
 
-            val localAvatarFile = File(binding.ivAvatar.context.filesDir, "avatar_${currentUserId}.jpg")
+            val localAvatarFile = if (isCurrentAuthor && currentUserId.isNotBlank()) {
+                File(binding.ivAvatar.context.filesDir, "avatar_${currentUserId}.jpg")
+            } else null
 
-            val avatarPath = if (post.userName.equals(currentName, ignoreCase = true) && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+            val avatarPath = if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
                 localAvatarFile.absolutePath
-            } else {
+            } else if (!post.userAvatarPath.isNullOrBlank()) {
                 post.userAvatarPath
-                    ?: SupabaseClient.getAvatarPath(currentUserId)
-                    ?: SupabaseClient.getAvatarPath(currentEmail)
+            } else if (!post.authorId.isNullOrBlank()) {
+                SupabaseClient.getAvatarPath(post.authorId)
+            } else if (isCurrentAuthor) {
+                SupabaseClient.getAvatarPath(currentUserId)
+            } else {
+                null
             }
 
-            if (!avatarPath.isNullOrBlank()) {
-                try {
-                    if (avatarPath.startsWith("http://") || avatarPath.startsWith("https://")) {
-                        Glide.with(binding.ivAvatar.context)
-                            .load(avatarPath)
-                            .placeholder(R.drawable.shape_avatar_placeholder)
-                            .error(R.drawable.shape_avatar_placeholder)
-                            .into(binding.ivAvatar)
-                        loadedPhoto = true
-                    } else if (avatarPath.startsWith("/")) {
-                        val file = File(avatarPath)
-                        if (file.exists() && file.length() > 0L) {
-                            Glide.with(binding.ivAvatar.context)
-                                .load(file)
-                                .placeholder(R.drawable.shape_avatar_placeholder)
-                                .into(binding.ivAvatar)
-                            loadedPhoto = true
-                        }
-                    } else if (avatarPath.startsWith("content://") || avatarPath.startsWith("file://")) {
-                        Glide.with(binding.ivAvatar.context)
-                            .load(Uri.parse(avatarPath))
-                            .placeholder(R.drawable.shape_avatar_placeholder)
-                            .into(binding.ivAvatar)
-                        loadedPhoto = true
-                    }
-                } catch (_: Exception) {}
-            }
-
-            if (!loadedPhoto) {
-                binding.ivAvatar.setImageResource(post.userAvatar)
-            }
+            binding.ivAvatar.loadUserAvatar(avatarPath, post.userAvatar)
 
             val isLiked = likedPosts.contains(post.id)
             val currentLikes = if (isLiked) post.likesCount + 1 else post.likesCount
@@ -97,7 +74,21 @@ class PostAdapter(
                 binding.tvLikesCount.setTextColor(android.graphics.Color.parseColor("#64748B"))
             }
 
-            if (post.imageRes != null) {
+            val media = post.mediaUrl
+            if (!media.isNullOrBlank()) {
+                binding.cardImageContainer.visibility = View.VISIBLE
+                if (media.startsWith("http://") || media.startsWith("https://") || media.startsWith("content://") || media.startsWith("/") || media.startsWith("file://")) {
+                    Glide.with(binding.ivPostImage.context)
+                        .load(media)
+                        .placeholder(R.drawable.bg_image_placeholder)
+                        .error(R.drawable.bg_image_placeholder)
+                        .into(binding.ivPostImage)
+                } else if (post.imageRes != null) {
+                    binding.ivPostImage.setImageResource(post.imageRes)
+                } else {
+                    binding.ivPostImage.setImageResource(R.drawable.bg_image_placeholder)
+                }
+            } else if (post.imageRes != null) {
                 binding.cardImageContainer.visibility = View.VISIBLE
                 binding.ivPostImage.setImageResource(post.imageRes)
             } else {
@@ -105,6 +96,8 @@ class PostAdapter(
             }
 
             binding.root.setOnClickListener { onPostClick(post) }
+            binding.tvPostText.setOnClickListener { onPostClick(post) }
+            binding.cardImageContainer.setOnClickListener { onPostClick(post) }
 
             binding.ivAvatar.setOnClickListener {
                 if (onAuthorClick != null) onAuthorClick.invoke(post) else onPostClick(post)

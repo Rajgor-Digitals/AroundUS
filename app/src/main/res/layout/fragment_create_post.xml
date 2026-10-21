@@ -324,10 +324,11 @@
 
                     <!-- Avatar -->
                     <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivAuthorAvatar"
                         android:layout_width="46dp"
                         android:layout_height="46dp"
                         android:scaleType="centerCrop"
-                        android:src="@drawable/img_avatar_gaurav_rajgor"
+                        android:src="@drawable/shape_avatar_placeholder"
                         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
                     <!-- User Name and Location -->

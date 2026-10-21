@@ -19,14 +19,14 @@ data class UserEntity(
     val phone: String? = null,
     @SerializedName("location")
     val location: String? = null,
-    @SerializedName(value = "bio", alternate = ["profile"])
+    @SerializedName("bio")
     val bio: String? = null,
-    @SerializedName(value = "profile_photo", alternate = ["profilePhoto", "avatar_url"])
+    @SerializedName(value = "profile_photo", alternate = ["profilePhoto", "avatar_url", "profile_image", "avatar", "profile", "image"])
     val profilePhoto: String? = null,
     @SerializedName(value = "username_last_changed", alternate = ["usernameLastChanged"])
     val usernameLastChanged: Long? = null
 ) {
-    val profile: String? get() = bio ?: profilePhoto
+    val profile: String? get() = profilePhoto
 }
 
 data class PostEntity(
@@ -185,30 +185,35 @@ fun formatTimeAgo(timestampStr: String?): String {
 
 fun PostEntity.toUIModel(userName: String = "Neighbor", userAvatarPath: String? = null): Post {
     return Post(
-        id = postId,
-        userName = userName,
+        id = postId ?: "",
+        userName = if (userName.isNullOrBlank()) "Neighbor" else userName,
         userAvatar = R.drawable.shape_avatar_placeholder,
-        neighborhood = location ?: "Bhujpur, Kutch",
+        neighborhood = if (location.isNullOrBlank()) "Bhujpur, Kutch" else location,
         timeAgo = formatTimeAgo(timestamp),
-        category = type,
-        text = text,
+        category = if (type.isNullOrBlank()) "General" else type,
+        text = text ?: "",
         imageRes = if (!media.isNullOrBlank()) R.drawable.bg_image_placeholder else null,
         likesCount = 0,
         commentsCount = 0,
-        userAvatarPath = userAvatarPath
+        userAvatarPath = userAvatarPath,
+        authorId = authorId ?: "",
+        mediaUrl = media
     )
 }
 
-fun CommentEntity.toUIModel(userName: String = "Neighbor"): Comment {
+fun CommentEntity.toUIModel(userName: String = "Neighbor", userAvatarPath: String? = null): Comment {
     return Comment(
-        id = commentId,
-        userName = userName,
+        id = commentId ?: "",
+        userName = if (userName.isNullOrBlank()) "Neighbor" else userName,
         avatarRes = R.drawable.shape_avatar_placeholder,
-        text = text,
+        text = text ?: "",
         time = formatTimeAgo(timestamp),
-        likeCount = 0
+        likeCount = 0,
+        avatarPath = userAvatarPath,
+        userId = userId ?: ""
     )
 }
+
 
 fun GroupEntity.toUIModel(): Group {
     return Group(

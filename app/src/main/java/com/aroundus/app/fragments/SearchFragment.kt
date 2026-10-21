@@ -73,6 +73,11 @@ class SearchFragment : Fragment() {
             },
             onShareClick = {
                 Toast.makeText(requireContext(), "Link copied!", Toast.LENGTH_SHORT).show()
+            },
+            onAuthorClick = { post ->
+                val targetId = if (!post.authorId.isNullOrBlank()) post.authorId else post.id
+                val bundle = Bundle().apply { putString("userId", targetId) }
+                findNavController().navigate(R.id.myProfileFragment, bundle)
             }
         )
 
