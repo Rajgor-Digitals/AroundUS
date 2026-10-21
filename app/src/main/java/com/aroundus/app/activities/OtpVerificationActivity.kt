@@ -94,7 +94,10 @@ class OtpVerificationActivity : AppCompatActivity() {
             binding.tilOtp.error = null
 
             Toast.makeText(this, "OTP Verified Successfully!", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, ProfileSetupActivity::class.java))
+            val intent = Intent(this, ProfileSetupActivity::class.java).apply {
+                putExtra("email", targetEmail)
+            }
+            startActivity(intent)
             finish()
         }
 

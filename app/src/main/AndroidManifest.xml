@@ -55,7 +55,7 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activities.ProfileSetupActivity"
-            android:exported="false"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- Main Activity -->

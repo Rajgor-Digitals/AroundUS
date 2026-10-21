@@ -1,222 +1,1046 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
+    android:background="#F8FAFC"
     android:fillViewport="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:paddingBottom="40dp">
 
-        <!-- Header -->
-        <View
-            android:id="@+id/topDecor"
-            android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:background="@color/primary"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            style="@style/Widget.AroundUS.Toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/primary"
-            app:layout_constraintEnd_toEndOf="parent"
+        <!-- Top Navigation Bar -->
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_arrow_back"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:navigationIcon="@drawable/ic_arrow_back"
-            app:navigationIconTint="@color/on_primary"
-            app:title="Set Up Your Profile"
-            app:titleTextColor="@color/on_primary" />
+            app:tint="#0D8A3F" />
 
-        <!-- Avatar Section -->
-        <FrameLayout
-            android:id="@+id/avatarSection"
+        <LinearLayout
+            android:id="@+id/llHeaderBrand"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="60dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/ivAvatar"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:src="@drawable/shape_avatar_placeholder"
-                app:civ_border_color="@color/surface"
-                app:civ_border_width="3dp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="@id/btnBack"
+            app:layout_constraintEnd_toStartOf="@id/btnSkip"
+            app:layout_constraintStart_toEndOf="@id/btnBack"
+            app:layout_constraintTop_toTopOf="@id/btnBack">
 
             <ImageView
-                android:id="@+id/ivAddPhoto"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_gravity="bottom|end"
-                android:background="@drawable/shape_circle_primary"
-                android:backgroundTint="@color/primary"
-                android:padding="6dp"
-                android:src="@drawable/ic_camera"
-                android:tint="@color/on_primary" />
-        </FrameLayout>
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="AroundUS Logo"
+                android:src="@drawable/ic_aroundus_custom_logo" />
 
-        <TextView
-            android:id="@+id/tvAddPhoto"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/btn_add_photo"
-            android:textColor="@color/primary"
-            android:textSize="13sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/avatarSection" />
-
-        <!-- Form -->
-        <LinearLayout
-            android:id="@+id/formLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="20dp"
-            android:orientation="vertical"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvAddPhoto">
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilUsername"
-                style="@style/Widget.AroundUS.TextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/hint_username"
-                app:helperText="Choose a unique username"
-                app:startIconDrawable="@drawable/ic_person">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etUsername"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textNoSuggestions"
-                    android:textSize="15sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilBio"
-                style="@style/Widget.AroundUS.TextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="@string/hint_bio"
-                app:counterEnabled="true"
-                app:counterMaxLength="150">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etBio"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="top"
-                    android:inputType="textMultiLine"
-                    android:maxLength="150"
-                    android:minLines="3"
-                    android:textSize="15sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilNeighborhood"
-                style="@style/Widget.AroundUS.TextInputLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="@string/hint_location"
-                app:startIconDrawable="@drawable/ic_location">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etNeighborhood"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textPostalAddress|textCapWords"
-                    android:textSize="15sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Interests Label -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="12dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="Your Interests"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp" />
+                android:layout_marginStart="6dp"
+                android:fontFamily="sans-serif-black"
+                android:text="Around "
+                android:textColor="#111827"
+                android:textSize="17sp" />
 
-            <!-- Interest Chips -->
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipGroupInterests"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-black"
+                android:text="Us"
+                android:textColor="#0D8A3F"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btnSkip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:fontFamily="sans-serif-medium"
+            android:padding="8dp"
+            android:text="Skip"
+            android:textColor="#0D8A3F"
+            android:textSize="14sp"
+            app:layout_constraintBottom_toBottomOf="@id/btnBack"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/btnBack" />
+
+        <!-- Step Progress Badge & Tracker -->
+        <LinearLayout
+            android:id="@+id/llStepHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="20dp"
+            android:orientation="vertical"
+            app:layout_constraintTop_toBottomOf="@id/btnBack">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_step_badge"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="10dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="4dp">
+
+                <View
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:background="@drawable/shape_circle_primary"
+                    android:backgroundTint="#0D8A3F" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:letterSpacing="0.04"
+                    android:text="STEP 2 OF 2 • ALMOST THERE"
+                    android:textColor="#065F46"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- 2-Bar Progress Tracker -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="5dp"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_step_capsule_active" />
+
+                <View
+                    android:id="@+id/progressStep2"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_step_capsule_active" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvSetupTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="sans-serif-black"
+                android:text="Set Up Your Profile"
+                android:textColor="#111827"
+                android:textSize="26sp" />
+
+            <TextView
+                android:id="@+id/tvSetupSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="sans-serif"
+                android:lineSpacingExtra="2dp"
+                android:text="Personalize your details so neighbors in your community recognize you."
+                android:textColor="#64748B"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Avatar Studio Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardAvatar"
+            style="@style/Widget.AroundUS.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="18dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
+            app:layout_constraintTop_toBottomOf="@id/llStepHeader"
+            app:strokeColor="#F1F5F9"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:selectionRequired="false"
-                app:singleSelection="false">
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="20dp">
 
-                <com.google.android.material.chip.Chip
-                    style="@style/Widget.Material3.Chip.Filter"
+                <!-- Main Avatar Circle with Edit Button Overlay -->
+                <FrameLayout
+                    android:id="@+id/avatarContainer"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Events" />
+                    android:layout_gravity="center">
 
-                <com.google.android.material.chip.Chip
-                    style="@style/Widget.Material3.Chip.Filter"
+                    <View
+                        android:layout_width="112dp"
+                        android:layout_height="112dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/shape_circle_primary"
+                        android:backgroundTint="#DCFCE7" />
+
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:id="@+id/ivAvatar"
+                        android:layout_width="104dp"
+                        android:layout_height="104dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/shape_avatar_placeholder"
+                        app:civ_border_color="#FFFFFF"
+                        app:civ_border_width="3dp"
+                        app:civ_circle_background_color="#F1F5F9" />
+
+                    <!-- Camera / Upload Badge Button -->
+                    <FrameLayout
+                        android:id="@+id/ivAddPhoto"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="bottom|end"
+                        android:layout_marginEnd="2dp"
+                        android:layout_marginBottom="2dp"
+                        android:background="@drawable/shape_circle_primary"
+                        android:backgroundTint="#0D8A3F"
+                        android:clickable="true"
+                        android:elevation="4dp"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Upload Photo"
+                            android:src="@drawable/ic_camera"
+                            app:tint="#FFFFFF" />
+                    </FrameLayout>
+                </FrameLayout>
+
+                <!-- Status / Action Text -->
+                <TextView
+                    android:id="@+id/tvAddPhoto"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Marketplace" />
+                    android:layout_marginTop="10dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:fontFamily="sans-serif-bold"
+                    android:padding="6dp"
+                    android:text="Choose Photo from Gallery"
+                    android:textColor="#0D8A3F"
+                    android:textSize="13.5sp" />
 
-                <com.google.android.material.chip.Chip
-                    style="@style/Widget.Material3.Chip.Filter"
+                <!-- Photo Added Badge (shown when photo is set) -->
+                <LinearLayout
+                    android:id="@+id/badgePhotoSelected"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="News" />
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_step_badge"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="3dp"
+                    android:visibility="gone"
+                    tools:visibility="visible">
 
-                <com.google.android.material.chip.Chip
-                    style="@style/Widget.Material3.Chip.Filter"
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_check_circle"
+                        app:tint="#0D8A3F" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Photo ready"
+                        android:textColor="#065F46"
+                        android:textSize="11.5sp" />
+                </LinearLayout>
+
+                <!-- Preset Avatars Divider -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#F1F5F9" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:fontFamily="sans-serif"
+                        android:text="or pick a community avatar"
+                        android:textColor="#94A3B8"
+                        android:textSize="12sp" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#F1F5F9" />
+                </LinearLayout>
+
+                <!-- Quick Preset Avatars Row -->
+                <LinearLayout
+                    android:id="@+id/llPresetAvatars"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Safety" />
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
-                <com.google.android.material.chip.Chip
-                    style="@style/Widget.Material3.Chip.Filter"
+                    <!-- Preset 1 -->
+                    <FrameLayout
+                        android:id="@+id/framePreset1"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:layout_marginEnd="12dp">
+
+                        <View
+                            android:id="@+id/ringPreset1"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_preset_avatar_ring"
+                            android:visibility="gone" />
+
+                        <de.hdodenhof.circleimageview.CircleImageView
+                            android:id="@+id/presetAvatar1"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/img_avatar_gaurav_rajgor"
+                            app:civ_border_color="#FFFFFF"
+                            app:civ_border_width="2dp" />
+                    </FrameLayout>
+
+                    <!-- Preset 2 -->
+                    <FrameLayout
+                        android:id="@+id/framePreset2"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:layout_marginEnd="12dp">
+
+                        <View
+                            android:id="@+id/ringPreset2"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_preset_avatar_ring"
+                            android:visibility="gone" />
+
+                        <de.hdodenhof.circleimageview.CircleImageView
+                            android:id="@+id/presetAvatar2"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/img_avatar_priya_sharma"
+                            app:civ_border_color="#FFFFFF"
+                            app:civ_border_width="2dp" />
+                    </FrameLayout>
+
+                    <!-- Preset 3 -->
+                    <FrameLayout
+                        android:id="@+id/framePreset3"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:layout_marginEnd="12dp">
+
+                        <View
+                            android:id="@+id/ringPreset3"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_preset_avatar_ring"
+                            android:visibility="gone" />
+
+                        <de.hdodenhof.circleimageview.CircleImageView
+                            android:id="@+id/presetAvatar3"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/img_avatar_amit_joshi"
+                            app:civ_border_color="#FFFFFF"
+                            app:civ_border_width="2dp" />
+                    </FrameLayout>
+
+                    <!-- Preset 4 -->
+                    <FrameLayout
+                        android:id="@+id/framePreset4"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp">
+
+                        <View
+                            android:id="@+id/ringPreset4"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_preset_avatar_ring"
+                            android:visibility="gone" />
+
+                        <de.hdodenhof.circleimageview.CircleImageView
+                            android:id="@+id/presetAvatar4"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/avatar_cultural_club"
+                            app:civ_border_color="#FFFFFF"
+                            app:civ_border_width="2dp" />
+                    </FrameLayout>
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- User Information Form Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardForm"
+            style="@style/Widget.AroundUS.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="18dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
+            app:layout_constraintTop_toBottomOf="@id/cardAvatar"
+            app:strokeColor="#F1F5F9"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="20dp">
+
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Recommendations" />
+                    android:fontFamily="sans-serif-black"
+                    android:letterSpacing="0.04"
+                    android:text="ABOUT YOU"
+                    android:textColor="#0D8A3F"
+                    android:textSize="12sp" />
 
-                <com.google.android.material.chip.Chip
-                    style="@style/Widget.Material3.Chip.Filter"
+                <!-- 1. Full Name -->
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Lost &amp; Found" />
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Display Name *"
+                    android:textColor="#1E293B"
+                    android:textSize="13.5sp" />
 
-                <com.google.android.material.chip.Chip
-                    style="@style/Widget.Material3.Chip.Filter"
+                <LinearLayout
+                    android:id="@+id/containerFullName"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input_field"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Full Name"
+                        android:src="@drawable/ic_person_outlined"
+                        app:tint="#0D8A3F" />
+
+                    <EditText
+                        android:id="@+id/etFullName"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="Your full name"
+                        android:imeOptions="actionNext"
+                        android:importantForAutofill="no"
+                        android:inputType="textPersonName|textCapWords"
+                        android:textColor="#111827"
+                        android:textColorHint="#9CA3AF"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- 2. Unique Username -->
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Groups" />
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Community Username *"
+                    android:textColor="#1E293B"
+                    android:textSize="13.5sp" />
 
-            </com.google.android.material.chip.ChipGroup>
+                <LinearLayout
+                    android:id="@+id/containerUsername"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input_field"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="@"
+                        android:textColor="#0D8A3F"
+                        android:textSize="18sp" />
+
+                    <EditText
+                        android:id="@+id/etUsername"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="username"
+                        android:imeOptions="actionNext"
+                        android:importantForAutofill="no"
+                        android:inputType="textNoSuggestions"
+                        android:textColor="#111827"
+                        android:textColorHint="#9CA3AF"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="sans-serif"
+                    android:text="Unique public tag visible on your posts and comments"
+                    android:textColor="#94A3B8"
+                    android:textSize="11.5sp" />
+
+                <!-- 3. Neighborhood / Location -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Neighborhood / Village *"
+                    android:textColor="#1E293B"
+                    android:textSize="13.5sp" />
+
+                <LinearLayout
+                    android:id="@+id/containerLocation"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input_field"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Location"
+                        android:src="@drawable/ic_location"
+                        app:tint="#0D8A3F" />
+
+                    <EditText
+                        android:id="@+id/etNeighborhood"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="e.g. Bhujpur, Kutch"
+                        android:imeOptions="actionNext"
+                        android:importantForAutofill="no"
+                        android:inputType="textPostalAddress|textCapWords"
+                        android:textColor="#111827"
+                        android:textColorHint="#9CA3AF"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- Quick Location Suggestions Pills -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/chipLocBhujpur"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_step_badge"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif-medium"
+                            android:paddingStart="10dp"
+                            android:paddingTop="5dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="5dp"
+                            android:text="🏡 Bhujpur Center"
+                            android:textColor="#065F46"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/chipLocKutch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/bg_step_badge"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif-medium"
+                            android:paddingStart="10dp"
+                            android:paddingTop="5dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="5dp"
+                            android:text="🌾 Kutch West"
+                            android:textColor="#065F46"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/chipLocMundra"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/bg_step_badge"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif-medium"
+                            android:paddingStart="10dp"
+                            android:paddingTop="5dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="5dp"
+                            android:text="⚓ Mundra Port Road"
+                            android:textColor="#065F46"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <!-- 4. Bio -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Bio / Introduction"
+                        android:textColor="#1E293B"
+                        android:textSize="13.5sp" />
+
+                    <TextView
+                        android:id="@+id/tvBioCounter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif"
+                        android:text="0/150"
+                        android:textColor="#94A3B8"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/containerBio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_input_field"
+                    android:gravity="top"
+                    android:minHeight="88dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="12dp">
+
+                    <EditText
+                        android:id="@+id/etBio"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@null"
+                        android:gravity="top"
+                        android:hint="Tell your neighbors a bit about yourself, interests or local ties..."
+                        android:imeOptions="actionDone"
+                        android:importantForAutofill="no"
+                        android:inputType="textMultiLine|textCapSentences"
+                        android:maxLength="150"
+                        android:minLines="3"
+                        android:textColor="#111827"
+                        android:textColorHint="#9CA3AF"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- Bio Quick Tags -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif"
+                    android:text="Tap to add to bio:"
+                    android:textColor="#94A3B8"
+                    android:textSize="11.5sp" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tagBioNeighbor"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif"
+                            android:paddingStart="10dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="4dp"
+                            android:text="+ Friendly neighbor"
+                            android:textColor="#475569"
+                            android:textSize="11.5sp" />
+
+                        <TextView
+                            android:id="@+id/tagBioPets"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif"
+                            android:paddingStart="10dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="4dp"
+                            android:text="+ 🐕 Pet lover"
+                            android:textColor="#475569"
+                            android:textSize="11.5sp" />
+
+                        <TextView
+                            android:id="@+id/tagBioGarden"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif"
+                            android:paddingStart="10dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="4dp"
+                            android:text="+ 🌱 Gardening fan"
+                            android:textColor="#475569"
+                            android:textSize="11.5sp" />
+
+                        <TextView
+                            android:id="@+id/tagBioHelp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif"
+                            android:paddingStart="10dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="4dp"
+                            android:text="+ 🤝 Happy to help"
+                            android:textColor="#475569"
+                            android:textSize="11.5sp" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Community Interests Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardInterests"
+            style="@style/Widget.AroundUS.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="18dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
+            app:layout_constraintTop_toBottomOf="@id/cardForm"
+            app:strokeColor="#F1F5F9"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif-black"
+                        android:text="Community Interests"
+                        android:textColor="#111827"
+                        android:textSize="17sp" />
+
+                    <TextView
+                        android:id="@+id/tvInterestsCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="0 selected"
+                        android:textColor="#0D8A3F"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="sans-serif"
+                    android:text="Pick topics to personalize what appears on your local feed"
+                    android:textColor="#64748B"
+                    android:textSize="13sp" />
+
+                <!-- Chips Container -->
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupInterests"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="6dp"
+                    app:selectionRequired="false"
+                    app:singleSelection="false">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipNews"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="📢 Local News &amp; Alerts"
+                        android:textColor="@color/chip_interest_text"
+                        app:chipBackgroundColor="@color/chip_interest_background"
+                        app:chipCornerRadius="16dp"
+                        app:chipStrokeColor="@color/chip_interest_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEvents"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="📅 Events &amp; Meetups"
+                        android:textColor="@color/chip_interest_text"
+                        app:chipBackgroundColor="@color/chip_interest_background"
+                        app:chipCornerRadius="16dp"
+                        app:chipStrokeColor="@color/chip_interest_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipMarketplace"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🛒 Marketplace &amp; Deals"
+                        android:textColor="@color/chip_interest_text"
+                        app:chipBackgroundColor="@color/chip_interest_background"
+                        app:chipCornerRadius="16dp"
+                        app:chipStrokeColor="@color/chip_interest_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipSafety"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="🛡️ Community Safety"
+                        android:textColor="@color/chip_interest_text"
+                        app:chipBackgroundColor="@color/chip_interest_background"
+                        app:chipCornerRadius="16dp"
+                        app:chipStrokeColor="@color/chip_interest_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRecommendations"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="💡 Recommendations"
+                        android:textColor="@color/chip_interest_text"
+                        app:chipBackgroundColor="@color/chip_interest_background"
+                        app:chipCornerRadius="16dp"
+                        app:chipStrokeColor="@color/chip_interest_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipHelp"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🤝 Neighbor Help"
+                        android:textColor="@color/chip_interest_text"
+                        app:chipBackgroundColor="@color/chip_interest_background"
+                        app:chipCornerRadius="16dp"
+                        app:chipStrokeColor="@color/chip_interest_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipPets"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🐾 Pets &amp; Animals"
+                        android:textColor="@color/chip_interest_text"
+                        app:chipBackgroundColor="@color/chip_interest_background"
+                        app:chipCornerRadius="16dp"
+                        app:chipStrokeColor="@color/chip_interest_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipSports"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚽ Sports &amp; Fitness"
+                        android:textColor="@color/chip_interest_text"
+                        app:chipBackgroundColor="@color/chip_interest_background"
+                        app:chipCornerRadius="16dp"
+                        app:chipStrokeColor="@color/chip_interest_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCleanliness"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🌱 Clean &amp; Green Drive"
+                        android:textColor="@color/chip_interest_text"
+                        app:chipBackgroundColor="@color/chip_interest_background"
+                        app:chipCornerRadius="16dp"
+                        app:chipStrokeColor="@color/chip_interest_stroke"
+                        app:chipStrokeWidth="1dp" />
+
+                </com.google.android.material.chip.ChipGroup>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Primary Action Button: Complete Setup -->
+        <FrameLayout
+            android:id="@+id/frameBtnContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="26dp"
+            android:layout_marginEnd="18dp"
+            app:layout_constraintTop_toBottomOf="@id/cardInterests">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveProfile"
-                style="@style/Widget.AroundUS.Button.Primary"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/button_height"
-                android:layout_marginTop="28dp"
-                android:layout_marginBottom="32dp"
-                android:text="Complete Setup" />
+                android:layout_height="54dp"
+                android:background="@drawable/bg_emerald_pill_button"
+                android:fontFamily="sans-serif-bold"
+                android:text="Complete Setup &amp; Enter AroundUS"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="15.5sp"
+                app:backgroundTint="@null" />
 
-        </LinearLayout>
+            <ProgressBar
+                android:id="@+id/progressBarSaving"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                android:indeterminateTint="#FFFFFF"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- Secondary Bottom Skip Action -->
+        <TextView
+            android:id="@+id/btnSkipBottom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:fontFamily="sans-serif-medium"
+            android:padding="8dp"
+            android:text="I'll complete my profile later"
+            android:textColor="#64748B"
+            android:textSize="13.5sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/frameBtnContainer" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
