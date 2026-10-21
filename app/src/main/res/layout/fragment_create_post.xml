@@ -451,7 +451,7 @@
 
                 </LinearLayout>
 
-                <!-- Selected Image Attachment Preview (optional) -->
+                <!-- Selected Image / Video Attachment Preview -->
                 <FrameLayout
                     android:id="@+id/imagePreviewContainer"
                     android:layout_width="match_parent"
@@ -463,8 +463,48 @@
                         android:id="@+id/ivSelectedImage"
                         android:layout_width="match_parent"
                         android:layout_height="180dp"
+                        android:background="@drawable/bg_image_placeholder"
                         android:scaleType="centerCrop"
                         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium" />
+
+                    <!-- Video Center Play Badge Overlay -->
+                    <ImageView
+                        android:id="@+id/ivVideoPreviewPlayIcon"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_circle_play"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_play_arrow"
+                        android:visibility="gone" />
+
+                    <!-- Video Tag Badge -->
+                    <LinearLayout
+                        android:id="@+id/badgeVideoAttachment"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|start"
+                        android:layout_margin="10dp"
+                        android:background="@drawable/bg_video_tag"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:src="@drawable/ic_video_cam"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="VIDEO"
+                            android:textColor="#FFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
 
                     <ImageView
                         android:id="@+id/btnRemoveImage"

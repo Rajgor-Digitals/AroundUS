@@ -25,6 +25,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 import com.aroundus.app.utils.loadUserAvatar
+import com.bumptech.glide.Glide
 import java.io.File
 
 class CreatePostFragment : Fragment() {
@@ -45,7 +46,11 @@ class CreatePostFragment : Fragment() {
         if (uri != null) {
             selectedMediaUri = uri
             binding.imagePreviewContainer.visibility = View.VISIBLE
-            binding.ivSelectedImage.setImageURI(uri)
+            binding.ivVideoPreviewPlayIcon.visibility = View.GONE
+            binding.badgeVideoAttachment.visibility = View.GONE
+            Glide.with(this)
+                .load(uri)
+                .into(binding.ivSelectedImage)
             Toast.makeText(requireContext(), "Photo attached successfully!", Toast.LENGTH_SHORT).show()
         }
     }
@@ -53,7 +58,24 @@ class CreatePostFragment : Fragment() {
     private val pickVideoLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
             selectedMediaUri = uri
-            Toast.makeText(requireContext(), "Video attached successfully!", Toast.LENGTH_SHORT).show()
+            binding.imagePreviewContainer.visibility = View.VISIBLE
+            binding.ivVideoPreviewPlayIcon.visibility = View.VISIBLE
+            binding.badgeVideoAttachment.visibility = View.VISIBLE
+            Glide.with(this)
+                .asBitmap()
+                .load(uri)
+                .into(binding.ivSelectedImage)
+
+            val fileSize = try {
+                requireContext().contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: 0L
+            } catch (_: Exception) { 0L }
+
+            val sizeMb = fileSize / (1024 * 1024)
+            if (sizeMb > 40) {
+                Toast.makeText(requireContext(), "Video attached (${sizeMb}MB). Larger clips may take extra time to upload.", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(requireContext(), "Video attached successfully!", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -255,6 +277,9 @@ class CreatePostFragment : Fragment() {
         binding.btnRemoveImage.setOnClickListener {
             selectedMediaUri = null
             binding.imagePreviewContainer.visibility = View.GONE
+            binding.ivVideoPreviewPlayIcon.visibility = View.GONE
+            binding.badgeVideoAttachment.visibility = View.GONE
+            binding.ivSelectedImage.setImageDrawable(null)
         }
 
         // Video Picker

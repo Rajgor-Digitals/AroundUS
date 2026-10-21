@@ -165,7 +165,7 @@
             android:textColor="@color/text_primary"
             android:textSize="14sp" />
 
-        <!-- Rounded Image Container -->
+        <!-- Rounded Image / Video Container -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardImageContainer"
             android:layout_width="match_parent"
@@ -185,6 +185,45 @@
                 android:contentDescription="Post image"
                 android:scaleType="centerCrop"
                 android:visibility="visible" />
+
+            <!-- Video Center Play Button Overlay -->
+            <ImageView
+                android:id="@+id/ivPostPlayIcon"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_circle_play"
+                android:padding="14dp"
+                android:src="@drawable/ic_play_arrow"
+                android:visibility="gone" />
+
+            <!-- Video Badge Tag -->
+            <LinearLayout
+                android:id="@+id/badgeVideoTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_margin="12dp"
+                android:background="@drawable/bg_video_tag"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_video_cam"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="VIDEO"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp" />
+            </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Elegant Action Row -->

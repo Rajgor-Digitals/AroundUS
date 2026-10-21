@@ -115,14 +115,83 @@
             android:layout_height="1dp"
             android:background="@color/divider" />
 
-        <!-- Post Image -->
-        <ImageView
-            android:id="@+id/ivPostImage"
+        <!-- Post Media Container (Image / Video Player) -->
+        <FrameLayout
+            android:id="@+id/cardMediaContainer"
             android:layout_width="match_parent"
             android:layout_height="280dp"
-            android:background="@drawable/bg_image_placeholder"
-            android:contentDescription="Post image"
-            android:scaleType="centerCrop" />
+            android:background="#000000"
+            android:visibility="gone">
+
+            <!-- Modern Jetpack Media3 Video Player -->
+            <androidx.media3.ui.PlayerView
+                android:id="@+id/playerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                app:resize_mode="fit"
+                app:show_buffering="when_playing"
+                app:use_controller="true"
+                android:visibility="gone" />
+
+            <!-- Static Image / Video Thumbnail -->
+            <ImageView
+                android:id="@+id/ivPostImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_image_placeholder"
+                android:contentDescription="Post media"
+                android:scaleType="centerCrop" />
+
+            <!-- Video Center Play Button Overlay -->
+            <ImageView
+                android:id="@+id/ivDetailPlayIcon"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_circle_play"
+                android:padding="16dp"
+                android:src="@drawable/ic_play_arrow"
+                android:visibility="gone" />
+
+            <!-- Video Buffering Indicator -->
+            <ProgressBar
+                android:id="@+id/progressVideoLoading"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_gravity="center"
+                android:indeterminate="true"
+                android:indeterminateTint="#FFFFFF"
+                android:visibility="gone" />
+
+            <!-- Video Tag Badge -->
+            <LinearLayout
+                android:id="@+id/badgeVideoTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_margin="14dp"
+                android:background="@drawable/bg_video_tag"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_video_cam"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="VIDEO"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </FrameLayout>
 
         <!-- Post Content -->
         <LinearLayout

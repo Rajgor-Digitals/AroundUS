@@ -17,7 +17,14 @@ data class Post(
     val authorId: String? = null,
     val mediaUrl: String? = null,
     val isVerified: Boolean = false
-)
+) {
+    val isVideo: Boolean
+        get() = mediaUrl?.let { url ->
+            val clean = url.substringBefore("?").lowercase()
+            clean.endsWith(".mp4") || clean.endsWith(".webm") || clean.endsWith(".mkv") ||
+            clean.endsWith(".mov") || clean.endsWith(".3gp") || clean.contains("/video")
+        } ?: false
+}
 
 data class Story(
     val id: String,

@@ -20,6 +20,12 @@ import com.aroundus.app.repository.CommentRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
+import android.net.Uri
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.ExoPlayer
 import com.aroundus.app.utils.loadUserAvatar
 import com.aroundus.app.utils.loadPostImage
 import com.bumptech.glide.Glide
@@ -42,6 +48,7 @@ class PostDetailFragment : Fragment() {
 
     private val commentList = mutableListOf<Comment>()
     private lateinit var commentAdapter: CommentAdapter
+    private var exoPlayer: ExoPlayer? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPostDetailBinding.inflate(inflater, container, false)
@@ -287,17 +294,119 @@ class PostDetailFragment : Fragment() {
             }
         }
 
-        // Post Media Image
+        // Post Media (Image or Video)
         val media = post.mediaUrl
         if (!media.isNullOrBlank()) {
-            binding.ivPostImage.visibility = View.VISIBLE
-            binding.ivPostImage.loadPostImage(media)
+            binding.cardMediaContainer.visibility = View.VISIBLE
+            if (post.isVideo) {
+                binding.badgeVideoTag.visibility = View.VISIBLE
+                binding.ivDetailPlayIcon.visibility = View.VISIBLE
+                binding.progressVideoLoading.visibility = View.GONE
+                binding.ivPostImage.visibility = View.VISIBLE
+                binding.ivPostImage.loadPostImage(media)
+
+                val startVideoAction = View.OnClickListener {
+                    playVideo(media)
+                }
+
+                binding.ivDetailPlayIcon.setOnClickListener(startVideoAction)
+                binding.cardMediaContainer.setOnClickListener(startVideoAction)
+            } else {
+                releasePlayer()
+                binding.playerView.visibility = View.GONE
+                binding.ivDetailPlayIcon.visibility = View.GONE
+                binding.badgeVideoTag.visibility = View.GONE
+                binding.progressVideoLoading.visibility = View.GONE
+                binding.ivPostImage.visibility = View.VISIBLE
+                binding.ivPostImage.loadPostImage(media)
+            }
         } else if (post.imageRes != null) {
+            releasePlayer()
+            binding.cardMediaContainer.visibility = View.VISIBLE
+            binding.playerView.visibility = View.GONE
+            binding.ivDetailPlayIcon.visibility = View.GONE
+            binding.badgeVideoTag.visibility = View.GONE
+            binding.progressVideoLoading.visibility = View.GONE
             binding.ivPostImage.visibility = View.VISIBLE
             binding.ivPostImage.setImageResource(post.imageRes)
         } else {
-            binding.ivPostImage.visibility = View.GONE
+            releasePlayer()
+            binding.cardMediaContainer.visibility = View.GONE
         }
+    }
+
+    private fun playVideo(videoUrl: String) {
+        binding.ivDetailPlayIcon.visibility = View.GONE
+        binding.progressVideoLoading.visibility = View.VISIBLE
+        binding.playerView.visibility = View.VISIBLE
+
+        try {
+            // Release existing player instance safely
+            releasePlayer()
+
+            // Optimized progressive buffering: starts playing after just 500ms of buffer
+            val loadControl = DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                    /* minBufferMs = */ 2500,
+                    /* maxBufferMs = */ 30000,
+                    /* bufferForPlaybackMs = */ 500,
+                    /* bufferForPlaybackAfterRebufferMs = */ 1000
+                )
+                .build()
+
+            val player = ExoPlayer.Builder(requireContext())
+                .setLoadControl(loadControl)
+                .build()
+
+            exoPlayer = player
+            binding.playerView.player = player
+
+            val mediaItem = MediaItem.fromUri(Uri.parse(videoUrl.trim()))
+            player.setMediaItem(mediaItem)
+            player.repeatMode = Player.REPEAT_MODE_ALL
+            player.prepare()
+            player.playWhenReady = true
+
+            player.addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    when (playbackState) {
+                        Player.STATE_BUFFERING -> {
+                            binding.progressVideoLoading.visibility = View.VISIBLE
+                        }
+                        Player.STATE_READY -> {
+                            binding.progressVideoLoading.visibility = View.GONE
+                            binding.ivPostImage.visibility = View.GONE
+                        }
+                        Player.STATE_ENDED -> {
+                            binding.progressVideoLoading.visibility = View.GONE
+                        }
+                        Player.STATE_IDLE -> {
+                            binding.progressVideoLoading.visibility = View.GONE
+                        }
+                    }
+                }
+
+                override fun onPlayerError(error: PlaybackException) {
+                    binding.progressVideoLoading.visibility = View.GONE
+                    binding.ivDetailPlayIcon.visibility = View.VISIBLE
+                    binding.ivPostImage.visibility = View.VISIBLE
+                    Toast.makeText(requireContext(), "Playback notice: ${error.message ?: "Retrying video stream"}", Toast.LENGTH_SHORT).show()
+                }
+            })
+        } catch (e: Exception) {
+            binding.progressVideoLoading.visibility = View.GONE
+            binding.ivDetailPlayIcon.visibility = View.VISIBLE
+            Toast.makeText(requireContext(), "Error initializing video: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun releasePlayer() {
+        try {
+            exoPlayer?.stop()
+            exoPlayer?.release()
+            exoPlayer = null
+            _binding?.playerView?.player = null
+        } catch (_: Exception) {}
     }
 
     private fun loadComments() {
@@ -316,7 +425,15 @@ class PostDetailFragment : Fragment() {
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        try {
+            exoPlayer?.pause()
+        } catch (_: Exception) {}
+    }
+
     override fun onDestroyView() {
+        releasePlayer()
         super.onDestroyView()
         _binding = null
     }

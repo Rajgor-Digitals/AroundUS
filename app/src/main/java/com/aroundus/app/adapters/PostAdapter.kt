@@ -83,11 +83,22 @@ class PostAdapter(
             if (!media.isNullOrBlank()) {
                 binding.cardImageContainer.visibility = View.VISIBLE
                 binding.ivPostImage.loadPostImage(media)
+                if (post.isVideo) {
+                    binding.ivPostPlayIcon.visibility = View.VISIBLE
+                    binding.badgeVideoTag.visibility = View.VISIBLE
+                } else {
+                    binding.ivPostPlayIcon.visibility = View.GONE
+                    binding.badgeVideoTag.visibility = View.GONE
+                }
             } else if (post.imageRes != null) {
                 binding.cardImageContainer.visibility = View.VISIBLE
                 binding.ivPostImage.setImageResource(post.imageRes)
+                binding.ivPostPlayIcon.visibility = View.GONE
+                binding.badgeVideoTag.visibility = View.GONE
             } else {
                 binding.cardImageContainer.visibility = View.GONE
+                binding.ivPostPlayIcon.visibility = View.GONE
+                binding.badgeVideoTag.visibility = View.GONE
             }
 
             binding.root.setOnClickListener { onPostClick(post) }
