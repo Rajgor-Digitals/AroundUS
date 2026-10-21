@@ -838,6 +838,7 @@ class PostRepository {
 
     companion object {
         private val globalAuthorCache = ConcurrentHashMap<String, Pair<String, String?>>()
+        private val globalVerifiedCache = ConcurrentHashMap<String, Boolean>()
         private var memoryCachedPosts: List<Post>? = null
         private const val PREFS_CACHE = "aroundus_posts_cache"
         private const val KEY_POSTS_JSON = "cached_posts_json"
@@ -886,7 +887,8 @@ class PostRepository {
                             isSaved = p.isSaved,
                             userAvatarPath = p.userAvatarPath,
                             authorId = p.authorId ?: "",
-                            mediaUrl = p.mediaUrl
+                            mediaUrl = p.mediaUrl,
+                            isVerified = p.isVerified
                         )
                     }
                     memoryCachedPosts = sanitized
@@ -946,7 +948,9 @@ class PostRepository {
                                         val user = userResp.body()?.firstOrNull()
                                         val name = if (!user?.name.isNullOrBlank()) user!!.name else "Neighbor"
                                         val avatar = user?.profilePhoto?.takeIf { !it.isNullOrBlank() } ?: SupabaseClient.getAvatarPath(authorId)
+                                        val isVer = user?.isVerified == true
                                         globalAuthorCache[authorId] = Pair(name, avatar)
+                                        globalVerifiedCache[authorId] = isVer
                                         if (!avatar.isNullOrBlank()) {
                                             SupabaseClient.saveAvatarPath(authorId, avatar)
                                         }
@@ -967,7 +971,8 @@ class PostRepository {
                         } else {
                             Pair("Neighbor", null)
                         }
-                        p.toUIModel(userName = authorName, userAvatarPath = avatarPath)
+                        val isVer = if (pAuthorId.isNotBlank()) (globalVerifiedCache[pAuthorId] ?: false) else false
+                        p.toUIModel(userName = authorName, userAvatarPath = avatarPath, isVerified = isVer)
                     }
 
                     // 4. Update memory & disk cache for instant 0ms app open next time
@@ -1102,6 +1107,20 @@ class CommentRepository {
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            }
+        }
+
+    suspend fun fetchCommentsCountMap(): Map<String, Int> =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = service.getAllComments()
+                if (resp.isSuccessful && resp.body() != null) {
+                    resp.body()!!.groupBy { it.postId }.mapValues { it.value.size }
+                } else {
+                    emptyMap()
+                }
+            } catch (_: Exception) {
+                emptyMap()
             }
         }
 

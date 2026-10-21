@@ -200,7 +200,7 @@ class HomeFragment : Fragment() {
         }
 
         binding.catAnnouncements.setOnClickListener {
-            Toast.makeText(requireContext(), "Announcements", Toast.LENGTH_SHORT).show()
+            findNavController().navigate(R.id.announcementsFragment)
         }
 
         binding.catHelpSupport.setOnClickListener {
@@ -224,7 +224,7 @@ class HomeFragment : Fragment() {
         }
 
         binding.btnViewAllAnnouncements.setOnClickListener {
-            Toast.makeText(requireContext(), "View all announcements", Toast.LENGTH_SHORT).show()
+            findNavController().navigate(R.id.announcementsFragment)
         }
     }
 

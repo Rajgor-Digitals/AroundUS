@@ -169,6 +169,10 @@ class CreatePostFragment : Fragment() {
     }
 
     private fun setupCategorySelectors() {
+        arguments?.getString("category")?.let {
+            if (it.isNotBlank()) selectedCategory = it
+        }
+
         val categoryViews = listOf(
             Triple(binding.catGeneral, binding.tvCatGeneral, binding.lineCatGeneral) to "General",
             Triple(binding.catAnnouncement, binding.tvCatAnnouncement, binding.lineCatAnnouncement) to "Announcement",
@@ -176,6 +180,8 @@ class CreatePostFragment : Fragment() {
             Triple(binding.catForSale, binding.tvCatForSale, binding.lineCatForSale) to "For Sale / Offer",
             Triple(binding.catEvent, binding.tvCatEvent, binding.lineCatEvent) to "Event"
         )
+
+        updateCategorySelection(categoryViews)
 
         categoryViews.forEach { (views, categoryName) ->
             views.first.setOnClickListener {

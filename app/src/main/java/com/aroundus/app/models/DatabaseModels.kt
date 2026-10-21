@@ -187,7 +187,7 @@ fun formatTimeAgo(timestampStr: String?): String {
     }
 }
 
-fun PostEntity.toUIModel(userName: String = "Neighbor", userAvatarPath: String? = null): Post {
+fun PostEntity.toUIModel(userName: String = "Neighbor", userAvatarPath: String? = null, isVerified: Boolean = false): Post {
     return Post(
         id = postId ?: "",
         userName = if (userName.isNullOrBlank()) "Neighbor" else userName,
@@ -201,7 +201,8 @@ fun PostEntity.toUIModel(userName: String = "Neighbor", userAvatarPath: String? 
         commentsCount = 0,
         userAvatarPath = userAvatarPath,
         authorId = authorId ?: "",
-        mediaUrl = media
+        mediaUrl = media,
+        isVerified = isVerified
     )
 }
 

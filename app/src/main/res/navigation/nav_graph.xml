@@ -34,6 +34,12 @@
             app:destination="@id/searchFragment"
             app:enterAnim="@anim/fade_in" />
 
+        <action
+            android:id="@+id/action_home_to_announcements"
+            app:destination="@id/announcementsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
     </fragment>
 
 
@@ -181,5 +187,26 @@
         android:name="com.aroundus.app.fragments.SettingsFragment"
         android:label="Settings"
         tools:layout="@layout/fragment_settings" />
+
+    <!-- Announcements -->
+    <fragment
+        android:id="@+id/announcementsFragment"
+        android:name="com.aroundus.app.fragments.AnnouncementsFragment"
+        android:label="Announcements"
+        tools:layout="@layout/fragment_announcements">
+
+        <action
+            android:id="@+id/action_announcements_to_postDetail"
+            app:destination="@id/postDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+        <action
+            android:id="@+id/action_announcements_to_comments"
+            app:destination="@id/commentsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+    </fragment>
 
 </navigation>

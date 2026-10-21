@@ -15,7 +15,8 @@ data class Post(
     var isSaved: Boolean = false,
     val userAvatarPath: String? = null,
     val authorId: String? = null,
-    val mediaUrl: String? = null
+    val mediaUrl: String? = null,
+    val isVerified: Boolean = false
 )
 
 data class Story(

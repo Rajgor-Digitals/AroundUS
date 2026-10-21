@@ -103,6 +103,11 @@ interface SupabaseService {
         @Query("order") order: String = "timestamp.asc"
     ): Response<List<CommentEntity>>
 
+    @GET("rest/v1/comments")
+    suspend fun getAllComments(
+        @Query("select") select: String = "comment_id,post_id"
+    ): Response<List<CommentEntity>>
+
     @POST("rest/v1/comments")
     suspend fun createComment(
         @Header("Prefer") prefer: String = "return=representation",
