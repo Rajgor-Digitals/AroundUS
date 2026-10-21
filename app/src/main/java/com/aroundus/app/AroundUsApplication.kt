@@ -11,12 +11,18 @@ class AroundUsApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         SupabaseClient.init(this)
+        com.aroundus.app.utils.UserPresenceManager.init(this)
+        com.aroundus.app.utils.MessageNotificationManager.initNotificationChannel(this)
 
-        // Asynchronously pre-warm Retrofit client, OkHttp connection pool, and Post cache
+        // Asynchronously pre-warm Retrofit client, OkHttp connection pool, Post cache, and start message notification listener
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 PostRepository().fetchPostsWithAuthors(applicationContext)
             } catch (_: Exception) {}
+            com.aroundus.app.utils.MessageNotificationManager.startListeningForIncomingMessages(
+                applicationContext,
+                CoroutineScope(Dispatchers.IO)
+            )
         }
     }
 }

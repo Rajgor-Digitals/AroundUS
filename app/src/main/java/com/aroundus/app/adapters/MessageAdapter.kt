@@ -20,6 +20,19 @@ class MessageAdapter(private val messages: List<Message>) :
         fun bind(message: Message) {
             binding.tvMessage.text = message.text
             binding.tvTime.text = message.time
+            if (message.isSeen) {
+                binding.ivReceipt.setImageResource(com.aroundus.app.R.drawable.ic_done_all_green)
+                binding.ivReceipt.imageTintList = android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.parseColor("#0D8A3F")
+                )
+                binding.ivReceipt.contentDescription = "Seen"
+            } else {
+                binding.ivReceipt.setImageResource(com.aroundus.app.R.drawable.ic_done_single)
+                binding.ivReceipt.imageTintList = android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.parseColor("#94A3B8")
+                )
+                binding.ivReceipt.contentDescription = "Sent"
+            }
         }
     }
 

@@ -65,7 +65,10 @@ data class Message(
     val text: String,
     val isSent: Boolean,
     val time: String,
-    val id: String = ""
+    val id: String = "",
+    var isSeen: Boolean = false,
+    var seenTime: String? = null,
+    val timestampMs: Long = 0L
 )
 
 data class Notification(

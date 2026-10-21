@@ -150,6 +150,14 @@ interface SupabaseService {
     ): Response<List<MessageEntity>>
 
     @GET("rest/v1/messages")
+    suspend fun getIncomingMessages(
+        @Query("receiver_id") queryFilter: String, // e.g. "eq.$currentUserId"
+        @Query("select") select: String = "*",
+        @Query("order") order: String = "timestamp.desc",
+        @Query("limit") limit: Int = 20
+    ): Response<List<MessageEntity>>
+
+    @GET("rest/v1/messages")
     suspend fun getMessagesForConversation(
         @Query("or") orFilter: String,
         @Query("select") select: String = "*",

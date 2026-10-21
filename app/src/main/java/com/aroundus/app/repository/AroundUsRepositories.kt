@@ -1511,6 +1511,12 @@ class MessageRepository {
 
                     val formattedTime = formatMessageTimestamp(latestMsg?.timestamp)
 
+                    val latestMsgTimestamp = latestMsg?.timestamp?.toLongOrNull() ?: 0L
+                    if (latestMsg?.senderId == partnerId && latestMsgTimestamp > 0L) {
+                        com.aroundus.app.utils.UserPresenceManager.recordUserActive(partnerId, latestMsgTimestamp)
+                    }
+                    val isPartnerOnline = com.aroundus.app.utils.UserPresenceManager.isUserOnline(partnerId)
+
                     chatList.add(
                         ChatItem(
                             id = partnerId,
@@ -1519,7 +1525,7 @@ class MessageRepository {
                             lastMessage = plainText,
                             time = formattedTime,
                             unreadCount = 0,
-                            isOnline = true,
+                            isOnline = isPartnerOnline,
                             avatarUrl = partnerAvatar
                         )
                     )

@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.aroundus.app.R
@@ -31,11 +32,41 @@ class MainActivity : AppCompatActivity() {
 
         setupBottomNavigation()
         setupDrawer()
+        requestNotificationPermission()
+    }
+
+    private fun requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1001)
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
         refreshDrawerUserData()
+        val myId = com.aroundus.app.network.SupabaseClient.getCurrentUserId()
+        if (!myId.isNullOrBlank()) {
+            com.aroundus.app.utils.UserPresenceManager.recordUserActive(myId)
+            com.aroundus.app.utils.UserPresenceManager.setUserOnline(myId, true)
+        }
+        com.aroundus.app.utils.MessageNotificationManager.startListeningForIncomingMessages(
+            applicationContext,
+            lifecycleScope
+        )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        val myId = com.aroundus.app.network.SupabaseClient.getCurrentUserId()
+        if (!myId.isNullOrBlank()) {
+            com.aroundus.app.utils.UserPresenceManager.recordUserActive(myId)
+        }
     }
 
     // --- DRAWER OPEN / CLOSE FUNCTIONS ---
