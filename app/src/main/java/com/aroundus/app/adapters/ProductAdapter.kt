@@ -5,16 +5,19 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.aroundus.app.R
 import com.aroundus.app.databinding.ItemProductBinding
 import com.aroundus.app.models.Product
+import com.aroundus.app.utils.loadUserAvatar
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 
 class ProductAdapter(
     private var products: List<Product>,
     private val onProductClick: (Product) -> Unit,
-    private val onChatClick: ((Product) -> Unit)? = null
+    private val onChatClick: ((Product) -> Unit)? = null,
+    private val onWishlistClick: ((Product) -> Unit)? = null
 ) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
 
     fun updateList(newProducts: List<Product>) {
@@ -29,7 +32,7 @@ class ProductAdapter(
             binding.tvProductName.text = product.name
 
             // Price badge styling
-            if (product.price.equals("Free", ignoreCase = true)) {
+            if (product.price.equals("Free", ignoreCase = true) || product.priceAmount <= 0.0) {
                 binding.tvPrice.text = "🎁 Free"
                 binding.tvPrice.setBackgroundResource(R.drawable.bg_free_badge)
             } else {
@@ -37,18 +40,38 @@ class ProductAdapter(
                 binding.tvPrice.setBackgroundResource(R.drawable.bg_price_pill)
             }
 
-            binding.tvLocation.text = product.location
+            binding.tvLocation.text = if (!product.locality.isNullOrBlank()) product.locality else product.location
             binding.tvTime.text = product.timeAgo
             binding.tvCondition.text = product.condition
-            binding.ivProduct.setImageResource(product.imageRes)
+
+            // Video indicator badge
+            binding.badgeVideo.visibility = if (product.isVideo) View.VISIBLE else View.GONE
+
+            // Product image loading (Supabase remote URL / local resource)
+            if (!product.imageUrl.isNullOrBlank()) {
+                Glide.with(binding.root.context)
+                    .load(product.imageUrl)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .placeholder(R.drawable.bg_image_placeholder)
+                    .error(R.drawable.bg_image_placeholder)
+                    .centerCrop()
+                    .into(binding.ivProduct)
+            } else if (product.imageRes != 0) {
+                binding.ivProduct.setImageResource(product.imageRes)
+            } else {
+                binding.ivProduct.setImageResource(R.drawable.bg_image_placeholder)
+            }
 
             // Seller details
             binding.tvSellerName.text = product.sellerName
-            if (product.sellerAvatarRes != 0) {
+            if (!product.sellerAvatarUrl.isNullOrBlank()) {
+                binding.ivSellerAvatar.loadUserAvatar(product.sellerAvatarUrl)
+            } else if (product.sellerAvatarRes != 0) {
                 binding.ivSellerAvatar.setImageResource(product.sellerAvatarRes)
             } else {
                 binding.ivSellerAvatar.setImageResource(R.drawable.shape_avatar_placeholder)
             }
+
             binding.ivVerifiedBadge.visibility = if (product.isVerifiedSeller) View.VISIBLE else View.GONE
 
             // Wishlist heart button
@@ -62,8 +85,7 @@ class ProductAdapter(
                     v.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
                 }.start()
 
-                val msg = if (product.isSaved) "Saved to wishlist ❤️" else "Removed from wishlist"
-                Toast.makeText(v.context, msg, Toast.LENGTH_SHORT).show()
+                onWishlistClick?.invoke(product)
             }
 
             // Quick chat pill

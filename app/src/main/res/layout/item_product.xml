@@ -61,6 +61,41 @@
                 android:src="@drawable/ic_favorite_border"
                 app:tint="#64748B" />
 
+            <!-- Video Tag (Bottom-Start) -->
+            <LinearLayout
+                android:id="@+id/badgeVideo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_margin="8dp"
+                android:background="@drawable/bg_location_pill"
+                android:backgroundTint="#D0000000"
+                android:elevation="1dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="7dp"
+                android:paddingTop="3dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="3dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:src="@drawable/ic_video_cam"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Video"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9.5sp" />
+            </LinearLayout>
+
             <!-- Category / Condition Tag (Bottom-Right) -->
             <TextView
                 android:id="@+id/tvCondition"

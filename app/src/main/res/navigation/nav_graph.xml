@@ -104,7 +104,8 @@
     <fragment
         android:id="@+id/sellItemFragment"
         android:name="com.aroundus.app.fragments.SellItemFragment"
-        android:label="Sell Item" />
+        android:label="Sell Item"
+        tools:layout="@layout/fragment_sell_item" />
 
     <!-- Events -->
     <fragment

@@ -4,6 +4,8 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -13,6 +15,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.aroundus.app.R
@@ -21,28 +24,39 @@ import com.aroundus.app.activities.MainActivity
 import com.aroundus.app.adapters.ProductAdapter
 import com.aroundus.app.databinding.FragmentMarketplaceBinding
 import com.aroundus.app.models.Product
-import com.aroundus.app.utils.DummyData
+import com.aroundus.app.network.SupabaseClient
+import com.aroundus.app.repository.MarketplaceRepository
+import com.aroundus.app.repository.NetworkResult
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MarketplaceFragment : Fragment() {
 
     private enum class SortMode {
         NEARBY,
+        NEWEST,
         PRICE_LOW_HIGH,
-        PRICE_HIGH_LOW,
-        FREE_FIRST
+        PRICE_HIGH_LOW
     }
 
     private var _binding: FragmentMarketplaceBinding? = null
     private val binding get() = _binding!!
 
+    private val marketplaceRepository = MarketplaceRepository()
     private lateinit var productAdapter: ProductAdapter
-    private val allProducts = DummyData.products
-    private var filteredProducts = mutableListOf<Product>()
+
+    private var allFetchedProducts = mutableListOf<Product>()
+    private var displayedProducts = mutableListOf<Product>()
 
     private var currentCategory = "All"
     private var currentQuery = ""
     private var currentSort = SortMode.NEARBY
     private var isSavedFilterOnly = false
+
+    private val searchDebounceHandler = Handler(Looper.getMainLooper())
+    private var searchDebounceRunnable: Runnable? = null
+    private var loadJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,12 +74,20 @@ class MarketplaceFragment : Fragment() {
         setupTopBarActions()
         setupSearch()
         setupCategoryChips()
-        applyFilters()
+        setupSwipeRefresh()
+
+        loadMarketplaceData(showLoadingIndicator = true)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh quietly in background to catch newly created listings or saved item updates
+        loadMarketplaceData(showLoadingIndicator = false)
     }
 
     private fun setupRecyclerView() {
         productAdapter = ProductAdapter(
-            products = filteredProducts,
+            products = displayedProducts,
             onProductClick = { product ->
                 try {
                     val bundle = Bundle().apply {
@@ -73,12 +95,22 @@ class MarketplaceFragment : Fragment() {
                     }
                     findNavController().navigate(R.id.action_marketplace_to_productDetail, bundle)
                 } catch (_: Exception) {
-                    // Fallback to conversation with seller
                     openChatWithSeller(product)
                 }
             },
             onChatClick = { product ->
                 openChatWithSeller(product)
+            },
+            onWishlistClick = { product ->
+                lifecycleScope.launch {
+                    val isSaved = marketplaceRepository.toggleSavedListing(requireContext(), product.id)
+                    val msg = if (isSaved) "Saved to wishlist ❤️" else "Removed from wishlist"
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+
+                    if (isSavedFilterOnly) {
+                        applyCurrentFilters()
+                    }
+                }
             }
         )
 
@@ -88,10 +120,61 @@ class MarketplaceFragment : Fragment() {
         }
     }
 
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.setColorSchemeColors(Color.parseColor("#0D8A3F"))
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            loadMarketplaceData(showLoadingIndicator = false)
+        }
+    }
+
+    private fun loadMarketplaceData(showLoadingIndicator: Boolean) {
+        if (showLoadingIndicator) {
+            binding.pbLoading.visibility = View.VISIBLE
+        }
+
+        loadJob?.cancel()
+        loadJob = lifecycleScope.launch {
+            try {
+                val result = marketplaceRepository.fetchListings(
+                    context = requireContext(),
+                    category = currentCategory,
+                    query = currentQuery,
+                    sort = currentSort.name,
+                    onlySaved = isSavedFilterOnly
+                )
+
+                binding.pbLoading.visibility = View.GONE
+                binding.swipeRefreshLayout.isRefreshing = false
+
+                when (result) {
+                    is NetworkResult.Success -> {
+                        allFetchedProducts = result.data.toMutableList()
+                        applyCurrentFilters()
+                    }
+                    is NetworkResult.Error -> {
+                        // Use local / cached items if available
+                        applyCurrentFilters()
+                    }
+                }
+            } catch (e: Exception) {
+                binding.pbLoading.visibility = View.GONE
+                binding.swipeRefreshLayout.isRefreshing = false
+                applyCurrentFilters()
+            }
+        }
+    }
+
     private fun openChatWithSeller(product: Product) {
+        val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
+        if (product.sellerId.isNotBlank() && product.sellerId == currentUserId) {
+            Toast.makeText(requireContext(), "You cannot message yourself (this is your own listing).", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val intent = Intent(requireContext(), ConversationActivity::class.java).apply {
             putExtra("userId", product.sellerId.ifBlank { "seller_${product.id}" })
             putExtra("userName", product.sellerName)
+            putExtra("avatarUrl", product.sellerAvatarUrl)
             putExtra("avatarRes", product.sellerAvatarRes)
             putExtra("isOnline", true)
         }
@@ -121,14 +204,17 @@ class MarketplaceFragment : Fragment() {
                 binding.btnSavedItems.setImageResource(R.drawable.ic_bookmark_outline)
                 binding.btnSavedItems.imageTintList = ColorStateList.valueOf(Color.parseColor("#0F172A"))
             }
-            applyFilters()
+            applyCurrentFilters()
         }
 
         binding.fabSell.setOnClickListener {
+            if (!SupabaseClient.isLoggedIn()) {
+                Toast.makeText(requireContext(), "Please sign in to list items for sale.", Toast.LENGTH_SHORT).show()
+            }
             try {
                 findNavController().navigate(R.id.action_marketplace_to_sellItem)
-            } catch (_: Exception) {
-                Toast.makeText(requireContext(), "Sell an item in Bhujpur neighborhood", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Unable to open Sell Item: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -141,15 +227,23 @@ class MarketplaceFragment : Fragment() {
         binding.etSearchProducts.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                currentQuery = s?.toString()?.trim().orEmpty()
-                binding.btnClearSearch.visibility = if (currentQuery.isNotEmpty()) View.VISIBLE else View.GONE
-                applyFilters()
+                val query = s?.toString()?.trim().orEmpty()
+                binding.btnClearSearch.visibility = if (query.isNotEmpty()) View.VISIBLE else View.GONE
+
+                searchDebounceRunnable?.let { searchDebounceHandler.removeCallbacks(it) }
+                searchDebounceRunnable = Runnable {
+                    currentQuery = query
+                    applyCurrentFilters()
+                }
+                searchDebounceHandler.postDelayed(searchDebounceRunnable!!, 300)
             }
             override fun afterTextChanged(s: Editable?) {}
         })
 
         binding.btnClearSearch.setOnClickListener {
             binding.etSearchProducts.text?.clear()
+            currentQuery = ""
+            applyCurrentFilters()
         }
     }
 
@@ -158,14 +252,18 @@ class MarketplaceFragment : Fragment() {
         binding.chipFurniture.setOnClickListener { selectCategory("Furniture", binding.chipFurniture) }
         binding.chipVehicles.setOnClickListener { selectCategory("Vehicles", binding.chipVehicles) }
         binding.chipElectronics.setOnClickListener { selectCategory("Electronics", binding.chipElectronics) }
-        binding.chipFree.setOnClickListener { selectCategory("Free", binding.chipFree) }
-        binding.chipGarden.setOnClickListener { selectCategory("Home & Garden", binding.chipGarden) }
+        binding.chipMobilePhones.setOnClickListener { selectCategory("Mobile Phones", binding.chipMobilePhones) }
+        binding.chipHomeKitchen.setOnClickListener { selectCategory("Home & Kitchen", binding.chipHomeKitchen) }
+        binding.chipFashion.setOnClickListener { selectCategory("Fashion", binding.chipFashion) }
+        binding.chipBooks.setOnClickListener { selectCategory("Books", binding.chipBooks) }
+        binding.chipSports.setOnClickListener { selectCategory("Sports", binding.chipSports) }
+        binding.chipOther.setOnClickListener { selectCategory("Other", binding.chipOther) }
     }
 
     private fun selectCategory(category: String, activeChip: TextView) {
         currentCategory = category
         updateChipStyles(activeChip)
-        applyFilters()
+        applyCurrentFilters()
     }
 
     private fun updateChipStyles(activeChip: TextView) {
@@ -174,8 +272,12 @@ class MarketplaceFragment : Fragment() {
             binding.chipFurniture,
             binding.chipVehicles,
             binding.chipElectronics,
-            binding.chipFree,
-            binding.chipGarden
+            binding.chipMobilePhones,
+            binding.chipHomeKitchen,
+            binding.chipFashion,
+            binding.chipBooks,
+            binding.chipSports,
+            binding.chipOther
         )
 
         allChips.forEach { chip ->
@@ -192,9 +294,9 @@ class MarketplaceFragment : Fragment() {
     private fun showSortMenu(anchor: View) {
         val popup = PopupMenu(requireContext(), anchor)
         popup.menu.add(0, 1, 0, "⚡ Nearby Listings (Default)")
-        popup.menu.add(0, 2, 1, "💰 Price: Low to High")
-        popup.menu.add(0, 3, 2, "💎 Price: High to Low")
-        popup.menu.add(0, 4, 3, "🎁 Free Items First")
+        popup.menu.add(0, 2, 1, "🕒 Newest Listings First")
+        popup.menu.add(0, 3, 2, "💰 Price: Low to High")
+        popup.menu.add(0, 4, 3, "💎 Price: High to Low")
 
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -203,69 +305,43 @@ class MarketplaceFragment : Fragment() {
                     binding.tvSortLabel.text = "Sort: Nearby ▾"
                 }
                 2 -> {
+                    currentSort = SortMode.NEWEST
+                    binding.tvSortLabel.text = "Sort: Newest ▾"
+                }
+                3 -> {
                     currentSort = SortMode.PRICE_LOW_HIGH
                     binding.tvSortLabel.text = "Sort: ₹ Low-High ▾"
                 }
-                3 -> {
+                4 -> {
                     currentSort = SortMode.PRICE_HIGH_LOW
                     binding.tvSortLabel.text = "Sort: ₹ High-Low ▾"
                 }
-                4 -> {
-                    currentSort = SortMode.FREE_FIRST
-                    binding.tvSortLabel.text = "Sort: Free First ▾"
-                }
             }
-            applyFilters()
+            applyCurrentFilters()
             true
         }
         popup.show()
     }
 
-    private fun parsePriceAmount(priceStr: String): Int {
-        if (priceStr.equals("Free", ignoreCase = true)) return 0
-        val digits = priceStr.filter { it.isDigit() }
-        return digits.toIntOrNull() ?: 0
-    }
+    private fun applyCurrentFilters() {
+        val filtered = marketplaceRepository.filterAndSortListings(
+            source = allFetchedProducts,
+            category = currentCategory,
+            query = currentQuery,
+            sort = currentSort.name,
+            onlySaved = isSavedFilterOnly
+        )
 
-    private fun applyFilters() {
-        val list = allProducts.filter { product ->
-            val matchesCategory = when (currentCategory) {
-                "All" -> true
-                "Free" -> product.price.equals("Free", ignoreCase = true) || product.category.equals("Free", ignoreCase = true)
-                else -> product.category.contains(currentCategory, ignoreCase = true)
-            }
+        displayedProducts = filtered.toMutableList()
+        productAdapter.updateList(displayedProducts)
 
-            val matchesQuery = if (currentQuery.isBlank()) true else {
-                product.name.contains(currentQuery, ignoreCase = true) ||
-                product.location.contains(currentQuery, ignoreCase = true) ||
-                product.condition.contains(currentQuery, ignoreCase = true) ||
-                product.category.contains(currentQuery, ignoreCase = true) ||
-                product.sellerName.contains(currentQuery, ignoreCase = true)
-            }
-
-            val matchesSaved = if (isSavedFilterOnly) product.isSaved else true
-
-            matchesCategory && matchesQuery && matchesSaved
-        }.toMutableList()
-
-        // Apply selected sort
-        when (currentSort) {
-            SortMode.NEARBY -> {}
-            SortMode.PRICE_LOW_HIGH -> list.sortBy { parsePriceAmount(it.price) }
-            SortMode.PRICE_HIGH_LOW -> list.sortByDescending { parsePriceAmount(it.price) }
-            SortMode.FREE_FIRST -> list.sortByDescending { it.price.equals("Free", ignoreCase = true) }
-        }
-
-        filteredProducts = list
-        productAdapter.updateList(filteredProducts)
-
-        val hasItems = filteredProducts.isNotEmpty()
+        val hasItems = displayedProducts.isNotEmpty()
         binding.rvProducts.visibility = if (hasItems) View.VISIBLE else View.GONE
         binding.layoutEmptyState.visibility = if (hasItems) View.GONE else View.VISIBLE
 
         binding.tvResultsCount.text = when {
-            isSavedFilterOnly -> "Saved Wishlist (${filteredProducts.size} items)"
-            currentQuery.isNotBlank() || currentCategory != "All" -> "Showing ${filteredProducts.size} listings nearby"
+            isSavedFilterOnly -> "Saved Wishlist (${displayedProducts.size} items)"
+            currentQuery.isNotBlank() || currentCategory != "All" -> "Showing ${displayedProducts.size} listings nearby"
             else -> "Verified Local Neighbors · Zero Commission"
         }
     }
@@ -280,11 +356,13 @@ class MarketplaceFragment : Fragment() {
         binding.btnSavedItems.imageTintList = ColorStateList.valueOf(Color.parseColor("#0F172A"))
         binding.tvSortLabel.text = "Sort: Nearby ▾"
         updateChipStyles(binding.chipAll)
-        applyFilters()
+        applyCurrentFilters()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        searchDebounceRunnable?.let { searchDebounceHandler.removeCallbacks(it) }
+        loadJob?.cancel()
         _binding = null
     }
 }

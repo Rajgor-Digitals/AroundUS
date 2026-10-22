@@ -228,13 +228,13 @@
                     android:gravity="center"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
-                    android:text="📱 Electronics"
+                    android:text="💻 Electronics"
                     android:textColor="#475569"
                     android:textSize="12sp" />
 
-                <!-- Free Items Chip -->
+                <!-- Mobile Phones Chip -->
                 <TextView
-                    android:id="@+id/chipFree"
+                    android:id="@+id/chipMobilePhones"
                     android:layout_width="wrap_content"
                     android:layout_height="34dp"
                     android:layout_marginEnd="8dp"
@@ -243,13 +243,73 @@
                     android:gravity="center"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
-                    android:text="🎁 Free Items"
+                    android:text="📱 Mobile Phones"
                     android:textColor="#475569"
                     android:textSize="12sp" />
 
-                <!-- Home & Garden Chip -->
+                <!-- Home & Kitchen Chip -->
                 <TextView
-                    android:id="@+id/chipGarden"
+                    android:id="@+id/chipHomeKitchen"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_category_chip_inactive"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="🍳 Home &amp; Kitchen"
+                    android:textColor="#475569"
+                    android:textSize="12sp" />
+
+                <!-- Fashion Chip -->
+                <TextView
+                    android:id="@+id/chipFashion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_category_chip_inactive"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="👗 Fashion"
+                    android:textColor="#475569"
+                    android:textSize="12sp" />
+
+                <!-- Books Chip -->
+                <TextView
+                    android:id="@+id/chipBooks"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_category_chip_inactive"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="📚 Books"
+                    android:textColor="#475569"
+                    android:textSize="12sp" />
+
+                <!-- Sports Chip -->
+                <TextView
+                    android:id="@+id/chipSports"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_category_chip_inactive"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="⚽ Sports"
+                    android:textColor="#475569"
+                    android:textSize="12sp" />
+
+                <!-- Other Chip -->
+                <TextView
+                    android:id="@+id/chipOther"
                     android:layout_width="wrap_content"
                     android:layout_height="34dp"
                     android:background="@drawable/bg_category_chip_inactive"
@@ -257,7 +317,7 @@
                     android:gravity="center"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
-                    android:text="🌿 Home &amp; Garden"
+                    android:text="📦 Other"
                     android:textColor="#475569"
                     android:textSize="12sp" />
 
@@ -314,17 +374,34 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <!-- Products 2-Column Grid -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvProducts"
+        <!-- Pull to Refresh Products Grid -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingStart="6dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="6dp"
-            android:paddingBottom="96dp"
-            android:scrollbars="none" />
+            android:layout_height="match_parent">
+
+            <!-- Products 2-Column Grid -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvProducts"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingStart="6dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="96dp"
+                android:scrollbars="none" />
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <!-- Loading Indicator -->
+        <ProgressBar
+            android:id="@+id/pbLoading"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:indeterminateTint="#0D8A3F"
+            android:visibility="gone" />
 
         <!-- Empty State View -->
         <LinearLayout

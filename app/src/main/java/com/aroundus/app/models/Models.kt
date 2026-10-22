@@ -47,8 +47,26 @@ data class Product(
     val sellerAvatarRes: Int = 0,
     val sellerId: String = "",
     val isVerifiedSeller: Boolean = true,
-    val description: String = ""
-)
+    val description: String = "",
+    val imageUrl: String? = null,
+    val imageUrls: List<String> = emptyList(),
+    val sellerAvatarUrl: String? = null,
+    val brand: String? = null,
+    val locality: String? = null,
+    val priceAmount: Double = 0.0,
+    val isNegotiable: Boolean = false,
+    val listingStatus: String = "active",
+    val createdAtMs: Long = 0L,
+    val latitude: Double? = null,
+    val longitude: Double? = null
+) {
+    val isVideo: Boolean
+        get() {
+            val url = imageUrl ?: imageUrls.firstOrNull() ?: return false
+            val clean = url.substringBefore("?").lowercase()
+            return clean.endsWith(".mp4") || clean.endsWith(".webm") || clean.endsWith(".mov") || clean.contains("/video")
+        }
+}
 
 data class Event(
     val id: String,

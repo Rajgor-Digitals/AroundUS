@@ -229,4 +229,70 @@ interface SupabaseService {
         @Query("follower_id") followerFilter: String,
         @Query("following_id") followingFilter: String
     ): Response<Unit>
+
+    // --- LISTINGS TABLE (BUY & SELL MARKETPLACE) ---
+
+    @GET("rest/v1/listings")
+    suspend fun getListings(
+        @Query("select") select: String = "*",
+        @Query("order") order: String = "created_at.desc",
+        @Query("listing_status") statusFilter: String? = "eq.active"
+    ): Response<List<ListingEntity>>
+
+    @GET("rest/v1/listings")
+    suspend fun getAllListings(
+        @Query("select") select: String = "*",
+        @Query("order") order: String = "created_at.desc"
+    ): Response<List<ListingEntity>>
+
+    @GET("rest/v1/listings")
+    suspend fun getListingById(
+        @Query("listing_id") queryFilter: String,
+        @Query("select") select: String = "*"
+    ): Response<List<ListingEntity>>
+
+    @GET("rest/v1/listings")
+    suspend fun getListingsBySeller(
+        @Query("seller_id") queryFilter: String,
+        @Query("select") select: String = "*",
+        @Query("order") order: String = "created_at.desc"
+    ): Response<List<ListingEntity>>
+
+    @POST("rest/v1/listings")
+    suspend fun createListing(
+        @Header("Prefer") prefer: String = "return=representation",
+        @Body listing: ListingEntity
+    ): Response<List<ListingEntity>>
+
+    @PATCH("rest/v1/listings")
+    suspend fun updateListing(
+        @Query("listing_id") queryFilter: String,
+        @Header("Prefer") prefer: String = "return=representation",
+        @Body listingMap: Map<String, @JvmSuppressWildcards Any>
+    ): Response<List<ListingEntity>>
+
+    @DELETE("rest/v1/listings")
+    suspend fun deleteListing(
+        @Query("listing_id") queryFilter: String
+    ): Response<Unit>
+
+    // --- SAVED LISTINGS TABLE ---
+
+    @GET("rest/v1/saved_listings")
+    suspend fun getSavedListings(
+        @Query("user_id") queryFilter: String,
+        @Query("select") select: String = "*"
+    ): Response<List<SavedListingEntity>>
+
+    @POST("rest/v1/saved_listings")
+    suspend fun saveListing(
+        @Header("Prefer") prefer: String = "return=representation,resolution=merge-duplicates",
+        @Body saved: SavedListingEntity
+    ): Response<List<SavedListingEntity>>
+
+    @DELETE("rest/v1/saved_listings")
+    suspend fun deleteSavedListing(
+        @Query("user_id") userFilter: String,
+        @Query("listing_id") listingFilter: String
+    ): Response<Unit>
 }

@@ -11,9 +11,3 @@ class EventDetailFragment : Fragment() {
         return inflater.inflate(com.aroundus.app.R.layout.fragment_events, container, false)
     }
 }
-
-class SellItemFragment : Fragment() {
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(com.aroundus.app.R.layout.fragment_create_post, container, false)
-    }
-}

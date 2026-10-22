@@ -226,6 +226,77 @@ data class FollowEntity(
     val followingId: String = ""
 )
 
+data class ListingEntity(
+    @SerializedName(value = "listing_id", alternate = ["listingId", "id"])
+    val listingId: String = "",
+    @SerializedName(value = "seller_id", alternate = ["sellerId"])
+    val sellerId: String = "",
+    @SerializedName("title")
+    val title: String = "",
+    @SerializedName("description")
+    val description: String? = null,
+    @SerializedName("price")
+    val price: Double = 0.0,
+    @SerializedName("category")
+    val category: String = "Other",
+    @SerializedName("condition")
+    val condition: String = "Good",
+    @SerializedName("brand")
+    val brand: String? = null,
+    @SerializedName("location")
+    val location: String? = "Bhujpur, Kutch",
+    @SerializedName("locality")
+    val locality: String? = "Bhujpur Village",
+    @SerializedName("latitude")
+    val latitude: Double? = null,
+    @SerializedName("longitude")
+    val longitude: Double? = null,
+    @SerializedName(value = "image_urls", alternate = ["imageUrls", "media", "images"])
+    val imageUrls: String? = null,
+    @SerializedName(value = "listing_status", alternate = ["listingStatus", "status"])
+    val listingStatus: String = "active",
+    @SerializedName(value = "is_negotiable", alternate = ["isNegotiable", "negotiable"])
+    val isNegotiable: Boolean = false,
+    @SerializedName(value = "created_at", alternate = ["createdAt"])
+    val createdAt: String? = null,
+    @SerializedName(value = "updated_at", alternate = ["updatedAt"])
+    val updatedAt: String? = null
+) {
+    fun getImageList(): List<String> {
+        val raw = imageUrls?.trim().orEmpty()
+        if (raw.isBlank()) return emptyList()
+        if (raw.startsWith("[") && raw.endsWith("]")) {
+            val inner = raw.substring(1, raw.length - 1).trim()
+            if (inner.isBlank()) return emptyList()
+            return inner.split(",")
+                .map { it.trim().removeSurrounding("\"").removeSurrounding("'") }
+                .filter { it.isNotBlank() }
+        }
+        if (raw.contains(",")) {
+            return raw.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        }
+        return listOf(raw)
+    }
+
+    val isVideo: Boolean
+        get() {
+            val first = getImageList().firstOrNull() ?: imageUrls ?: return false
+            val clean = first.substringBefore("?").lowercase()
+            return clean.endsWith(".mp4") || clean.endsWith(".webm") || clean.endsWith(".mov") || clean.contains("/video")
+        }
+}
+
+data class SavedListingEntity(
+    @SerializedName("id")
+    val id: String = "",
+    @SerializedName(value = "user_id", alternate = ["userId"])
+    val userId: String = "",
+    @SerializedName(value = "listing_id", alternate = ["listingId"])
+    val listingId: String = "",
+    @SerializedName(value = "created_at", alternate = ["createdAt"])
+    val createdAt: String? = null
+)
+
 // Extension functions to convert Database Entities to UI Models
 
 fun formatTimeAgo(timestampStr: String?): String {
@@ -341,5 +412,52 @@ fun MessageEntity.toUIModel(currentUserId: String?): Message {
         text = text,
         isSent = senderId == currentUserId,
         time = "Now"
+    )
+}
+
+fun ListingEntity.toUIModel(
+    sellerName: String = "Neighbor",
+    sellerAvatarUrl: String? = null,
+    isVerifiedSeller: Boolean = true,
+    isSaved: Boolean = false
+): Product {
+    val imgList = getImageList()
+    val firstImg = imgList.firstOrNull()
+    val formattedPrice = if (price <= 0.0) "Free" else "₹${String.format(java.util.Locale.US, "%,.0f", price)}"
+    val locText = if (!locality.isNullOrBlank()) locality else (location ?: "Bhujpur Village")
+
+    return Product(
+        id = listingId,
+        name = title,
+        price = formattedPrice,
+        imageRes = R.drawable.bg_image_placeholder,
+        location = locText,
+        timeAgo = formatTimeAgo(createdAt),
+        condition = if (condition.isBlank()) "Good" else condition,
+        isSaved = isSaved,
+        category = category,
+        sellerName = sellerName,
+        sellerAvatarRes = R.drawable.shape_avatar_placeholder,
+        sellerId = sellerId,
+        isVerifiedSeller = isVerifiedSeller,
+        description = description ?: "",
+        imageUrl = firstImg,
+        imageUrls = imgList,
+        sellerAvatarUrl = sellerAvatarUrl,
+        brand = brand,
+        locality = locText,
+        priceAmount = price,
+        isNegotiable = isNegotiable,
+        listingStatus = listingStatus,
+        createdAtMs = try {
+            if (createdAt?.toLongOrNull() != null) createdAt.toLong()
+            else {
+                val parser = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US)
+                parser.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                parser.parse(createdAt?.substringBefore(".") ?: "")?.time ?: System.currentTimeMillis()
+            }
+        } catch (_: Exception) { System.currentTimeMillis() },
+        latitude = latitude,
+        longitude = longitude
     )
 }
