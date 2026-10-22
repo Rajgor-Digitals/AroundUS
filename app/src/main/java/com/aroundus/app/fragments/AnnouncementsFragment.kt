@@ -23,6 +23,8 @@ import com.aroundus.app.repository.CommentRepository
 import com.aroundus.app.repository.EventRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -66,14 +68,26 @@ class AnnouncementsFragment : Fragment() {
         setupSearch()
         setupSwipeRefresh()
         setupCreateActions()
+        observeRefreshEvents()
 
         loadAnnouncementsFromSupabase(showLoading = true)
     }
 
     override fun onResume() {
         super.onResume()
-        // Silently refresh announcements when returning from CreatePostFragment
-        loadAnnouncementsFromSupabase(showLoading = false)
+        if (AppRefreshManager.isStale(RefreshTarget.ANNOUNCEMENTS)) {
+            loadAnnouncementsFromSupabase(showLoading = false)
+        }
+    }
+
+    private fun observeRefreshEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            AppRefreshManager.refreshEvents.collect { target ->
+                if (target == RefreshTarget.ANNOUNCEMENTS || target == RefreshTarget.ALL) {
+                    loadAnnouncementsFromSupabase(showLoading = false)
+                }
+            }
+        }
     }
 
     private fun initMasterList() {
@@ -335,6 +349,7 @@ class AnnouncementsFragment : Fragment() {
                     masterAnnouncements.clear()
                     masterAnnouncements.addAll(uniqueAnnouncements)
                     filterAnnouncements()
+                    AppRefreshManager.markRefreshed(RefreshTarget.ANNOUNCEMENTS)
                 }
             } catch (_: Exception) {
             } finally {

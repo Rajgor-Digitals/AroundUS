@@ -20,6 +20,8 @@ import com.aroundus.app.databinding.FragmentSellItemBinding
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.MarketplaceRepository
 import com.aroundus.app.repository.NetworkResult
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
 import com.bumptech.glide.Glide
 import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
@@ -318,6 +320,8 @@ class SellItemFragment : Fragment() {
 
                 when (createResult) {
                     is NetworkResult.Success -> {
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.MARKETPLACE)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                         Toast.makeText(
                             requireContext(),
                             "🎉 Listing published successfully in $locality!",

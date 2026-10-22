@@ -28,8 +28,10 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.MessageRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.UserRepository
+import com.aroundus.app.utils.AppRefreshManager
 import com.aroundus.app.utils.CryptoManager
 import com.aroundus.app.utils.MessageNotificationManager
+import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.UserPresenceManager
 import com.aroundus.app.utils.loadUserAvatar
 import kotlinx.coroutines.Job
@@ -310,7 +312,9 @@ class ConversationActivity : AppCompatActivity() {
                     } else {
                         messageRepository.sendMessage(receiverId = recipientUserId, text = text)
                     }
-                    if (result is NetworkResult.Error) {
+                    if (result is NetworkResult.Success) {
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.MESSAGES)
+                    } else if (result is NetworkResult.Error) {
                         Toast.makeText(this@ConversationActivity, "Failed to send: ${result.message}", Toast.LENGTH_SHORT).show()
                     }
                 }

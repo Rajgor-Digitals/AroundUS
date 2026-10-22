@@ -24,6 +24,8 @@ import com.aroundus.app.repository.UserRepository
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.loadUserAvatar
 import com.bumptech.glide.Glide
 import java.io.File
@@ -203,6 +205,9 @@ class CreatePostFragment : Fragment() {
 
                 when (result) {
                     is NetworkResult.Success -> {
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.ANNOUNCEMENTS)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                         Toast.makeText(requireContext(), "Post shared with your neighborhood!", Toast.LENGTH_SHORT).show()
                         findNavController().popBackStack()
                     }

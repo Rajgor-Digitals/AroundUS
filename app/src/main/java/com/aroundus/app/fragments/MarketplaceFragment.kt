@@ -27,6 +27,9 @@ import com.aroundus.app.models.Product
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.MarketplaceRepository
 import com.aroundus.app.repository.NetworkResult
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.applyAroundUsTheme
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -75,14 +78,26 @@ class MarketplaceFragment : Fragment() {
         setupSearch()
         setupCategoryChips()
         setupSwipeRefresh()
+        observeRefreshEvents()
 
         loadMarketplaceData(showLoadingIndicator = true)
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh quietly in background to catch newly created listings or saved item updates
-        loadMarketplaceData(showLoadingIndicator = false)
+        if (AppRefreshManager.isStale(RefreshTarget.MARKETPLACE)) {
+            loadMarketplaceData(showLoadingIndicator = false)
+        }
+    }
+
+    private fun observeRefreshEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            AppRefreshManager.refreshEvents.collect { target ->
+                if (target == RefreshTarget.MARKETPLACE || target == RefreshTarget.ALL) {
+                    loadMarketplaceData(showLoadingIndicator = false)
+                }
+            }
+        }
     }
 
     private fun setupRecyclerView() {
@@ -121,7 +136,7 @@ class MarketplaceFragment : Fragment() {
     }
 
     private fun setupSwipeRefresh() {
-        binding.swipeRefreshLayout.setColorSchemeColors(Color.parseColor("#0D8A3F"))
+        binding.swipeRefreshLayout.applyAroundUsTheme()
         binding.swipeRefreshLayout.setOnRefreshListener {
             loadMarketplaceData(showLoadingIndicator = false)
         }
@@ -150,6 +165,7 @@ class MarketplaceFragment : Fragment() {
                     is NetworkResult.Success -> {
                         allFetchedProducts = result.data.toMutableList()
                         applyCurrentFilters()
+                        AppRefreshManager.markRefreshed(RefreshTarget.MARKETPLACE)
                     }
                     is NetworkResult.Error -> {
                         // Use local / cached items if available

@@ -20,6 +20,9 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.GroupRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.UserRepository
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.applyAroundUsTheme
 import kotlinx.coroutines.launch
 
 class GroupDetailFragment : Fragment() {
@@ -68,7 +71,15 @@ class GroupDetailFragment : Fragment() {
 
         initViews()
         setupListeners()
+        setupSwipeRefresh()
         loadLatestGroupData()
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.applyAroundUsTheme()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            loadLatestGroupData()
+        }
     }
 
     private fun initViews() {
@@ -145,27 +156,35 @@ class GroupDetailFragment : Fragment() {
     }
 
     private fun loadLatestGroupData() {
-        if (groupId.isBlank()) return
+        if (groupId.isBlank()) {
+            binding.swipeRefreshLayout.isRefreshing = false
+            return
+        }
 
         lifecycleScope.launch {
-            currentUserId = userRepository.resolveValidAuthorId().ifBlank {
-                SupabaseClient.getCurrentUserId() ?: ""
-            }
-
-            when (val result = groupRepository.fetchGroupById(groupId)) {
-                is NetworkResult.Success -> {
-                    val entity = result.data
-                    currentGroupEntity = entity
-                    groupName = entity.name
-                    groupCategory = entity.category ?: "Local"
-                    groupDescription = entity.description.orEmpty()
-                    groupMembersText = entity.formatMembersDisplay()
-                    isJoined = entity.isMember(currentUserId)
-                    coverRes = resolveGroupCoverRes(groupCategory, groupName)
-
-                    initViews()
+            try {
+                currentUserId = userRepository.resolveValidAuthorId().ifBlank {
+                    SupabaseClient.getCurrentUserId() ?: ""
                 }
-                is NetworkResult.Error -> {}
+
+                when (val result = groupRepository.fetchGroupById(groupId)) {
+                    is NetworkResult.Success -> {
+                        val entity = result.data
+                        currentGroupEntity = entity
+                        groupName = entity.name
+                        groupCategory = entity.category ?: "Local"
+                        groupDescription = entity.description.orEmpty()
+                        groupMembersText = entity.formatMembersDisplay()
+                        isJoined = entity.isMember(currentUserId)
+                        coverRes = resolveGroupCoverRes(groupCategory, groupName)
+
+                        initViews()
+                        AppRefreshManager.markRefreshed(RefreshTarget.GROUPS)
+                    }
+                    is NetworkResult.Error -> {}
+                }
+            } finally {
+                binding.swipeRefreshLayout.isRefreshing = false
             }
         }
     }
@@ -184,6 +203,8 @@ class GroupDetailFragment : Fragment() {
                         groupMembersText = result.data.formatMembersDisplay()
                         binding.tvDetailMembersText.text = groupMembersText
                         updateJoinButtonUI()
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.GROUPS)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                         Toast.makeText(requireContext(), "You left $groupName", Toast.LENGTH_SHORT).show()
                     }
                     is NetworkResult.Error -> {
@@ -199,6 +220,8 @@ class GroupDetailFragment : Fragment() {
                         groupMembersText = result.data.formatMembersDisplay()
                         binding.tvDetailMembersText.text = groupMembersText
                         updateJoinButtonUI()
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.GROUPS)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                         Toast.makeText(requireContext(), "Welcome to $groupName!", Toast.LENGTH_SHORT).show()
                     }
                     is NetworkResult.Error -> {

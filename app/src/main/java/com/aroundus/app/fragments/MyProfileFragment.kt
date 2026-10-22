@@ -37,6 +37,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import com.aroundus.app.repository.NotificationRepository
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.applyAroundUsTheme
 import com.aroundus.app.utils.ImageUtils
 import com.aroundus.app.utils.loadUserAvatar
 
@@ -128,14 +132,38 @@ class MyProfileFragment : Fragment() {
         updateOwnershipUI(false)
         setupRecyclerView()
         setupListeners()
+        setupSwipeRefresh()
+        observeRefreshEvents()
+
         loadUserProfile()
         loadUserPostsAndMetrics()
     }
 
     override fun onResume() {
         super.onResume()
-        loadUserProfile()
-        loadUserPostsAndMetrics()
+        if (AppRefreshManager.isStale(RefreshTarget.PROFILE)) {
+            loadUserProfile()
+            loadUserPostsAndMetrics()
+        }
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.applyAroundUsTheme()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            loadUserProfile()
+            loadUserPostsAndMetrics()
+        }
+    }
+
+    private fun observeRefreshEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            AppRefreshManager.refreshEvents.collect { target ->
+                if (target == RefreshTarget.PROFILE || target == RefreshTarget.ALL) {
+                    loadUserProfile()
+                    loadUserPostsAndMetrics()
+                }
+            }
+        }
     }
 
     private fun setupRecyclerView() {
@@ -493,6 +521,8 @@ class MyProfileFragment : Fragment() {
                         myOwnUserEntity = result.data
                         viewedUserEntity = result.data
                         PostRepository.updateAuthorAvatar(authUserId, photoToSave)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
                         Toast.makeText(requireContext(), "Profile updated successfully!", Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
                         loadUserProfile()
@@ -612,15 +642,25 @@ class MyProfileFragment : Fragment() {
         val b = _binding ?: return
 
         // Notification badge with real unread count
-        val unreadNotifs = com.aroundus.app.utils.DummyData.notifications.count { it.isUnread }
-        if (unreadNotifs > 0) {
-            b.tvNotificationBadge.visibility = View.VISIBLE
-            b.tvNotificationBadge.text = unreadNotifs.toString()
-        } else {
-            b.tvNotificationBadge.visibility = View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val notifRes = NotificationRepository().fetchNotifications(requireContext())
+                if (notifRes is NetworkResult.Success) {
+                    val unreadCount = notifRes.data.count { it.isUnread }
+                    if (unreadCount > 0) {
+                        b.tvNotificationBadge.visibility = View.VISIBLE
+                        b.tvNotificationBadge.text = unreadCount.toString()
+                    } else {
+                        b.tvNotificationBadge.visibility = View.GONE
+                    }
+                }
+            } catch (_: Exception) {
+                b.tvNotificationBadge.visibility = View.GONE
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
+            try {
             // 1. Fetch user posts from Supabase database (Real count)
             when (val result = postRepository.fetchPosts()) {
                 is NetworkResult.Success -> {
@@ -672,8 +712,12 @@ class MyProfileFragment : Fragment() {
             // 4. Fetch personal saved posts count
             val savedCount = SupabaseClient.getSavedPostIds(loggedInUserId).size
             _binding?.tvSavedCount?.text = savedCount.toString()
+            AppRefreshManager.markRefreshed(RefreshTarget.PROFILE)
+        } finally {
+            _binding?.swipeRefreshLayout?.isRefreshing = false
         }
     }
+}
 
     private fun saveImageToInternalStorage(uri: Uri): String? {
         return try {

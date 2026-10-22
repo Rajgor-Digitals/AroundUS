@@ -20,6 +20,9 @@ import com.aroundus.app.repository.CommentRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.applyAroundUsTheme
 import android.net.Uri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -65,7 +68,15 @@ class PostDetailFragment : Fragment() {
         setupCommentsRecyclerView()
         setupCommentInput()
         setupActionButtons()
+        setupSwipeRefresh()
         loadPostAndAuthor()
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.applyAroundUsTheme()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            loadPostAndAuthor()
+        }
     }
 
     private fun setupCommentsRecyclerView() {
@@ -126,6 +137,8 @@ class PostDetailFragment : Fragment() {
                     is NetworkResult.Success -> {
                         binding.etCommentInput.text?.clear()
                         Toast.makeText(requireContext(), "Comment added!", Toast.LENGTH_SHORT).show()
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                         loadComments()
                     }
                     is NetworkResult.Error -> {
@@ -156,6 +169,8 @@ class PostDetailFragment : Fragment() {
                 binding.tvLikesCount.setTextColor(Color.parseColor("#64748B"))
                 binding.tvLikesCount.text = "$likeCount likes"
             }
+            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
         }
 
         // Share button
@@ -226,13 +241,17 @@ class PostDetailFragment : Fragment() {
 
         // 2. Fetch fresh post and original author profile from Supabase database
         lifecycleScope.launch {
-            when (val result = postRepository.getPostById(postId, context)) {
-                is NetworkResult.Success -> {
-                    bindPostData(result.data)
+            try {
+                when (val result = postRepository.getPostById(postId, context)) {
+                    is NetworkResult.Success -> {
+                        bindPostData(result.data)
+                    }
+                    is NetworkResult.Error -> {}
                 }
-                is NetworkResult.Error -> {}
+                loadComments()
+            } finally {
+                binding.swipeRefreshLayout.isRefreshing = false
             }
-            loadComments()
         }
     }
 

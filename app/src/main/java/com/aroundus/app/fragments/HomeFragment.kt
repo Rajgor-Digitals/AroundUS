@@ -20,6 +20,9 @@ import com.aroundus.app.models.toUIModel
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.applyAroundUsTheme
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -53,20 +56,52 @@ class HomeFragment : Fragment() {
         setupAnnouncementsRecyclerView()
         setupClickListeners()
         setupFilterTabs()
+        setupSwipeRefresh()
+        observeRefreshEvents()
 
         // 1. Instant 0ms cache-first rendering so app opens without delay
         loadPostsFromCache()
 
-        // 2. Start background refresh with 5s interval
-        startAutoRefreshLoop()
+        // 2. Fetch fresh posts on initial load
+        viewLifecycleOwner.lifecycleScope.launch {
+            fetchPostsAndCheckUpdate()
+            AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh feed immediately from cache when returning from CreatePostFragment (0ms)
         loadPostsFromCache()
+        if (AppRefreshManager.isStale(RefreshTarget.HOME_FEED)) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                fetchPostsAndCheckUpdate()
+                AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+            }
+        }
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.applyAroundUsTheme()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    fetchPostsAndCheckUpdate()
+                    AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+                } finally {
+                    binding.swipeRefreshLayout.isRefreshing = false
+                }
+            }
+        }
+    }
+
+    private fun observeRefreshEvents() {
         viewLifecycleOwner.lifecycleScope.launch {
-            fetchPostsAndCheckUpdate()
+            AppRefreshManager.refreshEvents.collect { target ->
+                if (target == RefreshTarget.HOME_FEED || target == RefreshTarget.ALL) {
+                    fetchPostsAndCheckUpdate()
+                    AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+                }
+            }
         }
     }
 
@@ -140,15 +175,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun startAutoRefreshLoop() {
-        autoRefreshJob?.cancel()
-        autoRefreshJob = viewLifecycleOwner.lifecycleScope.launch {
-            while (isActive) {
-                fetchPostsAndCheckUpdate()
-                delay(5000L) // 5 seconds interval prevents network congestion
-            }
-        }
-    }
+
 
     private suspend fun fetchPostsAndCheckUpdate() {
         when (val result = postRepository.fetchPostsWithAuthors(context?.applicationContext)) {

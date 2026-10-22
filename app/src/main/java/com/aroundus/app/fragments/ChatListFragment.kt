@@ -25,6 +25,9 @@ import com.aroundus.app.repository.MessageRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.applyAroundUsTheme
 import kotlinx.coroutines.launch
 
 class ChatListFragment : Fragment() {
@@ -58,12 +61,45 @@ class ChatListFragment : Fragment() {
         setupHeaderActions()
         setupSearchBar()
         setupTabs()
+        setupSwipeRefresh()
+        observeRefreshEvents()
+
         loadSupabaseConversations()
     }
 
     override fun onResume() {
         super.onResume()
-        loadSupabaseConversations()
+        if (AppRefreshManager.isStale(RefreshTarget.MESSAGES)) {
+            refreshCurrentTab()
+        }
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.applyAroundUsTheme()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            refreshCurrentTab()
+        }
+    }
+
+    private fun observeRefreshEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            AppRefreshManager.refreshEvents.collect { target ->
+                if (target == RefreshTarget.MESSAGES || target == RefreshTarget.ALL) {
+                    refreshCurrentTab()
+                }
+            }
+        }
+    }
+
+    private fun refreshCurrentTab() {
+        when (currentTab) {
+            TabType.CHATS -> loadSupabaseConversations()
+            TabType.GROUPS, TabType.ANNOUNCEMENTS -> {
+                filterListByCurrentTab()
+                binding.swipeRefreshLayout.isRefreshing = false
+                AppRefreshManager.markRefreshed(RefreshTarget.MESSAGES)
+            }
+        }
     }
 
     private fun initChatList() {
@@ -269,8 +305,9 @@ class ChatListFragment : Fragment() {
 
     private fun loadSupabaseConversations() {
         lifecycleScope.launch {
-            val currentUserId = userRepository.resolveValidAuthorId().ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
-            when (val result = messageRepository.fetchUserConversations()) {
+            try {
+                val currentUserId = userRepository.resolveValidAuthorId().ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
+                when (val result = messageRepository.fetchUserConversations()) {
                 is NetworkResult.Success -> {
                     allChatsList.clear()
                     allChatsList.addAll(result.data)
@@ -332,8 +369,12 @@ class ChatListFragment : Fragment() {
                     }
                 }
             }
+        } finally {
+            binding.swipeRefreshLayout.isRefreshing = false
+            AppRefreshManager.markRefreshed(RefreshTarget.MESSAGES)
         }
     }
+}
 
     override fun onDestroyView() {
         super.onDestroyView()

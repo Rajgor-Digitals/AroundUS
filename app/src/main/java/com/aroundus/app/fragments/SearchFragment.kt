@@ -20,6 +20,7 @@ import com.aroundus.app.models.UserEntity
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
+import com.aroundus.app.utils.applyAroundUsTheme
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -56,7 +57,15 @@ class SearchFragment : Fragment() {
         setupAdapters()
         setupListeners()
         setupTabs()
+        setupSwipeRefresh()
         loadAllData()
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.applyAroundUsTheme()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            loadAllData()
+        }
     }
 
     private fun setupAdapters() {
@@ -151,25 +160,29 @@ class SearchFragment : Fragment() {
 
     private fun loadAllData() {
         lifecycleScope.launch {
-            // Load posts
-            when (val postResult = postRepository.fetchPostsWithAuthors()) {
-                is NetworkResult.Success -> {
-                    allPosts.clear()
-                    allPosts.addAll(postResult.data)
-                }
-                is NetworkResult.Error -> {}
-            }
-
-            // Load users from Supabase users table
             try {
-                val userResp = com.aroundus.app.network.SupabaseClient.getService().getUsers()
-                if (userResp.isSuccessful && userResp.body() != null) {
-                    allUsers.clear()
-                    allUsers.addAll(userResp.body()!!)
+                // Load posts
+                when (val postResult = postRepository.fetchPostsWithAuthors(context?.applicationContext)) {
+                    is NetworkResult.Success -> {
+                        allPosts.clear()
+                        allPosts.addAll(postResult.data)
+                    }
+                    is NetworkResult.Error -> {}
                 }
-            } catch (_: Exception) {}
 
-            performSearch(binding.etSearchInput.text.toString().trim())
+                // Load users from Supabase users table
+                try {
+                    val userResp = com.aroundus.app.network.SupabaseClient.getService().getUsers()
+                    if (userResp.isSuccessful && userResp.body() != null) {
+                        allUsers.clear()
+                        allUsers.addAll(userResp.body()!!)
+                    }
+                } catch (_: Exception) {}
+
+                performSearch(binding.etSearchInput.text.toString().trim())
+            } finally {
+                binding.swipeRefreshLayout.isRefreshing = false
+            }
         }
     }
 

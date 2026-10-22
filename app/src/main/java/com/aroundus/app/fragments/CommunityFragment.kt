@@ -25,6 +25,9 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.GroupRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.UserRepository
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.applyAroundUsTheme
 import kotlinx.coroutines.launch
 
 class CommunityFragment : Fragment() {
@@ -61,13 +64,34 @@ class CommunityFragment : Fragment() {
         setupDiscoverGroups()
         setupSearch()
         setupCreateGroupActions()
+        setupSwipeRefresh()
+        observeRefreshEvents()
 
-        loadSupabaseGroups()
+        loadSupabaseGroups(showLoading = true)
     }
 
     override fun onResume() {
         super.onResume()
-        loadSupabaseGroups()
+        if (AppRefreshManager.isStale(RefreshTarget.GROUPS)) {
+            loadSupabaseGroups(showLoading = false)
+        }
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.applyAroundUsTheme()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            loadSupabaseGroups(showLoading = false)
+        }
+    }
+
+    private fun observeRefreshEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            AppRefreshManager.refreshEvents.collect { target ->
+                if (target == RefreshTarget.GROUPS || target == RefreshTarget.ALL) {
+                    loadSupabaseGroups(showLoading = false)
+                }
+            }
+        }
     }
 
     private fun setupCreateGroupActions() {
@@ -88,27 +112,35 @@ class CommunityFragment : Fragment() {
         }
     }
 
-    private fun loadSupabaseGroups() {
-        binding.pbGroupsLoading.visibility = View.VISIBLE
+    private fun loadSupabaseGroups(showLoading: Boolean = false) {
+        if (showLoading && allFetchedGroups.isEmpty()) {
+            binding.pbGroupsLoading.visibility = View.VISIBLE
+        }
         lifecycleScope.launch {
-            currentUserId = userRepository.resolveValidAuthorId().ifBlank {
-                SupabaseClient.getCurrentUserId() ?: ""
-            }
-
-            when (val result = groupRepository.fetchGroups()) {
-                is NetworkResult.Success -> {
-                    binding.pbGroupsLoading.visibility = View.GONE
-                    allFetchedGroups.clear()
-                    allFetchedGroups.addAll(result.data)
-
-                    processGroupsData(result.data)
+            try {
+                currentUserId = userRepository.resolveValidAuthorId().ifBlank {
+                    SupabaseClient.getCurrentUserId() ?: ""
                 }
-                is NetworkResult.Error -> {
-                    binding.pbGroupsLoading.visibility = View.GONE
-                    if (allFetchedGroups.isEmpty()) {
-                        binding.layoutEmptyDiscover.visibility = View.VISIBLE
+
+                when (val result = groupRepository.fetchGroups()) {
+                    is NetworkResult.Success -> {
+                        binding.pbGroupsLoading.visibility = View.GONE
+                        allFetchedGroups.clear()
+                        allFetchedGroups.addAll(result.data)
+
+                        processGroupsData(result.data)
+                        AppRefreshManager.markRefreshed(RefreshTarget.GROUPS)
+                    }
+                    is NetworkResult.Error -> {
+                        binding.pbGroupsLoading.visibility = View.GONE
+                        if (allFetchedGroups.isEmpty()) {
+                            binding.layoutEmptyDiscover.visibility = View.VISIBLE
+                        }
                     }
                 }
+            } finally {
+                binding.pbGroupsLoading.visibility = View.GONE
+                binding.swipeRefreshLayout.isRefreshing = false
             }
         }
     }

@@ -11,6 +11,8 @@ import com.aroundus.app.databinding.BottomSheetCreateGroupBinding
 import com.aroundus.app.models.GroupEntity
 import com.aroundus.app.repository.GroupRepository
 import com.aroundus.app.repository.NetworkResult
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -87,6 +89,8 @@ class CreateGroupBottomSheetFragment : BottomSheetDialogFragment() {
             when (val result = groupRepository.createGroup(name = name, description = description, category = category)) {
                 is NetworkResult.Success -> {
                     setLoading(false)
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.GROUPS)
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                     Toast.makeText(requireContext(), "Group created successfully!", Toast.LENGTH_SHORT).show()
                     onGroupCreated?.invoke(result.data)
                     dismiss()

@@ -15,6 +15,9 @@ import com.aroundus.app.models.Event
 import com.aroundus.app.models.toUIModel
 import com.aroundus.app.repository.EventRepository
 import com.aroundus.app.repository.NetworkResult
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.applyAroundUsTheme
 import kotlinx.coroutines.launch
 
 class EventsFragment : Fragment() {
@@ -41,6 +44,9 @@ class EventsFragment : Fragment() {
             adapter = eventAdapter
         }
 
+        setupSwipeRefresh()
+        observeRefreshEvents()
+
         loadSupabaseEvents()
 
         binding.fabCreateEvent.setOnClickListener {
@@ -48,16 +54,45 @@ class EventsFragment : Fragment() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (AppRefreshManager.isStale(RefreshTarget.EVENTS)) {
+            loadSupabaseEvents()
+        }
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefreshLayout.applyAroundUsTheme()
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            loadSupabaseEvents()
+        }
+    }
+
+    private fun observeRefreshEvents() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            AppRefreshManager.refreshEvents.collect { target ->
+                if (target == RefreshTarget.EVENTS || target == RefreshTarget.ALL) {
+                    loadSupabaseEvents()
+                }
+            }
+        }
+    }
+
     private fun loadSupabaseEvents() {
         lifecycleScope.launch {
-            when (val result = eventRepository.fetchEvents()) {
-                is NetworkResult.Success -> {
-                    val remoteEvents = result.data.map { it.toUIModel() }
-                    eventList.clear()
-                    eventList.addAll(remoteEvents)
-                    eventAdapter.notifyDataSetChanged()
+            try {
+                when (val result = eventRepository.fetchEvents()) {
+                    is NetworkResult.Success -> {
+                        val remoteEvents = result.data.map { it.toUIModel() }
+                        eventList.clear()
+                        eventList.addAll(remoteEvents)
+                        eventAdapter.notifyDataSetChanged()
+                        AppRefreshManager.markRefreshed(RefreshTarget.EVENTS)
+                    }
+                    is NetworkResult.Error -> {}
                 }
-                is NetworkResult.Error -> {}
+            } finally {
+                binding.swipeRefreshLayout.isRefreshing = false
             }
         }
     }
