@@ -22,6 +22,7 @@ import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
 import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.PostActionUtils
 import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.applyAroundUsTheme
 import com.google.android.material.tabs.TabLayout
@@ -98,8 +99,8 @@ class SearchFragment : Fragment() {
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.commentsFragment, bundle)
             },
-            onShareClick = {
-                Toast.makeText(requireContext(), "Link copied!", Toast.LENGTH_SHORT).show()
+            onShareClick = { post ->
+                PostActionUtils.sharePost(requireContext(), post)
             },
             onAuthorClick = { post ->
                 val targetId = if (!post.authorId.isNullOrBlank()) post.authorId else post.id

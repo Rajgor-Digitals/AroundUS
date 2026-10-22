@@ -74,6 +74,12 @@
             android:exported="true"
             android:screenOrientation="portrait" />
 
+        <!-- Full-Screen Media Viewer Activity -->
+        <activity
+            android:name=".activities.FullScreenImageViewerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AroundUS" />
+
     </application>
 
 </manifest>

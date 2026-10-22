@@ -13,6 +13,8 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.utils.loadUserAvatar
 import com.aroundus.app.utils.loadPostImage
 import android.widget.Toast
+import com.aroundus.app.activities.FullScreenImageViewerActivity
+import com.aroundus.app.utils.PostActionUtils
 import java.io.File
 
 class PostAdapter(
@@ -20,8 +22,9 @@ class PostAdapter(
     private val onPostClick: (Post) -> Unit,
     private val onLikeClick: (Post) -> Unit,
     private val onCommentClick: (Post) -> Unit,
-    private val onShareClick: (Post) -> Unit,
-    private val onAuthorClick: ((Post) -> Unit)? = null
+    private val onShareClick: ((Post) -> Unit)? = null,
+    private val onAuthorClick: ((Post) -> Unit)? = null,
+    private val onPostDeleted: ((Post) -> Unit)? = null
 ) : RecyclerView.Adapter<PostAdapter.PostViewHolder>() {
 
     private val optimisticLikedStatus = mutableMapOf<String, Boolean>()
@@ -109,9 +112,47 @@ class PostAdapter(
                 binding.badgeVideoTag.visibility = View.GONE
             }
 
-            binding.root.setOnClickListener { onPostClick(post) }
-            binding.tvPostText.setOnClickListener { onPostClick(post) }
-            binding.cardImageContainer.setOnClickListener { onPostClick(post) }
+            // Image Click: Open FullScreenImageViewerActivity for photos, or onPostClick for videos
+            binding.cardImageContainer.setOnClickListener {
+                if (post.isVideo) {
+                    onPostClick(post)
+                } else {
+                    val ctx = binding.root.context
+                    val imgUrl = post.mediaUrl
+                    val imgRes = post.imageRes ?: 0
+                    if (!imgUrl.isNullOrBlank() || imgRes != 0) {
+                        FullScreenImageViewerActivity.start(
+                            context = ctx,
+                            imageUrl = imgUrl,
+                            imageRes = imgRes,
+                            caption = post.text,
+                            authorName = post.userName,
+                            subtitle = post.neighborhood
+                        )
+                    } else {
+                        onPostClick(post)
+                    }
+                }
+            }
+
+            // More Options: Share, Copy, and Delete (for authors)
+            binding.btnMore.setOnClickListener { v ->
+                PostActionUtils.showPostOptionsMenu(
+                    context = v.context,
+                    anchorView = v,
+                    post = post,
+                    onDeleted = {
+                        if (posts is MutableList) {
+                            val idx = posts.indexOfFirst { it.id == post.id }
+                            if (idx != -1) {
+                                posts.removeAt(idx)
+                                notifyItemRemoved(idx)
+                            }
+                        }
+                        onPostDeleted?.invoke(post)
+                    }
+                )
+            }
 
             binding.ivAvatar.setOnClickListener {
                 if (onAuthorClick != null) onAuthorClick.invoke(post) else onPostClick(post)
@@ -154,7 +195,15 @@ class PostAdapter(
             }
 
             binding.btnComment.setOnClickListener { onCommentClick(post) }
-            binding.btnShare.setOnClickListener { onShareClick(post) }
+
+            // Native Share Action
+            binding.btnShare.setOnClickListener {
+                if (onShareClick != null) {
+                    onShareClick.invoke(post)
+                } else {
+                    PostActionUtils.sharePost(binding.root.context, post)
+                }
+            }
 
             var isSaved = SupabaseClient.getSavedPostIds(currentUserId).contains(post.id)
             if (isSaved) {

@@ -1377,6 +1377,34 @@ class PostRepository {
             NetworkResult.Error(e.localizedMessage ?: "Migration error", e)
         }
     }
+
+    /**
+     * Deletes a post from Supabase and evicts it from memory and disk caches.
+     */
+    suspend fun deletePost(
+        postId: String,
+        context: Context? = null
+    ): NetworkResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (postId.isBlank()) {
+                return@withContext NetworkResult.Error("Invalid post ID.")
+            }
+            val resp = service.deletePost("eq.$postId")
+            if (resp.isSuccessful || resp.code() in 200..299) {
+                // Evict from memory cache
+                val currentList = (memoryCachedPosts ?: getCachedPosts(context)).toMutableList()
+                currentList.removeAll { it.id == postId }
+                memoryCachedPosts = currentList
+                savePostsToCache(context, currentList)
+                NetworkResult.Success(Unit)
+            } else {
+                val err = resp.errorBody()?.string() ?: resp.message()
+                NetworkResult.Error("Failed to delete post: $err")
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.localizedMessage ?: "Failed to delete post", e)
+        }
+    }
 }
 
 

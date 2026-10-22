@@ -21,6 +21,7 @@ import com.aroundus.app.models.Product
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.MarketplaceRepository
 import com.aroundus.app.repository.NetworkResult
+import com.aroundus.app.activities.FullScreenImageViewerActivity
 import com.aroundus.app.utils.loadUserAvatar
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -184,7 +185,16 @@ class ProductDetailFragment : Fragment() {
         binding.tvImageCounter.text = "1/$totalCount"
         binding.tvImageCounter.visibility = if (totalCount > 1) View.VISIBLE else View.GONE
 
-        val adapter = ProductDetailImageAdapter(mediaList, product.imageRes)
+        val adapter = ProductDetailImageAdapter(mediaList, product.imageRes) { clickedUrl, clickedRes ->
+            FullScreenImageViewerActivity.start(
+                context = requireContext(),
+                imageUrl = clickedUrl,
+                imageRes = clickedRes,
+                caption = "${product.name} • ${product.price}\n${product.description ?: ""}",
+                authorName = product.sellerName,
+                subtitle = product.location
+            )
+        }
         binding.viewPagerImages.adapter = adapter
 
         binding.viewPagerImages.registerOnPageChangeCallback(object : androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
@@ -260,7 +270,8 @@ class ProductDetailFragment : Fragment() {
 
     private class ProductDetailImageAdapter(
         private val mediaUrls: List<String>,
-        private val fallbackRes: Int
+        private val fallbackRes: Int,
+        private val onImageClick: (String?, Int) -> Unit
     ) : RecyclerView.Adapter<ProductDetailImageAdapter.ImageViewHolder>() {
 
         inner class ImageViewHolder(val imageView: ImageView) : RecyclerView.ViewHolder(imageView)
@@ -290,6 +301,10 @@ class ProductDetailFragment : Fragment() {
                 holder.imageView.setImageResource(fallbackRes)
             } else {
                 holder.imageView.setImageResource(R.drawable.bg_image_placeholder)
+            }
+
+            holder.imageView.setOnClickListener {
+                onImageClick(url, fallbackRes)
             }
         }
 

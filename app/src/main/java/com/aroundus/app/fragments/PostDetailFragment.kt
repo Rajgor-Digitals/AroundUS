@@ -30,6 +30,8 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import com.aroundus.app.activities.FullScreenImageViewerActivity
+import com.aroundus.app.utils.PostActionUtils
 import com.aroundus.app.utils.loadUserAvatar
 import com.aroundus.app.utils.loadPostImage
 import com.bumptech.glide.Glide
@@ -196,7 +198,9 @@ class PostDetailFragment : Fragment() {
 
         // Share button
         binding.btnShare.setOnClickListener {
-            Toast.makeText(requireContext(), "Post link copied to clipboard!", Toast.LENGTH_SHORT).show()
+            currentPost?.let { post ->
+                PostActionUtils.sharePost(requireContext(), post)
+            }
         }
 
         // Save button
@@ -301,6 +305,45 @@ class PostDetailFragment : Fragment() {
         binding.chipCategory.text = post.category ?: "General"
         binding.tvPostText.text = post.text ?: ""
 
+        // Author Check
+        val isAuthor = PostActionUtils.isPostAuthor(post)
+        binding.btnFollow.visibility = if (isAuthor) View.GONE else View.VISIBLE
+
+        // Configure Toolbar Menu
+        binding.toolbar.menu.clear()
+        binding.toolbar.inflateMenu(R.menu.menu_post_detail)
+        binding.toolbar.menu.findItem(R.id.action_delete)?.isVisible = isAuthor
+        binding.toolbar.menu.findItem(R.id.action_report)?.isVisible = !isAuthor
+
+        binding.toolbar.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.action_share -> {
+                    PostActionUtils.sharePost(requireContext(), post)
+                    true
+                }
+                R.id.action_save -> {
+                    val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
+                    if (currentUserId.isNotBlank()) {
+                        val isNowSaved = SupabaseClient.toggleSavedPost(currentUserId, post.id)
+                        binding.btnSave.setColorFilter(if (isNowSaved) Color.parseColor("#0D8A3F") else Color.parseColor("#64748B"))
+                        Toast.makeText(requireContext(), if (isNowSaved) "Saved to bookmarks" else "Removed from bookmarks", Toast.LENGTH_SHORT).show()
+                    }
+                    true
+                }
+                R.id.action_delete -> {
+                    PostActionUtils.confirmAndDeletePost(requireContext(), post) {
+                        findNavController().popBackStack()
+                    }
+                    true
+                }
+                R.id.action_report -> {
+                    Toast.makeText(requireContext(), "Post reported for moderation review.", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                else -> false
+            }
+        }
+
         // Author profile photo resolution from Database
         val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
         val currentName = SupabaseClient.getCurrentUserName() ?: ""
@@ -373,6 +416,19 @@ class PostDetailFragment : Fragment() {
                 binding.progressVideoLoading.visibility = View.GONE
                 binding.ivPostImage.visibility = View.VISIBLE
                 binding.ivPostImage.loadPostImage(media)
+
+                val openPhotoAction = View.OnClickListener {
+                    FullScreenImageViewerActivity.start(
+                        context = requireContext(),
+                        imageUrl = media,
+                        imageRes = post.imageRes ?: 0,
+                        caption = post.text,
+                        authorName = post.userName,
+                        subtitle = post.neighborhood
+                    )
+                }
+                binding.ivPostImage.setOnClickListener(openPhotoAction)
+                binding.cardMediaContainer.setOnClickListener(openPhotoAction)
             }
         } else if (post.imageRes != null) {
             releasePlayer()
@@ -383,6 +439,19 @@ class PostDetailFragment : Fragment() {
             binding.progressVideoLoading.visibility = View.GONE
             binding.ivPostImage.visibility = View.VISIBLE
             binding.ivPostImage.setImageResource(post.imageRes)
+
+            val openPhotoAction = View.OnClickListener {
+                FullScreenImageViewerActivity.start(
+                    context = requireContext(),
+                    imageUrl = null,
+                    imageRes = post.imageRes,
+                    caption = post.text,
+                    authorName = post.userName,
+                    subtitle = post.neighborhood
+                )
+            }
+            binding.ivPostImage.setOnClickListener(openPhotoAction)
+            binding.cardMediaContainer.setOnClickListener(openPhotoAction)
         } else {
             releasePlayer()
             binding.cardMediaContainer.visibility = View.GONE

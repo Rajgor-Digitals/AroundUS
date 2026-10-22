@@ -26,6 +26,7 @@ import com.aroundus.app.repository.LikeRepository
 import com.aroundus.app.repository.UserRepository
 import com.aroundus.app.utils.AppRefreshManager
 import com.aroundus.app.utils.LocationState
+import com.aroundus.app.utils.PostActionUtils
 import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.UserLocationData
 import com.aroundus.app.utils.UserLocationManager
@@ -177,8 +178,8 @@ class HomeFragment : Fragment() {
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.commentsFragment, bundle)
             },
-            onShareClick = {
-                Toast.makeText(requireContext(), "Post link copied!", Toast.LENGTH_SHORT).show()
+            onShareClick = { post ->
+                PostActionUtils.sharePost(requireContext(), post)
             },
             onAuthorClick = { post ->
                 val targetId = if (!post.authorId.isNullOrBlank()) post.authorId else post.id
@@ -219,8 +220,8 @@ class HomeFragment : Fragment() {
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.commentsFragment, bundle)
             },
-            onShareClick = {
-                Toast.makeText(requireContext(), "Announcement link copied!", Toast.LENGTH_SHORT).show()
+            onShareClick = { post ->
+                PostActionUtils.sharePost(requireContext(), post)
             }
         )
 
