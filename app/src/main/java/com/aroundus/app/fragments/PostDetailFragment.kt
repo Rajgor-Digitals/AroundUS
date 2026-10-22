@@ -17,6 +17,7 @@ import com.aroundus.app.models.Comment
 import com.aroundus.app.models.Post
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.CommentRepository
+import com.aroundus.app.repository.LikeRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
@@ -43,6 +44,7 @@ class PostDetailFragment : Fragment() {
     private val postRepository = PostRepository()
     private val userRepository = UserRepository()
     private val commentRepository = CommentRepository()
+    private val likeRepository = LikeRepository()
 
     private var currentPost: Post? = null
     private var postId: String = ""
@@ -155,22 +157,41 @@ class PostDetailFragment : Fragment() {
 
         // Like button
         binding.btnLike.setOnClickListener {
-            isLiked = !isLiked
-            if (isLiked) {
-                likeCount++
-                binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite)
-                binding.ivLikeIcon.setColorFilter(Color.parseColor("#EF4444"))
-                binding.tvLikesCount.setTextColor(Color.parseColor("#EF4444"))
-                binding.tvLikesCount.text = "$likeCount likes"
-            } else {
-                likeCount = (likeCount - 1).coerceAtLeast(0)
-                binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite_border)
-                binding.ivLikeIcon.setColorFilter(Color.parseColor("#64748B"))
-                binding.tvLikesCount.setTextColor(Color.parseColor("#64748B"))
-                binding.tvLikesCount.text = "$likeCount likes"
+            val wasLiked = isLiked
+            val prevCount = likeCount
+            val nextLiked = !wasLiked
+            val nextCount = if (nextLiked) prevCount + 1 else (prevCount - 1).coerceAtLeast(0)
+
+            // 1. Optimistic UI update immediately
+            isLiked = nextLiked
+            likeCount = nextCount
+            updateLikeUi(isLiked, likeCount)
+
+            if (nextLiked) {
+                binding.ivLikeIcon.scaleX = 0.7f
+                binding.ivLikeIcon.scaleY = 0.7f
+                binding.ivLikeIcon.animate().scaleX(1.25f).scaleY(1.25f).setDuration(150).withEndAction {
+                    binding.ivLikeIcon.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+                }.start()
             }
-            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
-            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+
+            // 2. Persist to Supabase in background
+            lifecycleScope.launch {
+                when (val res = likeRepository.toggleLike(postId, wasLiked)) {
+                    is NetworkResult.Success -> {
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.ANNOUNCEMENTS)
+                    }
+                    is NetworkResult.Error -> {
+                        // Rollback on failure
+                        isLiked = wasLiked
+                        likeCount = prevCount
+                        updateLikeUi(isLiked, likeCount)
+                        Toast.makeText(requireContext(), "Could not update like: ${res.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
 
         // Share button
@@ -255,16 +276,30 @@ class PostDetailFragment : Fragment() {
         }
     }
 
+    private fun updateLikeUi(liked: Boolean, count: Int) {
+        binding.tvLikesCount.text = "$count likes"
+        if (liked) {
+            binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite)
+            binding.ivLikeIcon.setColorFilter(Color.parseColor("#EF4444"))
+            binding.tvLikesCount.setTextColor(Color.parseColor("#EF4444"))
+        } else {
+            binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite_border)
+            binding.ivLikeIcon.setColorFilter(Color.parseColor("#64748B"))
+            binding.tvLikesCount.setTextColor(Color.parseColor("#64748B"))
+        }
+    }
+
     private fun bindPostData(post: Post) {
         currentPost = post
         likeCount = post.likesCount
+        isLiked = post.isLiked
+        updateLikeUi(isLiked, likeCount)
         binding.tvUserName.text = post.userName?.ifBlank { "Neighbor" } ?: "Neighbor"
         val loc = post.neighborhood ?: "Bhujpur, Kutch"
         val time = post.timeAgo ?: "Just now"
         binding.tvLocationTime.text = "$loc · $time"
         binding.chipCategory.text = post.category ?: "General"
         binding.tvPostText.text = post.text ?: ""
-        binding.tvLikesCount.text = "$likeCount likes"
 
         // Author profile photo resolution from Database
         val currentUserId = SupabaseClient.getCurrentUserId() ?: ""

@@ -21,8 +21,10 @@ import com.aroundus.app.models.Announcement
 import com.aroundus.app.models.Post
 import com.aroundus.app.repository.CommentRepository
 import com.aroundus.app.repository.EventRepository
+import com.aroundus.app.repository.LikeRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
+import com.aroundus.app.repository.UserRepository
 import com.aroundus.app.utils.AppRefreshManager
 import com.aroundus.app.utils.RefreshTarget
 import kotlinx.coroutines.async
@@ -38,6 +40,8 @@ class AnnouncementsFragment : Fragment() {
     private val postRepository = PostRepository()
     private val commentRepository = CommentRepository()
     private val eventRepository = EventRepository()
+    private val likeRepository = LikeRepository()
+    private val userRepository = UserRepository()
 
     private val masterAnnouncements = mutableListOf<Announcement>()
     private val displayedAnnouncements = mutableListOf<Announcement>()
@@ -145,6 +149,20 @@ class AnnouncementsFragment : Fragment() {
                 try {
                     findNavController().navigate(R.id.postDetailFragment, bundle)
                 } catch (_: Exception) {}
+            },
+            onLikeClick = { announcement ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    when (val res = likeRepository.toggleLike(announcement.id, !announcement.isLiked)) {
+                        is NetworkResult.Success -> {
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                        }
+                        is NetworkResult.Error -> {
+                            Toast.makeText(context, "Could not update like: ${res.message}", Toast.LENGTH_SHORT).show()
+                            loadAnnouncementsFromSupabase(showLoading = false)
+                        }
+                    }
+                }
             },
             onCommentClick = { announcement ->
                 val bundle = Bundle().apply { putString("postId", announcement.id) }

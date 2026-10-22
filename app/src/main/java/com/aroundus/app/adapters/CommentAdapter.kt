@@ -11,7 +11,8 @@ import java.io.File
 
 class CommentAdapter(
     private val comments: List<Comment>,
-    private val onUserClick: ((Comment) -> Unit)? = null
+    private val onUserClick: ((Comment) -> Unit)? = null,
+    private val onDeleteClick: ((Comment) -> Unit)? = null
 ) : RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
 
     inner class CommentViewHolder(private val binding: ItemCommentBinding) :
@@ -48,6 +49,15 @@ class CommentAdapter(
 
             binding.btnLike.setOnClickListener {
                 binding.tvLikeCount.text = "❤ ${comment.likeCount + 1}"
+            }
+
+            if (isCurrentAuthor) {
+                binding.root.setOnLongClickListener {
+                    onDeleteClick?.invoke(comment)
+                    true
+                }
+            } else {
+                binding.root.setOnLongClickListener(null)
             }
         }
     }

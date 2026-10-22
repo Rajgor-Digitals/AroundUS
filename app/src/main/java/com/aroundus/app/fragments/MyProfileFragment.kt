@@ -22,6 +22,7 @@ import com.aroundus.app.models.UserEntity
 import com.aroundus.app.models.toUIModel
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.GroupRepository
+import com.aroundus.app.repository.LikeRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
@@ -52,6 +53,7 @@ class MyProfileFragment : Fragment() {
     private val userRepository = UserRepository()
     private val postRepository = PostRepository()
     private val groupRepository = GroupRepository()
+    private val likeRepository = LikeRepository()
 
     private val myPostList = mutableListOf<Post>()
     private lateinit var postAdapter: PostAdapter
@@ -173,7 +175,21 @@ class MyProfileFragment : Fragment() {
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.postDetailFragment, bundle)
             },
-            onLikeClick = { },
+            onLikeClick = { post ->
+                lifecycleScope.launch {
+                    when (val res = likeRepository.toggleLike(post.id, post.isLiked)) {
+                        is NetworkResult.Success -> {
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.ANNOUNCEMENTS)
+                        }
+                        is NetworkResult.Error -> {
+                            Toast.makeText(context, "Could not update like: ${res.message}", Toast.LENGTH_SHORT).show()
+                            postAdapter.rollbackLike(post.id, post.isLiked, post.likesCount)
+                        }
+                    }
+                }
+            },
             onCommentClick = { post ->
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.commentsFragment, bundle)

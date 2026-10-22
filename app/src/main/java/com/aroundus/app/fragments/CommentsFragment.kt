@@ -17,7 +17,10 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.CommentRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.UserRepository
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.loadUserAvatar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -59,6 +62,28 @@ class CommentsFragment : Fragment() {
                     val bundle = Bundle().apply { putString("userId", comment.userId) }
                     findNavController().navigate(R.id.myProfileFragment, bundle)
                 }
+            },
+            onDeleteClick = { comment ->
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Delete Comment")
+                    .setMessage("Are you sure you want to delete this comment?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        lifecycleScope.launch {
+                            when (val res = commentRepository.deleteComment(comment.id, postId)) {
+                                is NetworkResult.Success -> {
+                                    Toast.makeText(requireContext(), "Comment deleted", Toast.LENGTH_SHORT).show()
+                                    AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                                    AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                                    loadComments()
+                                }
+                                is NetworkResult.Error -> {
+                                    Toast.makeText(requireContext(), res.message, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
             }
         )
         binding.rvComments.apply {
@@ -105,6 +130,8 @@ class CommentsFragment : Fragment() {
                         is NetworkResult.Success -> {
                             binding.etComment.text?.clear()
                             Toast.makeText(requireContext(), "Comment posted", Toast.LENGTH_SHORT).show()
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                             loadComments()
                         }
                         is NetworkResult.Error -> {

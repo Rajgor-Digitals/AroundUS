@@ -15,6 +15,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
 
 /**
  * Result wrapper for repository operations
@@ -911,6 +913,34 @@ class PostRepository {
                 }
             }
         }
+
+        fun updateLocalLikeState(postId: String, isLiked: Boolean, countDelta: Int) {
+            memoryCachedPosts = memoryCachedPosts?.map { p ->
+                if (p.id == postId) {
+                    val newCount = (p.likesCount + countDelta).coerceAtLeast(0)
+                    p.copy(isLiked = isLiked, likesCount = newCount)
+                } else {
+                    p
+                }
+            }
+            SupabaseClient.getAppContext()?.let { ctx ->
+                memoryCachedPosts?.let { PostRepository().savePostsToCache(ctx, it) }
+            }
+        }
+
+        fun updateLocalCommentCount(postId: String, countDelta: Int) {
+            memoryCachedPosts = memoryCachedPosts?.map { p ->
+                if (p.id == postId) {
+                    val newCount = (p.commentsCount + countDelta).coerceAtLeast(0)
+                    p.copy(commentsCount = newCount)
+                } else {
+                    p
+                }
+            }
+            SupabaseClient.getAppContext()?.let { ctx ->
+                memoryCachedPosts?.let { PostRepository().savePostsToCache(ctx, it) }
+            }
+        }
     }
 
     fun getCachedPosts(context: Context?): List<Post> {
@@ -983,7 +1013,17 @@ class PostRepository {
     suspend fun fetchPostsWithAuthors(context: Context? = null): NetworkResult<List<Post>> =
         withContext(Dispatchers.IO) {
             try {
-                val resp = service.getPosts()
+                val currentUserId = UserRepository().resolveValidAuthorId()
+
+                // Fetch posts, comments count map, and likes data concurrently
+                val postsDeferred = async { service.getPosts() }
+                val commentsMapDeferred = async { CommentRepository().fetchCommentsCountMap() }
+                val likesDataDeferred = async { LikeRepository().fetchLikesData(currentUserId) }
+
+                val resp = postsDeferred.await()
+                val commentsCountMap = commentsMapDeferred.await()
+                val likesData = likesDataDeferred.await()
+
                 if (resp.isSuccessful && resp.body() != null) {
                     val posts = resp.body()!!
 
@@ -1018,7 +1058,7 @@ class PostRepository {
                         }
                     }
 
-                    // 3. Assemble UI models using fast O(1) in-memory author lookup
+                    // 3. Assemble UI models using dynamic comments and likes from database
                     val uiPosts = posts.map { p ->
                         val pAuthorId = p.authorId ?: ""
                         val (authorName, avatarPath) = if (pAuthorId.isNotBlank()) {
@@ -1027,7 +1067,18 @@ class PostRepository {
                             Pair("Neighbor", null)
                         }
                         val isVer = if (pAuthorId.isNotBlank()) (globalVerifiedCache[pAuthorId] ?: false) else false
-                        p.toUIModel(userName = authorName, userAvatarPath = avatarPath, isVerified = isVer)
+                        val postLikes = likesData.countMap[p.postId] ?: 0
+                        val postComments = commentsCountMap[p.postId] ?: 0
+                        val postIsLiked = likesData.userLikedPostIds.contains(p.postId)
+
+                        p.toUIModel(
+                            userName = authorName,
+                            userAvatarPath = avatarPath,
+                            isVerified = isVer,
+                            likesCount = postLikes,
+                            commentsCount = postComments,
+                            isLiked = postIsLiked
+                        )
                     }
 
                     // 4. Update memory & disk cache for instant 0ms app open next time
@@ -1078,7 +1129,24 @@ class PostRepository {
                             } catch (_: Exception) {}
                         }
                     }
-                    val postUI = p.toUIModel(userName = authorName, userAvatarPath = authorAvatar)
+
+                    // Query likes and comments count for this single post
+                    val currentUserId = UserRepository().resolveValidAuthorId()
+                    val cResp = try { service.getCommentsForPost("eq.$postId") } catch (_: Exception) { null }
+                    val commentsCount = if (cResp?.isSuccessful == true && cResp.body() != null) cResp.body()!!.size else 0
+
+                    val lResp = try { service.getLikesForPost("eq.$postId") } catch (_: Exception) { null }
+                    val likesList = if (lResp?.isSuccessful == true && lResp.body() != null) lResp.body()!! else emptyList()
+                    val likesCount = likesList.size
+                    val isLiked = likesList.any { it.userId == currentUserId }
+
+                    val postUI = p.toUIModel(
+                        userName = authorName,
+                        userAvatarPath = authorAvatar,
+                        likesCount = likesCount,
+                        commentsCount = commentsCount,
+                        isLiked = isLiked
+                    )
                     return@withContext NetworkResult.Success(postUI)
                 }
                 NetworkResult.Error("Post not found.")
@@ -1411,8 +1479,15 @@ class CommentRepository {
 
                 val resp = service.createComment(comment = comment)
                 if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                    NetworkResult.Success(resp.body()!!.first())
+                    val created = resp.body()!!.first()
+                    PostRepository.updateLocalCommentCount(postId, +1)
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.ANNOUNCEMENTS)
+                    NetworkResult.Success(created)
                 } else if (resp.code() in 200..299) {
+                    PostRepository.updateLocalCommentCount(postId, +1)
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.ANNOUNCEMENTS)
                     NetworkResult.Success(comment)
                 } else {
                     val errorMsg = resp.errorBody()?.string() ?: resp.message()
@@ -1420,6 +1495,129 @@ class CommentRepository {
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Failed to add comment", e)
+            }
+        }
+
+    suspend fun deleteComment(commentId: String, postId: String? = null): NetworkResult<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = service.deleteComment("eq.$commentId")
+                if (resp.isSuccessful) {
+                    if (!postId.isNullOrBlank()) {
+                        PostRepository.updateLocalCommentCount(postId, -1)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.ANNOUNCEMENTS)
+                    }
+                    NetworkResult.Success(Unit)
+                } else {
+                    val errorMsg = resp.errorBody()?.string() ?: resp.message()
+                    NetworkResult.Error("Failed to delete comment: $errorMsg")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to delete comment", e)
+            }
+        }
+}
+
+/**
+ * Dynamic Repository for Post Likes (Supabase post_likes table)
+ */
+class LikeRepository {
+    private val service get() = SupabaseClient.getService()
+
+    companion object {
+        // Prevents rapid-tap race conditions per post ID
+        private val inFlightLikes = ConcurrentHashMap<String, Boolean>()
+    }
+
+    data class LikesData(
+        val countMap: Map<String, Int> = emptyMap(),
+        val userLikedPostIds: Set<String> = emptySet()
+    )
+
+    suspend fun fetchLikesData(currentUserId: String?): LikesData =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = service.getAllLikes("like_id,post_id,user_id")
+                if (resp.isSuccessful && resp.body() != null) {
+                    val allLikes = resp.body()!!
+                    val countMap = allLikes.groupBy { it.postId }.mapValues { it.value.size }
+                    val userLikedSet = if (!currentUserId.isNullOrBlank()) {
+                        allLikes.filter { it.userId == currentUserId }.map { it.postId }.toSet()
+                    } else {
+                        emptySet()
+                    }
+                    LikesData(countMap, userLikedSet)
+                } else {
+                    LikesData()
+                }
+            } catch (_: Exception) {
+                LikesData()
+            }
+        }
+
+    suspend fun getPostLikes(postId: String): NetworkResult<List<PostLikeEntity>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = service.getLikesForPost("eq.$postId")
+                if (resp.isSuccessful && resp.body() != null) {
+                    NetworkResult.Success(resp.body()!!)
+                } else {
+                    NetworkResult.Error("Failed to fetch likes.")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            }
+        }
+
+    suspend fun toggleLike(postId: String, currentUserId: String, currentLiked: Boolean): NetworkResult<Boolean> =
+        toggleLike(postId, currentLiked, currentUserId)
+
+    suspend fun toggleLike(postId: String, currentLiked: Boolean, userId: String? = null): NetworkResult<Boolean> =
+        withContext(Dispatchers.IO) {
+            val currentUserId = if (!userId.isNullOrBlank()) userId else UserRepository().resolveValidAuthorId()
+            if (postId.isBlank() || currentUserId.isBlank()) {
+                return@withContext NetworkResult.Error("Invalid post or user ID.")
+            }
+
+            // Rapid-tap debouncing: reject duplicate in-flight requests for the same post
+            if (inFlightLikes.putIfAbsent(postId, true) != null) {
+                return@withContext NetworkResult.Error("Like update in progress. Please wait.")
+            }
+
+            try {
+                if (currentLiked) {
+                    // Unlike: delete from Supabase post_likes
+                    val resp = service.deleteLike("eq.$postId", "eq.$currentUserId")
+                    if (resp.isSuccessful) {
+                        PostRepository.updateLocalLikeState(postId, isLiked = false, countDelta = -1)
+                        NetworkResult.Success(false)
+                    } else {
+                        val error = resp.errorBody()?.string() ?: resp.message()
+                        NetworkResult.Error("Failed to unlike: $error")
+                    }
+                } else {
+                    // Like: insert into Supabase post_likes
+                    val entity = PostLikeEntity(
+                        likeId = "like_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
+                        postId = postId,
+                        userId = currentUserId
+                    )
+                    val resp = service.insertLike(like = entity)
+                    if (resp.isSuccessful || resp.code() == 409) {
+                        // 409 Conflict = already exists due to unique(user_id, post_id)
+                        val delta = if (resp.code() == 409) 0 else 1
+                        PostRepository.updateLocalLikeState(postId, isLiked = true, countDelta = delta)
+                        NetworkResult.Success(true)
+                    } else {
+                        val error = resp.errorBody()?.string() ?: resp.message()
+                        NetworkResult.Error("Failed to like: $error")
+                    }
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            } finally {
+                inFlightLikes.remove(postId)
             }
         }
 }

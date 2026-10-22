@@ -121,6 +121,42 @@ interface SupabaseService {
         @Body comment: CommentEntity
     ): Response<List<CommentEntity>>
 
+    @DELETE("rest/v1/comments")
+    suspend fun deleteComment(
+        @Query("comment_id") commentIdFilter: String // e.g. "eq.$commentId"
+    ): Response<Unit>
+
+    // --- POST LIKES TABLE ---
+
+    @GET("rest/v1/post_likes")
+    suspend fun getAllLikes(
+        @Query("select") select: String = "like_id,post_id,user_id"
+    ): Response<List<PostLikeEntity>>
+
+    @GET("rest/v1/post_likes")
+    suspend fun getLikesForPost(
+        @Query("post_id") queryFilter: String, // e.g. "eq.$postId"
+        @Query("select") select: String = "like_id,post_id,user_id"
+    ): Response<List<PostLikeEntity>>
+
+    @GET("rest/v1/post_likes")
+    suspend fun getUserLikes(
+        @Query("user_id") queryFilter: String, // e.g. "eq.$userId"
+        @Query("select") select: String = "like_id,post_id,user_id"
+    ): Response<List<PostLikeEntity>>
+
+    @POST("rest/v1/post_likes")
+    suspend fun insertLike(
+        @Header("Prefer") prefer: String = "return=representation",
+        @Body like: PostLikeEntity
+    ): Response<List<PostLikeEntity>>
+
+    @DELETE("rest/v1/post_likes")
+    suspend fun deleteLike(
+        @Query("post_id") postFilter: String, // e.g. "eq.$postId"
+        @Query("user_id") userFilter: String  // e.g. "eq.$userId"
+    ): Response<Unit>
+
     // --- GROUPS TABLE ---
 
     @GET("rest/v1/groups")

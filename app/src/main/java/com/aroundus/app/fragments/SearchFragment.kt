@@ -17,9 +17,12 @@ import com.aroundus.app.adapters.PostAdapter
 import com.aroundus.app.databinding.FragmentSearchBinding
 import com.aroundus.app.models.Post
 import com.aroundus.app.models.UserEntity
+import com.aroundus.app.repository.LikeRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.applyAroundUsTheme
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.Job
@@ -33,6 +36,7 @@ class SearchFragment : Fragment() {
 
     private val postRepository = PostRepository()
     private val userRepository = UserRepository()
+    private val likeRepository = LikeRepository()
 
     private val allPosts = mutableListOf<Post>()
     private val searchPostsResults = mutableListOf<Post>()
@@ -75,7 +79,21 @@ class SearchFragment : Fragment() {
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.postDetailFragment, bundle)
             },
-            onLikeClick = { },
+            onLikeClick = { post ->
+                lifecycleScope.launch {
+                    when (val res = likeRepository.toggleLike(post.id, post.isLiked)) {
+                        is NetworkResult.Success -> {
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.ANNOUNCEMENTS)
+                        }
+                        is NetworkResult.Error -> {
+                            Toast.makeText(context, "Could not update like: ${res.message}", Toast.LENGTH_SHORT).show()
+                            postAdapter.rollbackLike(post.id, post.isLiked, post.likesCount)
+                        }
+                    }
+                }
+            },
             onCommentClick = { post ->
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.commentsFragment, bundle)

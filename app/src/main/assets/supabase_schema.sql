@@ -184,3 +184,35 @@ CREATE POLICY "Allow users to insert own saved listings" ON public.saved_listing
 
 CREATE POLICY "Allow users to delete own saved listings" ON public.saved_listings
     FOR DELETE USING (auth.uid() IS NULL OR (auth.uid())::text = user_id OR (auth.jwt() ->> 'email' IS NOT NULL));
+
+-- 9. POST LIKES TABLE
+CREATE TABLE IF NOT EXISTS public.post_likes (
+    like_id TEXT PRIMARY KEY,
+    post_id TEXT NOT NULL REFERENCES public.posts(post_id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES public.users(user_id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_user_post_like UNIQUE (user_id, post_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON public.post_likes(post_id);
+CREATE INDEX IF NOT EXISTS idx_post_likes_user_id ON public.post_likes(user_id);
+
+ALTER TABLE public.post_likes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read post_likes" ON public.post_likes
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow users to insert own likes" ON public.post_likes
+    FOR INSERT WITH CHECK (
+        auth.uid() IS NULL OR 
+        (auth.uid())::text = user_id OR 
+        (auth.jwt() ->> 'email' IS NOT NULL)
+    );
+
+CREATE POLICY "Allow users to delete own likes" ON public.post_likes
+    FOR DELETE USING (
+        auth.uid() IS NULL OR 
+        (auth.uid())::text = user_id OR 
+        (auth.jwt() ->> 'email' IS NOT NULL)
+    );
+

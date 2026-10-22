@@ -22,6 +22,8 @@ import com.aroundus.app.models.toUIModel
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
+import com.aroundus.app.repository.LikeRepository
+import com.aroundus.app.repository.UserRepository
 import com.aroundus.app.utils.AppRefreshManager
 import com.aroundus.app.utils.LocationState
 import com.aroundus.app.utils.RefreshTarget
@@ -39,6 +41,8 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val postRepository = PostRepository()
+    private val likeRepository = LikeRepository()
+    private val userRepository = UserRepository()
     private val postList = mutableListOf<Post>()
     private val announcementList = mutableListOf<Post>()
     private lateinit var postAdapter: PostAdapter
@@ -154,7 +158,21 @@ class HomeFragment : Fragment() {
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.postDetailFragment, bundle)
             },
-            onLikeClick = { },
+            onLikeClick = { post ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    when (val res = likeRepository.toggleLike(post.id, post.isLiked)) {
+                        is NetworkResult.Success -> {
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.ANNOUNCEMENTS)
+                        }
+                        is NetworkResult.Error -> {
+                            Toast.makeText(context, "Could not update like: ${res.message}", Toast.LENGTH_SHORT).show()
+                            postAdapter.rollbackLike(post.id, post.isLiked, post.likesCount)
+                        }
+                    }
+                }
+            },
             onCommentClick = { post ->
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.commentsFragment, bundle)
@@ -182,7 +200,21 @@ class HomeFragment : Fragment() {
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.postDetailFragment, bundle)
             },
-            onLikeClick = { },
+            onLikeClick = { post ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    when (val res = likeRepository.toggleLike(post.id, post.isLiked)) {
+                        is NetworkResult.Success -> {
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.ANNOUNCEMENTS)
+                        }
+                        is NetworkResult.Error -> {
+                            Toast.makeText(context, "Could not update like: ${res.message}", Toast.LENGTH_SHORT).show()
+                            announcementAdapter.rollbackLike(post.id, post.isLiked, post.likesCount)
+                        }
+                    }
+                }
+            },
             onCommentClick = { post ->
                 val bundle = Bundle().apply { putString("postId", post.id) }
                 findNavController().navigate(R.id.commentsFragment, bundle)

@@ -63,6 +63,17 @@ data class CommentEntity(
     val timestamp: String = ""
 )
 
+data class PostLikeEntity(
+    @SerializedName(value = "like_id", alternate = ["likeId"])
+    val likeId: String = "",
+    @SerializedName(value = "post_id", alternate = ["postId"])
+    val postId: String = "",
+    @SerializedName(value = "user_id", alternate = ["userId"])
+    val userId: String = "",
+    @SerializedName(value = "created_at", alternate = ["createdAt"])
+    val createdAt: String? = null
+)
+
 data class GroupEntity(
     @SerializedName(value = "group_id", alternate = ["groupId"])
     val groupId: String = "",
@@ -325,7 +336,14 @@ fun formatTimeAgo(timestampStr: String?): String {
     }
 }
 
-fun PostEntity.toUIModel(userName: String = "Neighbor", userAvatarPath: String? = null, isVerified: Boolean = false): Post {
+fun PostEntity.toUIModel(
+    userName: String = "Neighbor",
+    userAvatarPath: String? = null,
+    isVerified: Boolean = false,
+    likesCount: Int = 0,
+    commentsCount: Int = 0,
+    isLiked: Boolean = false
+): Post {
     return Post(
         id = postId ?: "",
         userName = if (userName.isNullOrBlank()) "Neighbor" else userName,
@@ -335,8 +353,9 @@ fun PostEntity.toUIModel(userName: String = "Neighbor", userAvatarPath: String? 
         category = if (type.isNullOrBlank()) "General" else type,
         text = text ?: "",
         imageRes = if (!media.isNullOrBlank()) R.drawable.bg_image_placeholder else null,
-        likesCount = 0,
-        commentsCount = 0,
+        likesCount = likesCount,
+        commentsCount = commentsCount,
+        isLiked = isLiked,
         userAvatarPath = userAvatarPath,
         authorId = authorId ?: "",
         mediaUrl = media,

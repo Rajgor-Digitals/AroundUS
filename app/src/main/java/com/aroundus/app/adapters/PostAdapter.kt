@@ -24,7 +24,15 @@ class PostAdapter(
     private val onAuthorClick: ((Post) -> Unit)? = null
 ) : RecyclerView.Adapter<PostAdapter.PostViewHolder>() {
 
-    private val likedPosts = mutableSetOf<String>()
+    private val optimisticLikedStatus = mutableMapOf<String, Boolean>()
+    private val optimisticLikesCount = mutableMapOf<String, Int>()
+
+    fun rollbackLike(postId: String, originalLiked: Boolean, originalCount: Int) {
+        optimisticLikedStatus[postId] = originalLiked
+        optimisticLikesCount[postId] = originalCount
+        val idx = posts.indexOfFirst { it.id == postId }
+        if (idx != -1) notifyItemChanged(idx)
+    }
 
     inner class PostViewHolder(private val binding: ItemPostBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -65,8 +73,8 @@ class PostAdapter(
 
             binding.ivAvatar.loadUserAvatar(avatarPath, post.userAvatar)
 
-            val isLiked = likedPosts.contains(post.id)
-            val currentLikes = if (isLiked) post.likesCount + 1 else post.likesCount
+            val isLiked = optimisticLikedStatus[post.id] ?: post.isLiked
+            val currentLikes = optimisticLikesCount[post.id] ?: post.likesCount
             binding.tvLikesCount.text = currentLikes.toString()
 
             if (isLiked) {
@@ -118,18 +126,31 @@ class PostAdapter(
             }
 
             binding.btnLike.setOnClickListener {
-                if (likedPosts.contains(post.id)) {
-                    likedPosts.remove(post.id)
-                } else {
-                    likedPosts.add(post.id)
+                val wasLiked = optimisticLikedStatus[post.id] ?: post.isLiked
+                val prevCount = optimisticLikesCount[post.id] ?: post.likesCount
+                val nextLiked = !wasLiked
+                val nextCount = if (nextLiked) prevCount + 1 else (prevCount - 1).coerceAtLeast(0)
+
+                optimisticLikedStatus[post.id] = nextLiked
+                optimisticLikesCount[post.id] = nextCount
+
+                binding.tvLikesCount.text = nextCount.toString()
+                if (nextLiked) {
+                    binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite)
+                    binding.ivLikeIcon.setColorFilter(android.graphics.Color.parseColor("#EF4444"))
+                    binding.tvLikesCount.setTextColor(android.graphics.Color.parseColor("#EF4444"))
                     binding.ivLikeIcon.scaleX = 0.7f
                     binding.ivLikeIcon.scaleY = 0.7f
-                    binding.ivLikeIcon.animate().scaleX(1.2f).scaleY(1.2f).setDuration(150).withEndAction {
+                    binding.ivLikeIcon.animate().scaleX(1.25f).scaleY(1.25f).setDuration(150).withEndAction {
                         binding.ivLikeIcon.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
                     }.start()
+                } else {
+                    binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite_border)
+                    binding.ivLikeIcon.setColorFilter(android.graphics.Color.parseColor("#64748B"))
+                    binding.tvLikesCount.setTextColor(android.graphics.Color.parseColor("#64748B"))
                 }
-                bind(post)
-                onLikeClick(post)
+
+                onLikeClick(post.copy(isLiked = wasLiked, likesCount = prevCount))
             }
 
             binding.btnComment.setOnClickListener { onCommentClick(post) }

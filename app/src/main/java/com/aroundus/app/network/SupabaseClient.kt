@@ -32,6 +32,8 @@ object SupabaseClient {
         }
     }
 
+    fun getAppContext(): Context? = appContext
+
     fun getService(): SupabaseService {
         if (supabaseService == null) {
             val authInterceptor = Interceptor { chain ->
