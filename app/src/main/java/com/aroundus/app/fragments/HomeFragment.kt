@@ -1,12 +1,14 @@
 
 package com.aroundus.app.fragments
 
+import android.Manifest
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -21,7 +23,10 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.LocationState
 import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.UserLocationData
+import com.aroundus.app.utils.UserLocationManager
 import com.aroundus.app.utils.applyAroundUsTheme
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -40,6 +45,23 @@ class HomeFragment : Fragment() {
     private lateinit var announcementAdapter: PostAdapter
     private var autoRefreshJob: Job? = null
 
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        if (fineGranted || coarseGranted) {
+            startLocationDetection(forceRefresh = true)
+        } else {
+            val shouldShowRationale = shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) ||
+                                      shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION)
+            if (!shouldShowRationale) {
+                Toast.makeText(requireContext(), "Location permission denied. Tap location bar to set manually.", Toast.LENGTH_LONG).show()
+            }
+            updateLocationUI()
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -55,6 +77,7 @@ class HomeFragment : Fragment() {
         setupPostRecyclerView()
         setupAnnouncementsRecyclerView()
         setupClickListeners()
+        setupLocationBar()
         setupFilterTabs()
         setupSwipeRefresh()
         observeRefreshEvents()
@@ -219,7 +242,7 @@ class HomeFragment : Fragment() {
         }
 
         binding.btnLocationPicker.setOnClickListener {
-            Toast.makeText(requireContext(), "Location: Bhujpur, Kutch, Gujarat", Toast.LENGTH_SHORT).show()
+            openLocationBottomSheet()
         }
 
         binding.btnExploreNow.setOnClickListener {
@@ -279,6 +302,134 @@ class HomeFragment : Fragment() {
             binding.tabPopular.setTextColor(inactiveGray)
             binding.tabNearby.setTextColor(activeGreen)
         }
+    }
+
+    private fun setupLocationBar() {
+        updateLocationUI()
+
+        binding.btnLocationPicker.setOnClickListener {
+            openLocationBottomSheet()
+        }
+
+        binding.btnLocationRefresh.setOnClickListener {
+            checkPermissionsAndRefreshLocation()
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            UserLocationManager.currentSelectedLocation.collect { loc ->
+                updateLocationUI()
+            }
+        }
+
+        // Auto-detect on launch if no manual selection exists
+        val ctx = context ?: return
+        if (!UserLocationManager.isManualSelection(ctx)) {
+            if (UserLocationManager.hasLocationPermission(ctx)) {
+                startLocationDetection(forceRefresh = false)
+            } else if (UserLocationManager.getSelectedLocation(ctx) == null) {
+                // First-time user: request permission
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
+        }
+    }
+
+    private fun updateLocationUI() {
+        val b = _binding ?: return
+        val ctx = context ?: return
+        val selected = UserLocationManager.getSelectedLocation(ctx)
+        if (selected != null && selected.displayName.isNotBlank()) {
+            b.tvLocation.text = selected.displayName
+        } else {
+            b.tvLocation.text = "Tap to set location"
+        }
+    }
+
+    private fun checkPermissionsAndRefreshLocation() {
+        val ctx = context ?: return
+        if (!UserLocationManager.hasLocationPermission(ctx)) {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+            return
+        }
+
+        // Instant toggle: if user is currently on manual location, switch immediately in 0ms!
+        if (UserLocationManager.isManualSelection(ctx)) {
+            val instantLoc = UserLocationManager.switchToDeviceLocation(ctx)
+            if (instantLoc != null) {
+                updateLocationUI()
+                AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                Toast.makeText(ctx, "📍 Switched to: ${instantLoc.displayName}", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        startLocationDetection(forceRefresh = true)
+    }
+
+    private fun startLocationDetection(forceRefresh: Boolean) {
+        val ctx = context ?: return
+        val b = _binding ?: return
+
+        // Instant update if cached device location exists
+        val cachedDevice = UserLocationManager.getLastDeviceLocation(ctx)
+        if (cachedDevice != null && !UserLocationManager.isManualSelection(ctx)) {
+            updateLocationUI()
+        }
+
+        b.pbLocationLoading.visibility = View.VISIBLE
+        b.btnLocationRefresh.animate().rotationBy(360f).setDuration(600).start()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                when (val result = UserLocationManager.detectLocation(ctx, forceRefresh)) {
+                    is LocationState.Success -> {
+                        if (isAdded) {
+                            updateLocationUI()
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                        }
+                    }
+                    is LocationState.GpsDisabled -> {
+                        if (forceRefresh && isAdded) {
+                            Toast.makeText(ctx, "GPS is turned off. Tap location bar to enable.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    is LocationState.PermissionRequired -> {
+                        if (forceRefresh && isAdded) {
+                            locationPermissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        }
+                    }
+                    is LocationState.Error -> {
+                        if (forceRefresh && isAdded) {
+                            Toast.makeText(ctx, result.message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    else -> {}
+                }
+            } finally {
+                _binding?.pbLocationLoading?.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun openLocationBottomSheet() {
+        val sheet = LocationBottomSheetFragment.newInstance()
+        sheet.onLocationSelected = { loc ->
+            updateLocationUI()
+        }
+        sheet.show(parentFragmentManager, LocationBottomSheetFragment.TAG)
     }
 
     override fun onDestroyView() {

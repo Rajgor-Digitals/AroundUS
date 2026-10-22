@@ -2,6 +2,7 @@ package com.aroundus.app.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.aroundus.app.databinding.ActivityForgotPasswordBinding
 
@@ -23,7 +24,8 @@ class ForgotPasswordActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             binding.tilEmail.error = null
-            startActivity(Intent(this, OtpVerificationActivity::class.java))
+            Toast.makeText(this, "Password reset instructions sent to $email", Toast.LENGTH_LONG).show()
+            finish()
         }
 
         binding.btnBackToLogin.setOnClickListener { finish() }

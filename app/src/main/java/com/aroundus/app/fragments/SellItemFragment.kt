@@ -66,6 +66,11 @@ class SellItemFragment : Fragment() {
         setupCategorySelection()
         setupConditionSelection()
         setupPublishAction()
+
+        val defaultLocality = com.aroundus.app.utils.UserLocationManager.getSelectedLocation(requireContext())?.displayName
+        if (!defaultLocality.isNullOrBlank()) {
+            binding.etLocality.setText(defaultLocality)
+        }
     }
 
     private fun setupTopBar() {
@@ -223,7 +228,8 @@ class SellItemFragment : Fragment() {
 
             val title = binding.etTitle.text.toString().trim()
             val priceStr = binding.etPrice.text.toString().trim()
-            val locality = binding.etLocality.text.toString().trim().ifBlank { "Bhujpur Village, Kutch" }
+            val defaultLocality = com.aroundus.app.utils.UserLocationManager.getSelectedLocation(requireContext())?.displayName ?: "Nearby"
+            val locality = binding.etLocality.text.toString().trim().ifBlank { defaultLocality }
             val description = binding.etDescription.text.toString().trim()
             val brand = binding.etBrand.text.toString().trim()
             val isNegotiable = binding.switchNegotiable.isChecked

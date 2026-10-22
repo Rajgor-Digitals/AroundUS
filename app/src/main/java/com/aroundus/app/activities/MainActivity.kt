@@ -183,7 +183,16 @@ class MainActivity : AppCompatActivity() {
             binding.navigationDrawer.tvDrawerName.text = name
             val handle = email.substringBefore("@")
             binding.navigationDrawer.tvDrawerHandle.text = "@$handle"
-            binding.navigationDrawer.tvDrawerLocation.text = "Bhujpur, Kutch"
+            val activeLocation = com.aroundus.app.utils.UserLocationManager.getSelectedLocation(this)?.displayName ?: "Location not set"
+            binding.navigationDrawer.tvDrawerLocation.text = activeLocation
+            binding.navigationDrawer.tvDrawerLocation.setOnClickListener {
+                closeDrawer()
+                val sheet = com.aroundus.app.fragments.LocationBottomSheetFragment.newInstance()
+                sheet.onLocationSelected = { loc ->
+                    binding.navigationDrawer.tvDrawerLocation.text = loc.displayName
+                }
+                sheet.show(supportFragmentManager, com.aroundus.app.fragments.LocationBottomSheetFragment.TAG)
+            }
 
             // Set Avatar - prioritize remote URL from Supabase Storage
             val cachedAvatar = SupabaseClient.getAvatarPath(currentUserId)

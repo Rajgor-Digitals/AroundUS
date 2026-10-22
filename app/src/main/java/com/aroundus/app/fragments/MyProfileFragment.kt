@@ -451,7 +451,7 @@ class MyProfileFragment : Fragment() {
         val userToEdit = myOwnUserEntity
         val currentName = userToEdit?.name ?: SupabaseClient.getCurrentUserName() ?: ""
         val currentBio = userToEdit?.bio ?: ""
-        val currentLocation = userToEdit?.location ?: "Bhujpur, Kutch, Gujarat"
+        val currentLocation = userToEdit?.location?.takeIf { it.isNotBlank() } ?: com.aroundus.app.utils.UserLocationManager.getSelectedLocation(requireContext())?.displayName ?: ""
         val currentPhone = userToEdit?.phone ?: ""
 
         etName.setText(currentName)
@@ -521,6 +521,14 @@ class MyProfileFragment : Fragment() {
                         myOwnUserEntity = result.data
                         viewedUserEntity = result.data
                         PostRepository.updateAuthorAvatar(authUserId, photoToSave)
+                        val newLoc = newLocation.trim()
+                        if (newLoc.isNotBlank()) {
+                            com.aroundus.app.utils.UserLocationManager.saveSelectedLocation(
+                                requireContext(),
+                                com.aroundus.app.utils.UserLocationData(displayName = newLoc, locality = newLoc, isManualSelection = true),
+                                isManual = true
+                            )
+                        }
                         AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                         AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
                         Toast.makeText(requireContext(), "Profile updated successfully!", Toast.LENGTH_SHORT).show()
@@ -561,7 +569,7 @@ class MyProfileFragment : Fragment() {
         if (isOwnProfile) {
             val initialName = myOwnUserEntity?.name?.takeIf { it.isNotBlank() } ?: fallbackName
             val initialEmail = myOwnUserEntity?.email?.takeIf { it.isNotBlank() } ?: fallbackEmail
-            val initialLocation = myOwnUserEntity?.location?.takeIf { it.isNotBlank() } ?: "Bhujpur, Kutch, Gujarat"
+            val initialLocation = myOwnUserEntity?.location?.takeIf { it.isNotBlank() } ?: com.aroundus.app.utils.UserLocationManager.getSelectedLocation(requireContext())?.displayName ?: ""
             val initialBio = myOwnUserEntity?.bio?.takeIf {
                 it.isNotBlank() && !it.startsWith("/") && !it.startsWith("content://") && !it.startsWith("file://")
             } ?: "Passionate about building a better community. Let's connect and create a positive impact together."
@@ -574,7 +582,7 @@ class MyProfileFragment : Fragment() {
         } else {
             binding.tvUserName.text = "Loading..."
             binding.tvUsername.text = ""
-            binding.tvUserLocation.text = "Bhujpur, Kutch, Gujarat"
+            binding.tvUserLocation.text = ""
             binding.tvBio.text = ""
             displayAvatar(null)
         }
@@ -592,7 +600,7 @@ class MyProfileFragment : Fragment() {
 
                     val realName = profile.name.ifBlank { fallbackName }
                     val realEmail = profile.email.ifBlank { fallbackEmail }
-                    val realLocation = profile.location?.takeIf { it.isNotBlank() } ?: "Bhujpur, Kutch, Gujarat"
+                    val realLocation = profile.location?.takeIf { it.isNotBlank() } ?: com.aroundus.app.utils.UserLocationManager.getSelectedLocation(requireContext())?.displayName ?: ""
                     val realBio = profile.bio?.takeIf {
                         it.isNotBlank() && !it.startsWith("/") && !it.startsWith("content://") && !it.startsWith("file://")
                     } ?: "Passionate about building a better community. Let's connect and create a positive impact together."

@@ -60,6 +60,18 @@ class ProfileSetupActivity : AppCompatActivity() {
         }
     }
 
+    private val profileLocationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseGranted = permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        if (fineGranted || coarseGranted) {
+            detectLocationForProfile()
+        } else {
+            Toast.makeText(this, "Permission denied. You can enter your neighborhood manually.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityProfileSetupBinding.inflate(layoutInflater)
@@ -137,8 +149,13 @@ class ProfileSetupActivity : AppCompatActivity() {
         val generatedUsername = if (rawUsername.isNotBlank()) rawUsername else targetEmail.substringBefore("@")
         binding.etUsername.setText(generatedUsername)
 
-        // Default neighborhood
-        binding.etNeighborhood.setText("Bhujpur, Kutch")
+        // Pre-fill location from detected location if available
+        val detected = com.aroundus.app.utils.UserLocationManager.getSelectedLocation(this)?.displayName
+        if (!detected.isNullOrBlank()) {
+            binding.etNeighborhood.setText(detected)
+        } else {
+            binding.etNeighborhood.setText("")
+        }
     }
 
     private fun setupPhotoPickerListeners() {
@@ -196,14 +213,49 @@ class ProfileSetupActivity : AppCompatActivity() {
     }
 
     private fun setupLocationSuggestions() {
-        binding.chipLocBhujpur.setOnClickListener {
-            binding.etNeighborhood.setText("Bhujpur Center, Kutch")
+        binding.chipAutoDetectLocation.setOnClickListener {
+            checkPermissionsAndDetectForProfile()
+        }
+        binding.chipLocMundra.setOnClickListener {
+            binding.etNeighborhood.setText("Mundra, Gujarat")
         }
         binding.chipLocKutch.setOnClickListener {
             binding.etNeighborhood.setText("Kutch West Community")
         }
-        binding.chipLocMundra.setOnClickListener {
-            binding.etNeighborhood.setText("Mundra Road, Bhujpur")
+        binding.chipLocMundraPort.setOnClickListener {
+            binding.etNeighborhood.setText("Mundra Port Road")
+        }
+    }
+
+    private fun checkPermissionsAndDetectForProfile() {
+        if (!com.aroundus.app.utils.UserLocationManager.hasLocationPermission(this)) {
+            profileLocationPermissionLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+            return
+        }
+        detectLocationForProfile()
+    }
+
+    private fun detectLocationForProfile() {
+        Toast.makeText(this, "Detecting your location via GPS...", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            when (val res = com.aroundus.app.utils.UserLocationManager.detectLocation(this@ProfileSetupActivity, forceRefresh = true)) {
+                is com.aroundus.app.utils.LocationState.Success -> {
+                    binding.etNeighborhood.setText(res.location.displayName)
+                    Toast.makeText(this@ProfileSetupActivity, "📍 Location detected: ${res.location.displayName}", Toast.LENGTH_SHORT).show()
+                }
+                is com.aroundus.app.utils.LocationState.GpsDisabled -> {
+                    Toast.makeText(this@ProfileSetupActivity, "GPS is turned off. Please enable location in device settings.", Toast.LENGTH_LONG).show()
+                }
+                is com.aroundus.app.utils.LocationState.Error -> {
+                    Toast.makeText(this@ProfileSetupActivity, res.message, Toast.LENGTH_SHORT).show()
+                }
+                else -> {}
+            }
         }
     }
 
@@ -342,6 +394,17 @@ class ProfileSetupActivity : AppCompatActivity() {
 
                 // 3. Save profile to Supabase & local cache
                 userRepository.updateUserProfile(userEntity)
+
+                // Save to UserLocationManager
+                com.aroundus.app.utils.UserLocationManager.saveSelectedLocation(
+                    this@ProfileSetupActivity,
+                    com.aroundus.app.utils.UserLocationData(
+                        displayName = neighborhood,
+                        locality = neighborhood,
+                        isManualSelection = true
+                    ),
+                    isManual = true
+                )
 
                 // 4. Update session
                 SupabaseClient.saveSession(

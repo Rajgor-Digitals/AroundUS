@@ -153,7 +153,7 @@ class UserRepository {
                     name = cleanName,
                     email = cleanEmail,
                     phone = phone?.trim(),
-                    location = "Bhujpur, Kutch",
+                    location = null,
                     bio = "Member of AroundUs community."
                 )
 
@@ -210,7 +210,7 @@ class UserRepository {
                             userId = userId,
                             name = userName,
                             email = cleanEmail,
-                            location = "Bhujpur, Kutch"
+                            location = null
                         )
                         try { service.createUser(user = userEntity) } catch (_: Exception) {}
 
@@ -329,7 +329,7 @@ class UserRepository {
                 userId = fallbackId,
                 name = currentName,
                 email = currentEmail.ifBlank { "$fallbackId@aroundus.app" },
-                location = "Bhujpur, Kutch",
+                location = null,
                 profilePhoto = currentAvatar
             )
             try {
@@ -931,7 +931,7 @@ class PostRepository {
                             id = p.id ?: "",
                             userName = if (p.userName.isNullOrBlank()) "Neighbor" else p.userName,
                             userAvatar = p.userAvatar,
-                            neighborhood = if (p.neighborhood.isNullOrBlank()) "Bhujpur, Kutch" else p.neighborhood,
+                            neighborhood = if (p.neighborhood.isNullOrBlank()) "Nearby" else p.neighborhood,
                             timeAgo = if (p.timeAgo.isNullOrBlank()) "Just now" else p.timeAgo,
                             category = if (p.category.isNullOrBlank()) "General" else p.category,
                             text = p.text ?: "",
@@ -1091,7 +1091,7 @@ class PostRepository {
         text: String,
         type: String = "General",
         media: String? = null,
-        location: String? = "Bhujpur, Kutch",
+        location: String? = null,
         context: Context? = null
     ): NetworkResult<Post> =
         withContext(Dispatchers.IO) {
@@ -1108,6 +1108,10 @@ class PostRepository {
 
                 globalAuthorCache[authorId] = Pair(currentName, currentAvatar)
 
+                val effectiveLocation = location?.ifBlank { null }
+                    ?: (context?.let { com.aroundus.app.utils.UserLocationManager.getSelectedLocation(it)?.displayName })
+                    ?: "Nearby"
+
                 // 2. Create the post entity
                 val newPost = PostEntity(
                     postId = "post_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
@@ -1116,7 +1120,7 @@ class PostRepository {
                     text = text.trim(),
                     media = media,
                     timestamp = System.currentTimeMillis().toString(),
-                    location = location ?: "Bhujpur, Kutch"
+                    location = effectiveLocation
                 )
 
                 val resp = service.createPost(post = newPost)

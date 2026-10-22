@@ -366,7 +366,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="4dp"
                                 android:fontFamily="sans-serif"
-                                android:text="Bhujpur, Kutch, Gujarat"
+                                android:text="Select Location"
                                 android:textColor="#64748B"
                                 android:textSize="12sp" />
                         </LinearLayout>

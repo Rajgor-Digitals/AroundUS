@@ -11,6 +11,7 @@ class AroundUsApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         SupabaseClient.init(this)
+        com.aroundus.app.utils.UserLocationManager.init(this)
         com.aroundus.app.utils.UserPresenceManager.init(this)
         com.aroundus.app.utils.MessageNotificationManager.initNotificationChannel(this)
 

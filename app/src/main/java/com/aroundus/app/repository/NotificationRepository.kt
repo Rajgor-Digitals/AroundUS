@@ -97,7 +97,7 @@ class NotificationRepository {
                     Notification(
                         id = welcomeId,
                         type = "follow",
-                        text = "Welcome to AroundUS! Connect with verified neighbors in Bhujpur, Kutch.",
+                        text = "Welcome to AroundUS! Connect with verified neighbors in your local community.",
                         avatarRes = R.drawable.ic_check_circle,
                         time = "1d ago",
                         isUnread = !readIds.contains(welcomeId)

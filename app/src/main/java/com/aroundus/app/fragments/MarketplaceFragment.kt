@@ -94,10 +94,17 @@ class MarketplaceFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             AppRefreshManager.refreshEvents.collect { target ->
                 if (target == RefreshTarget.MARKETPLACE || target == RefreshTarget.ALL) {
+                    updateLocationBadge()
                     loadMarketplaceData(showLoadingIndicator = false)
                 }
             }
         }
+    }
+
+    private fun updateLocationBadge() {
+        val selected = com.aroundus.app.utils.UserLocationManager.getSelectedLocation(requireContext())
+        val locName = selected?.displayName ?: "Nearby"
+        binding.tvLocationBadge.text = "$locName · within 5 km"
     }
 
     private fun setupRecyclerView() {
@@ -198,6 +205,17 @@ class MarketplaceFragment : Fragment() {
     }
 
     private fun setupTopBarActions() {
+        updateLocationBadge()
+
+        binding.tvLocationBadge.setOnClickListener {
+            val sheet = LocationBottomSheetFragment.newInstance()
+            sheet.onLocationSelected = {
+                updateLocationBadge()
+                loadMarketplaceData(showLoadingIndicator = true)
+            }
+            sheet.show(parentFragmentManager, LocationBottomSheetFragment.TAG)
+        }
+
         binding.btnMenu.setOnClickListener {
             (activity as? MainActivity)?.openDrawer()
         }

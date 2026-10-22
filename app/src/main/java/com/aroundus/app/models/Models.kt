@@ -4,7 +4,7 @@ data class Post(
     val id: String = "",
     val userName: String = "Neighbor",
     val userAvatar: Int = 0,
-    val neighborhood: String = "Bhujpur, Kutch",
+    val neighborhood: String = "Nearby",
     val timeAgo: String = "Just now",
     val category: String = "General",
     val text: String = "",

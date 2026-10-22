@@ -37,7 +37,7 @@ class CreatePostFragment : Fragment() {
 
     private var selectedCategory = "General"
     private var selectedAudience = "Public"
-    private var selectedLocation = "Bhujpur, Kutch"
+    private var selectedLocation = ""
     private var selectedMediaUri: Uri? = null
 
     private val postRepository = PostRepository()
@@ -103,9 +103,22 @@ class CreatePostFragment : Fragment() {
         val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
         val currentEmail = SupabaseClient.getCurrentUserEmail() ?: ""
 
+        val detectedLocation = com.aroundus.app.utils.UserLocationManager.getSelectedLocation(requireContext())?.displayName
+        if (selectedLocation.isBlank() && !detectedLocation.isNullOrBlank()) {
+            selectedLocation = detectedLocation
+        }
+
         binding.tvAuthorName.text = userName
         binding.etPostContent.hint = "What's on your mind, $userName?"
-        binding.tvAuthorLocation.text = selectedLocation
+        binding.tvAuthorLocation.text = if (selectedLocation.isNotBlank()) selectedLocation else "Select Location"
+        binding.tvAuthorLocation.setOnClickListener {
+            val sheet = LocationBottomSheetFragment.newInstance()
+            sheet.onLocationSelected = { loc ->
+                selectedLocation = loc.displayName
+                binding.tvAuthorLocation.text = selectedLocation
+            }
+            sheet.show(parentFragmentManager, LocationBottomSheetFragment.TAG)
+        }
 
         // 1. Instant 0ms local avatar preview
         val localAvatarFile = if (currentUserId.isNotBlank()) {

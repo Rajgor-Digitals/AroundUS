@@ -329,15 +329,15 @@ class AnnouncementsFragment : Fragment() {
                                 authorAvatarUrl = null,
                                 authorAvatarRes = null,
                                 isVerified = true,
-                                location = event.location?.ifBlank { "Bhujpur, Kutch" } ?: "Bhujpur, Kutch",
+                                location = event.location?.ifBlank { "Nearby" } ?: "Nearby",
                                 timeAgo = "Upcoming",
                                 title = event.title.ifBlank { "Community Event" },
                                 category = "Events",
-                                content = "Event in ${event.location ?: "Bhujpur, Kutch"}: ${event.title}",
+                                content = "Event: ${event.title}",
                                 eventDate = event.date,
                                 eventTime = event.date,
-                                eventVenue = event.location ?: "Bhujpur, Kutch",
-                                eventAddress = event.location ?: "Bhujpur, Kutch",
+                                eventVenue = event.location ?: "Nearby Venue",
+                                eventAddress = event.location ?: "Nearby",
                                 authorId = event.creatorId
                             )
                         }

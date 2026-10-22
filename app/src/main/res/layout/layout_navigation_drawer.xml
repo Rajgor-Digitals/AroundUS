@@ -104,7 +104,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="5dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="Bhujpur, Kutch"
+                android:text="Location not set"
                 android:textColor="#0D8A3F"
                 android:textSize="12sp" />
         </LinearLayout>

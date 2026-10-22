@@ -260,7 +260,7 @@
                         android:ellipsize="end"
                         android:fontFamily="sans-serif-medium"
                         android:maxLines="1"
-                        android:text="Bhujpur, Kutch, Gujarat"
+                        android:text=""
                         android:textColor="#1E293B"
                         android:textSize="12sp" />
                 </LinearLayout>

@@ -585,7 +585,7 @@
                         android:layout_marginStart="12dp"
                         android:layout_weight="1"
                         android:background="@null"
-                        android:hint="e.g. Bhujpur, Kutch"
+                        android:hint="e.g. City or Neighborhood"
                         android:imeOptions="actionNext"
                         android:importantForAutofill="no"
                         android:inputType="textPostalAddress|textCapWords"
@@ -607,9 +607,26 @@
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/chipLocBhujpur"
+                            android:id="@+id/chipAutoDetectLocation"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:background="@drawable/bg_pill_audience"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif-bold"
+                            android:paddingStart="10dp"
+                            android:paddingTop="5dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="5dp"
+                            android:text="📍 Detect GPS"
+                            android:textColor="#0D8A3F"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/chipLocMundra"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
                             android:background="@drawable/bg_step_badge"
                             android:clickable="true"
                             android:focusable="true"
@@ -618,7 +635,7 @@
                             android:paddingTop="5dp"
                             android:paddingEnd="10dp"
                             android:paddingBottom="5dp"
-                            android:text="🏡 Bhujpur Center"
+                            android:text="🏙️ Mundra"
                             android:textColor="#065F46"
                             android:textSize="12sp" />
 
@@ -640,7 +657,7 @@
                             android:textSize="12sp" />
 
                         <TextView
-                            android:id="@+id/chipLocMundra"
+                            android:id="@+id/chipLocMundraPort"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"

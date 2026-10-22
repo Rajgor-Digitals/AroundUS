@@ -146,17 +146,14 @@ class RegisterActivity : AppCompatActivity() {
 
                     when (result) {
                         is com.aroundus.app.repository.NetworkResult.Success -> {
-                            val otpRepository = com.aroundus.app.repository.OtpRepository()
-                            val generatedOtp = otpRepository.generate6DigitOtp()
-                            otpRepository.sendOtp(email, generatedOtp)
+                            Toast.makeText(this@RegisterActivity, "Account created successfully!", Toast.LENGTH_SHORT).show()
 
-                            Toast.makeText(this@RegisterActivity, "OTP sent to $email", Toast.LENGTH_LONG).show()
-
-                            val intent = Intent(this@RegisterActivity, OtpVerificationActivity::class.java).apply {
+                            val intent = Intent(this@RegisterActivity, ProfileSetupActivity::class.java).apply {
                                 putExtra("email", email)
-                                putExtra("otpCode", generatedOtp)
+                                putExtra("name", name)
                             }
                             startActivity(intent)
+                            finish()
                         }
                         is com.aroundus.app.repository.NetworkResult.Error -> {
                             Toast.makeText(this@RegisterActivity, result.message, Toast.LENGTH_LONG).show()
@@ -168,7 +165,9 @@ class RegisterActivity : AppCompatActivity() {
 
         binding.btnGoogle.setOnClickListener {
             Toast.makeText(this, "Signing up with Google...", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, OtpVerificationActivity::class.java))
+            val intent = Intent(this, ProfileSetupActivity::class.java)
+            startActivity(intent)
+            finish()
         }
 
         binding.btnLogin.setOnClickListener {

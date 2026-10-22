@@ -68,7 +68,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
-                        android:text="Bhujpur, Kutch · within 5 km"
+                        android:text="Nearby · within 5 km"
                         android:textColor="#0D8A3F"
                         android:textSize="11sp" />
 

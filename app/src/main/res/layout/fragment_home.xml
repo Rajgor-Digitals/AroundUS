@@ -140,32 +140,47 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
+                android:background="@drawable/bg_location_pill"
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="5dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/llHeaderBrand">
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:id="@+id/ivLocationPin"
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
                     android:contentDescription="Location Pin"
                     android:src="@drawable/ic_location"
                     app:tint="#0D8A3F" />
+
+                <ProgressBar
+                    android:id="@+id/pbLocationLoading"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="4dp"
+                    android:indeterminateTint="#0D8A3F"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/tvLocation"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
+                    android:ellipsize="end"
                     android:fontFamily="sans-serif-bold"
-                    android:text="Bhujpur, Kutch, Gujarat"
+                    android:maxLines="1"
+                    android:text="Detecting location..."
                     android:textColor="#111827"
                     android:textSize="13.5sp" />
 
                 <ImageView
+                    android:id="@+id/ivLocationDropdown"
                     android:layout_width="14dp"
                     android:layout_height="14dp"
                     android:layout_marginStart="4dp"
@@ -173,6 +188,17 @@
                     android:rotation="90"
                     android:src="@drawable/ic_chevron_right"
                     app:tint="#64748B" />
+
+                <ImageButton
+                    android:id="@+id/btnLocationRefresh"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="6dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Refresh Location"
+                    android:padding="3dp"
+                    android:src="@drawable/ic_refresh"
+                    app:tint="#0D8A3F" />
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

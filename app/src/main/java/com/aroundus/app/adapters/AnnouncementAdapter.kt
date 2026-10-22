@@ -33,8 +33,8 @@ class AnnouncementAdapter(
 
             // 1. Author Info
             binding.tvAuthorName.text = announcement.authorName.ifBlank { "Neighbor" }
-            binding.ivVerifiedBadge.visibility = if (announcement.isVerified) View.VISIBLE else View.GONE
-            binding.tvLocationTime.text = "${announcement.location.ifBlank { "Bhujpur, Kutch" }}  •  ${announcement.timeAgo}"
+            val locDisplay = announcement.location.ifBlank { "Nearby" }
+            binding.tvLocationTime.text = "$locDisplay  •  ${announcement.timeAgo}"
 
             // Avatar resolution
             val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
