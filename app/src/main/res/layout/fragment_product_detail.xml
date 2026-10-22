@@ -447,7 +447,7 @@
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:fontFamily="sans-serif-bold"
-            android:text="Chat with Seller"
+            android:text="Contact Seller"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
             app:backgroundTint="#0D8A3F"

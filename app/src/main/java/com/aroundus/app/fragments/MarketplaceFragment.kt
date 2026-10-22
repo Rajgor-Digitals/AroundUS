@@ -200,6 +200,12 @@ class MarketplaceFragment : Fragment() {
             putExtra("avatarUrl", product.sellerAvatarUrl)
             putExtra("avatarRes", product.sellerAvatarRes)
             putExtra("isOnline", true)
+            putExtra("autoSendProductInquiry", true)
+            putExtra("productId", product.id)
+            putExtra("productName", product.name)
+            putExtra("productPrice", product.price)
+            putExtra("productImageUrl", product.imageUrl)
+            putExtra("productImageRes", product.imageRes)
         }
         startActivity(intent)
     }

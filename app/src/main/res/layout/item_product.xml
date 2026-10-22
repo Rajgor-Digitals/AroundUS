@@ -234,16 +234,17 @@
                     <ImageView
                         android:layout_width="10dp"
                         android:layout_height="10dp"
-                        android:contentDescription="Chat"
+                        android:contentDescription="Message seller"
                         android:src="@drawable/ic_message"
                         app:tint="#0D8A3F" />
 
                     <TextView
+                        android:id="@+id/tvQuickChat"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="3dp"
                         android:fontFamily="sans-serif-bold"
-                        android:text="Chat"
+                        android:text="Message"
                         android:textColor="#0D8A3F"
                         android:textSize="10.5sp" />
 

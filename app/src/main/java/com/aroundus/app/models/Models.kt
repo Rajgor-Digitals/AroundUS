@@ -92,6 +92,14 @@ data class ChatItem(
     val avatarUrl: String? = null
 )
 
+data class ProductCardAttachment(
+    val id: String = "",
+    val title: String = "",
+    val price: String = "",
+    val imageUrl: String? = null,
+    val imageRes: Int = 0
+)
+
 data class Message(
     val text: String,
     val isSent: Boolean,
@@ -99,7 +107,8 @@ data class Message(
     val id: String = "",
     var isSeen: Boolean = false,
     var seenTime: String? = null,
-    val timestampMs: Long = 0L
+    val timestampMs: Long = 0L,
+    val productCard: ProductCardAttachment? = null
 )
 
 data class Notification(

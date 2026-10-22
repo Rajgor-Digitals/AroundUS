@@ -33,6 +33,26 @@ class MainActivity : AppCompatActivity() {
         setupBottomNavigation()
         setupDrawer()
         requestNotificationPermission()
+        handleOpenProductId(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleOpenProductId(intent)
+    }
+
+    private fun handleOpenProductId(targetIntent: Intent?) {
+        val prodId = targetIntent?.getStringExtra("openProductId")
+        if (!prodId.isNullOrBlank()) {
+            targetIntent.removeExtra("openProductId")
+            val bundle = Bundle().apply {
+                putString("productId", prodId)
+            }
+            try {
+                navController.navigate(R.id.productDetailFragment, bundle)
+            } catch (_: Exception) {}
+        }
     }
 
     private fun requestNotificationPermission() {

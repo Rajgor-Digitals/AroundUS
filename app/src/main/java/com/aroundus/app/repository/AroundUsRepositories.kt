@@ -1912,7 +1912,7 @@ class MessageRepository {
                             id = partnerId,
                             userName = partnerName,
                             avatarRes = 0,
-                            lastMessage = plainText,
+                            lastMessage = com.aroundus.app.utils.ProductMessageUtils.cleanMessagePreview(plainText),
                             time = formattedTime,
                             unreadCount = 0,
                             isOnline = isPartnerOnline,

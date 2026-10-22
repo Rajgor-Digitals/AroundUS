@@ -242,7 +242,7 @@ object MessageNotificationManager {
                                         context = context,
                                         senderId = msg.senderId,
                                         senderName = senderName,
-                                        messageText = plainText,
+                                        messageText = ProductMessageUtils.cleanMessagePreview(plainText),
                                         avatarUrl = senderAvatar
                                     )
                                 }

@@ -3,6 +3,7 @@ package com.aroundus.app.activities
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -23,6 +24,7 @@ import com.aroundus.app.R
 import com.aroundus.app.adapters.MessageAdapter
 import com.aroundus.app.databinding.ActivityConversationBinding
 import com.aroundus.app.models.Message
+import com.aroundus.app.utils.ProductMessageUtils
 import com.aroundus.app.network.RealtimeTypingManager
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.MessageRepository
@@ -244,7 +246,9 @@ class ConversationActivity : AppCompatActivity() {
 
     private fun setupMessagesList() {
         messages.clear()
-        messageAdapter = MessageAdapter(messages)
+        messageAdapter = MessageAdapter(messages) { productCard ->
+            openProductDetail(productCard.id)
+        }
         binding.rvMessages.apply {
             layoutManager = LinearLayoutManager(this@ConversationActivity).apply {
                 stackFromEnd = true
@@ -253,9 +257,81 @@ class ConversationActivity : AppCompatActivity() {
         }
     }
 
+    private fun openProductDetail(productId: String) {
+        if (productId.isBlank()) return
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra("openProductId", productId)
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        startActivity(intent)
+    }
+
     private fun loadInitialMessages() {
         lifecycleScope.launch {
             fetchMessagesAndCheckUpdate(isInitial = true)
+            handleAutoProductInquiry()
+            handlePrefillMessage()
+        }
+    }
+
+    private fun handlePrefillMessage() {
+        val prefill = intent.getStringExtra("prefillMessage")
+        if (!prefill.isNullOrBlank()) {
+            binding.etMessage.setText(prefill)
+            binding.etMessage.setSelection(binding.etMessage.text.length)
+        }
+    }
+
+    private fun handleAutoProductInquiry() {
+        val shouldAutoSend = intent.getBooleanExtra("autoSendProductInquiry", false)
+        if (!shouldAutoSend) return
+        intent.removeExtra("autoSendProductInquiry")
+
+        val prodId = intent.getStringExtra("productId") ?: ""
+        val prodName = intent.getStringExtra("productName") ?: ""
+        val prodPrice = intent.getStringExtra("productPrice") ?: ""
+        val prodImageUrl = intent.getStringExtra("productImageUrl")
+        val prodImageRes = intent.getIntExtra("productImageRes", 0)
+
+        if (prodName.isBlank() && prodId.isBlank()) return
+
+        val rawEncodedText = ProductMessageUtils.encodeProductMessage(
+            id = prodId,
+            title = prodName,
+            price = prodPrice,
+            imageUrl = prodImageUrl,
+            imageRes = prodImageRes
+        )
+
+        val (cleanText, attachment) = ProductMessageUtils.parseMessage(rawEncodedText)
+        val currentTime = timeFormat.format(Date())
+        val now = System.currentTimeMillis()
+
+        val localMsg = Message(
+            text = cleanText,
+            isSent = true,
+            time = currentTime,
+            isSeen = false,
+            timestampMs = now,
+            productCard = attachment
+        )
+
+        messages.add(localMsg)
+        messageAdapter.notifyItemInserted(messages.size - 1)
+        binding.rvMessages.scrollToPosition(messages.size - 1)
+
+        lifecycleScope.launch {
+            if (currentUserId.isBlank()) {
+                currentUserId = userRepository.resolveValidAuthorId().ifBlank {
+                    SupabaseClient.getCurrentUserId() ?: ""
+                }
+            }
+            val result = messageRepository.sendMessage(receiverId = recipientUserId, text = rawEncodedText)
+            if (result is NetworkResult.Success) {
+                AppRefreshManager.notifyDataChanged(RefreshTarget.MESSAGES)
+            } else if (result is NetworkResult.Error) {
+                Toast.makeText(this@ConversationActivity, "Failed to send inquiry: ${result.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -292,14 +368,16 @@ class ConversationActivity : AppCompatActivity() {
                 typingDebounceHandler.removeCallbacks(stopTypingRunnable)
                 sendTypingBroadcast(false)
 
+                val (cleanText, productAttachment) = ProductMessageUtils.parseMessage(text)
                 val currentTime = timeFormat.format(Date())
                 val now = System.currentTimeMillis()
                 val localMsg = Message(
-                    text = text,
+                    text = cleanText,
                     isSent = true,
                     time = currentTime,
                     isSeen = false,
-                    timestampMs = now
+                    timestampMs = now,
+                    productCard = productAttachment
                 )
                 messages.add(localMsg)
                 messageAdapter.notifyItemInserted(messages.size - 1)
@@ -583,16 +661,18 @@ class ConversationActivity : AppCompatActivity() {
             when (val result = messageRepository.fetchGroupMessages(groupId)) {
                 is NetworkResult.Success -> {
                     val fetchedMessages = result.data.map { entity ->
+                        val (cleanText, productCard) = ProductMessageUtils.parseMessage(entity.text)
                         val timestampLong = entity.timestamp.toLongOrNull() ?: 0L
                         val timeFormatted = if (timestampLong > 0L) timeFormat.format(Date(timestampLong)) else "Now"
                         val isSentByMe = entity.senderId == authorId
                         Message(
-                            text = entity.text,
+                            text = cleanText,
                             isSent = isSentByMe,
                             time = timeFormatted,
                             id = entity.messageId,
                             isSeen = true,
-                            timestampMs = timestampLong
+                            timestampMs = timestampLong,
+                            productCard = productCard
                         )
                     }
 
@@ -606,11 +686,16 @@ class ConversationActivity : AppCompatActivity() {
                     } else {
                         var hasNew = false
                         for (newMsg in fetchedMessages) {
-                            val alreadyExists = messages.any {
+                            val existingIdx = messages.indexOfFirst {
                                 (it.id.isNotBlank() && it.id == newMsg.id) ||
-                                (it.id.isBlank() && it.text == newMsg.text && it.isSent == newMsg.isSent)
+                                (it.text == newMsg.text && it.isSent == newMsg.isSent && Math.abs(it.timestampMs - newMsg.timestampMs) < 60000L)
                             }
-                            if (!alreadyExists) {
+                            if (existingIdx != -1) {
+                                if (messages[existingIdx].id.isBlank() && newMsg.id.isNotBlank()) {
+                                    messages[existingIdx] = messages[existingIdx].copy(id = newMsg.id)
+                                    hasNew = true
+                                }
+                            } else {
                                 messages.add(newMsg)
                                 hasNew = true
                             }
@@ -650,6 +735,7 @@ class ConversationActivity : AppCompatActivity() {
                     } else {
                         entity.text
                     }
+                    val (cleanText, productCard) = ProductMessageUtils.parseMessage(plainText)
                     val timestampLong = entity.timestamp.toLongOrNull() ?: 0L
                     val timeFormatted = if (timestampLong > 0L) timeFormat.format(Date(timestampLong)) else "Now"
 
@@ -660,12 +746,13 @@ class ConversationActivity : AppCompatActivity() {
                     } else false
 
                     Message(
-                        text = plainText,
+                        text = cleanText,
                         isSent = isSentByMe,
                         time = timeFormatted,
                         id = entity.messageId,
                         isSeen = isSeen,
-                        timestampMs = timestampLong
+                        timestampMs = timestampLong,
+                        productCard = productCard
                     )
                 }
 
@@ -684,11 +771,16 @@ class ConversationActivity : AppCompatActivity() {
                     var hasNew = false
                     var receivedPartnerMessage = false
                     for (newMsg in fetchedMessages) {
-                        val alreadyExists = messages.any {
+                        val existingIdx = messages.indexOfFirst {
                             (it.id.isNotBlank() && it.id == newMsg.id) ||
-                            (it.id.isBlank() && it.text == newMsg.text && it.isSent == newMsg.isSent)
+                            (it.text == newMsg.text && it.isSent == newMsg.isSent && Math.abs(it.timestampMs - newMsg.timestampMs) < 60000L)
                         }
-                        if (!alreadyExists) {
+                        if (existingIdx != -1) {
+                            if (messages[existingIdx].id.isBlank() && newMsg.id.isNotBlank()) {
+                                messages[existingIdx] = messages[existingIdx].copy(id = newMsg.id)
+                                hasNew = true
+                            }
+                        } else {
                             messages.add(newMsg)
                             hasNew = true
                             if (!newMsg.isSent) {

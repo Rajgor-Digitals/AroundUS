@@ -217,12 +217,24 @@ class ProductDetailFragment : Fragment() {
     }
 
     private fun openChatWithSeller(product: Product) {
+        val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
+        if (product.sellerId.isNotBlank() && product.sellerId == currentUserId) {
+            Toast.makeText(requireContext(), "You cannot message yourself (this is your own listing).", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val intent = Intent(requireContext(), ConversationActivity::class.java).apply {
             putExtra("userId", product.sellerId.ifBlank { "seller_${product.id}" })
             putExtra("userName", product.sellerName)
             putExtra("avatarUrl", product.sellerAvatarUrl)
             putExtra("avatarRes", product.sellerAvatarRes)
             putExtra("isOnline", true)
+            putExtra("autoSendProductInquiry", true)
+            putExtra("productId", product.id)
+            putExtra("productName", product.name)
+            putExtra("productPrice", product.price)
+            putExtra("productImageUrl", product.imageUrl)
+            putExtra("productImageRes", product.imageRes)
         }
         startActivity(intent)
     }
