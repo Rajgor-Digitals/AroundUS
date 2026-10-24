@@ -1,7 +1,10 @@
 package com.aroundus.app.fragments
 
+import android.Manifest
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -21,13 +24,14 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.launch
-
 import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.LocationState
 import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.UserLocationManager
 import com.aroundus.app.utils.loadUserAvatar
 import com.bumptech.glide.Glide
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.launch
 import java.io.File
 
 class CreatePostFragment : Fragment() {
@@ -81,6 +85,20 @@ class CreatePostFragment : Fragment() {
         }
     }
 
+    // ActivityResult Launcher for Automatic Location Permission Detection
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (fineGranted || coarseGranted) {
+            fetchDeviceLocationAutomatically()
+        } else {
+            Toast.makeText(requireContext(), "Location permission denied. You can enter location manually.", Toast.LENGTH_SHORT).show()
+            showManualLocationFallbackDialog()
+        }
+    }
+
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCreatePostBinding.inflate(inflater, container, false)
@@ -103,9 +121,11 @@ class CreatePostFragment : Fragment() {
         val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
         val currentEmail = SupabaseClient.getCurrentUserEmail() ?: ""
 
-        val detectedLocation = com.aroundus.app.utils.UserLocationManager.getSelectedLocation(requireContext())?.displayName
+        val detectedLocation = UserLocationManager.getSelectedLocation(requireContext())?.displayName
         if (selectedLocation.isBlank() && !detectedLocation.isNullOrBlank()) {
             selectedLocation = detectedLocation
+        } else if (selectedLocation.isBlank() && UserLocationManager.hasLocationPermission(requireContext()) && UserLocationManager.isGpsEnabled(requireContext())) {
+            fetchDeviceLocationAutomatically(silent = true)
         }
 
         binding.tvAuthorName.text = userName
@@ -305,28 +325,107 @@ class CreatePostFragment : Fragment() {
             pickVideoLauncher.launch("video/*")
         }
 
-        // Location Tagging Dialog
+        // Location Tagging - Automatically fetch location from device GPS
         binding.btnAddLocation.setOnClickListener {
-            showLocationDialog()
-        }
-
-        // Poll Creation Dialog
-        binding.btnAddPoll.setOnClickListener {
-            showPollDialog()
-        }
-
-        binding.btnAddMore.setOnClickListener {
-            Toast.makeText(requireContext(), "More options: Add Tags or Links", Toast.LENGTH_SHORT).show()
+            fetchDeviceLocationAutomatically()
         }
     }
 
-    private fun showLocationDialog() {
+    /**
+     * Automatically fetches the device's current location using GPS and Fused Location Provider.
+     */
+    private fun fetchDeviceLocationAutomatically(silent: Boolean = false) {
+        val ctx = context ?: return
+
+        if (!UserLocationManager.hasLocationPermission(ctx)) {
+            if (!silent) {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
+            return
+        }
+
+        if (!UserLocationManager.isGpsEnabled(ctx)) {
+            if (!silent) {
+                MaterialAlertDialogBuilder(ctx)
+                    .setTitle("Device GPS / Location Disabled")
+                    .setMessage("Location services are disabled on your device. Please turn on GPS to automatically detect your neighborhood.")
+                    .setPositiveButton("Turn On") { _, _ ->
+                        startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    }
+                    .setNegativeButton("Enter Manually") { _, _ ->
+                        showManualLocationFallbackDialog()
+                    }
+                    .show()
+            }
+            return
+        }
+
+        // Fast path: instant cached device location
+        val instantLoc = UserLocationManager.switchToDeviceLocation(ctx)
+        if (instantLoc != null && instantLoc.displayName.isNotBlank()) {
+            selectedLocation = instantLoc.displayName
+            binding.tvAuthorLocation.text = selectedLocation
+            if (!silent) {
+                Toast.makeText(ctx, "📍 Location detected: $selectedLocation", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+
+        if (!silent) {
+            Toast.makeText(ctx, "📍 Detecting current location...", Toast.LENGTH_SHORT).show()
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            when (val result = UserLocationManager.detectLocation(ctx, forceRefresh = true)) {
+                is LocationState.Success -> {
+                    if (isAdded) {
+                        val locName = result.location.displayName
+                        selectedLocation = locName
+                        binding.tvAuthorLocation.text = locName
+                        UserLocationManager.saveSelectedLocation(ctx, result.location, isManual = false)
+                        if (!silent) {
+                            Toast.makeText(ctx, "📍 Location detected: $locName", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                is LocationState.GpsDisabled -> {
+                    if (isAdded && !silent) {
+                        Toast.makeText(ctx, "GPS is turned off. Please enable device location.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                is LocationState.PermissionRequired -> {
+                    if (isAdded && !silent) {
+                        locationPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                    }
+                }
+                is LocationState.Error -> {
+                    if (isAdded && !silent) {
+                        Toast.makeText(ctx, "Could not detect location: ${result.message}", Toast.LENGTH_SHORT).show()
+                        showManualLocationFallbackDialog()
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
+
+    private fun showManualLocationFallbackDialog() {
         val input = EditText(requireContext()).apply {
             setText(selectedLocation)
             hint = "Enter location name"
         }
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Tag Location")
+            .setTitle("Set Location Manually")
             .setView(input)
             .setPositiveButton("Set Location") { _, _ ->
                 val loc = input.text.toString().trim()
@@ -336,43 +435,8 @@ class CreatePostFragment : Fragment() {
                     Toast.makeText(requireContext(), "Location updated: $selectedLocation", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showPollDialog() {
-        val inputQuestion = EditText(requireContext()).apply {
-            hint = "Ask a question..."
-        }
-        val inputOption1 = EditText(requireContext()).apply {
-            hint = "Option 1"
-        }
-        val inputOption2 = EditText(requireContext()).apply {
-            hint = "Option 2"
-        }
-
-        val container = android.widget.LinearLayout(requireContext()).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(40, 20, 40, 20)
-            addView(inputQuestion)
-            addView(inputOption1)
-            addView(inputOption2)
-        }
-
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Create Community Poll")
-            .setView(container)
-            .setPositiveButton("Add Poll") { _, _ ->
-                val q = inputQuestion.text.toString().trim()
-                val o1 = inputOption1.text.toString().trim()
-                val o2 = inputOption2.text.toString().trim()
-
-                if (q.isNotEmpty()) {
-                    val pollText = "\n📊 POLL: $q\n• $o1\n• $o2"
-                    val currentText = binding.etPostContent.text.toString()
-                    binding.etPostContent.setText("$currentText$pollText")
-                    Toast.makeText(requireContext(), "Poll attached to post!", Toast.LENGTH_SHORT).show()
-                }
+            .setNeutralButton("Auto-Detect") { _, _ ->
+                fetchDeviceLocationAutomatically()
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -383,7 +447,7 @@ class CreatePostFragment : Fragment() {
         binding.rowAudience.setOnClickListener { toggleAudience() }
 
         binding.rowNeighborhood.setOnClickListener {
-            showLocationDialog()
+            fetchDeviceLocationAutomatically()
         }
 
         binding.switchNotifications.setOnCheckedChangeListener { _, isChecked ->
