@@ -261,9 +261,7 @@ class CreatePostFragment : Fragment() {
         val categoryViews = listOf(
             Triple(binding.catGeneral, binding.tvCatGeneral, binding.lineCatGeneral) to "General",
             Triple(binding.catAnnouncement, binding.tvCatAnnouncement, binding.lineCatAnnouncement) to "Announcement",
-            Triple(binding.catHelpSupport, binding.tvCatHelpSupport, binding.lineCatHelpSupport) to "Help & Support",
-            Triple(binding.catForSale, binding.tvCatForSale, binding.lineCatForSale) to "For Sale / Offer",
-            Triple(binding.catEvent, binding.tvCatEvent, binding.lineCatEvent) to "Event"
+            Triple(binding.catHelpSupport, binding.tvCatHelpSupport, binding.lineCatHelpSupport) to "Help & Support"
         )
 
         updateCategorySelection(categoryViews)
@@ -453,15 +451,6 @@ class CreatePostFragment : Fragment() {
         binding.switchNotifications.setOnCheckedChangeListener { _, isChecked ->
             val status = if (isChecked) "Enabled" else "Muted"
             Toast.makeText(requireContext(), "Post notifications $status", Toast.LENGTH_SHORT).show()
-        }
-
-        binding.switchSchedule.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                binding.tvScheduleSubtitle.text = "Schedule for later"
-                Toast.makeText(requireContext(), "Pick date & time to schedule", Toast.LENGTH_SHORT).show()
-            } else {
-                binding.tvScheduleSubtitle.text = "Post now"
-            }
         }
     }
 
