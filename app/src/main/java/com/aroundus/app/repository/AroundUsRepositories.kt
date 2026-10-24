@@ -1990,11 +1990,89 @@ class EventRepository {
             }
         }
 
+    suspend fun uploadEventImage(context: Context, imageUri: Uri): NetworkResult<String> =
+        withContext(Dispatchers.IO) {
+            try {
+                val contentResolver = context.contentResolver
+                val inputStream = contentResolver.openInputStream(imageUri)
+                    ?: return@withContext NetworkResult.Error("Unable to open selected image.")
+                val rawBytes = inputStream.use { it.readBytes() }
+                if (rawBytes.isEmpty()) {
+                    return@withContext NetworkResult.Error("Image file is empty.")
+                }
+
+                // High-quality compress (1280px max, 85% JPEG)
+                val uploadBytes: ByteArray
+                val bmp = android.graphics.BitmapFactory.decodeByteArray(rawBytes, 0, rawBytes.size)
+                if (bmp != null) {
+                    val maxDim = 1280f
+                    val scale = (maxDim / maxOf(bmp.width, bmp.height)).coerceAtMost(1.0f)
+                    val scaled = if (scale < 1.0f) {
+                        android.graphics.Bitmap.createScaledBitmap(
+                            bmp,
+                            (bmp.width * scale).toInt().coerceAtLeast(1),
+                            (bmp.height * scale).toInt().coerceAtLeast(1),
+                            true
+                        )
+                    } else bmp
+                    val baos = java.io.ByteArrayOutputStream()
+                    scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, baos)
+                    uploadBytes = baos.toByteArray()
+                    if (scaled != bmp) scaled.recycle()
+                    bmp.recycle()
+                } else {
+                    uploadBytes = rawBytes
+                }
+
+                val timestamp = System.currentTimeMillis()
+                val uniqueToken = UUID.randomUUID().toString().take(8)
+                val filename = "event_${timestamp}_${uniqueToken}.jpg"
+                val objectPath = "events/$filename"
+
+                val baseUrl = SupabaseConfig.SUPABASE_URL.trimEnd('/')
+                val uploadUrl = "$baseUrl/storage/v1/object/post-media/$objectPath"
+
+                val token = SupabaseClient.getAccessToken()
+                val authHeaderValue = if (!token.isNullOrBlank() && token.startsWith("eyJ")) {
+                    "Bearer $token"
+                } else {
+                    "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
+                }
+
+                val requestBody = uploadBytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
+                val request = okhttp3.Request.Builder()
+                    .url(uploadUrl)
+                    .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
+                    .addHeader("Authorization", authHeaderValue)
+                    .addHeader("Content-Type", "image/jpeg")
+                    .post(requestBody)
+                    .build()
+
+                val client = okhttp3.OkHttpClient.Builder()
+                    .connectTimeout(25, java.util.concurrent.TimeUnit.SECONDS)
+                    .writeTimeout(45, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(25, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
+
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val publicUrl = "$baseUrl/storage/v1/object/public/post-media/$objectPath"
+                    NetworkResult.Success(publicUrl)
+                } else {
+                    val err = response.body?.string() ?: response.message
+                    NetworkResult.Error("Upload failed: $err")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to upload event photo", e)
+            }
+        }
+
     suspend fun createEvent(
         title: String,
         date: String,
         location: String?,
-        attendees: String? = "1 Attending"
+        attendees: String? = "1 Attending",
+        imageUrl: String? = null
     ): NetworkResult<EventEntity> =
         withContext(Dispatchers.IO) {
             try {
@@ -2005,27 +2083,69 @@ class EventRepository {
                     return@withContext NetworkResult.Error("Event date & time are required.")
                 }
 
-                val creatorId = userRepo.resolveValidAuthorId().ifBlank {
-                    SupabaseClient.getCurrentUserId() ?: ""
-                }.takeIf { it.isNotBlank() }
+                // Verify creatorId exists in public.users to prevent foreign key violation (code 23503)
+                var validCreatorId: String? = null
+                val currentUid = SupabaseClient.getCurrentUserId()
+                if (!currentUid.isNullOrBlank()) {
+                    try {
+                        val uResp = service.getUserById("eq.$currentUid")
+                        if (uResp.isSuccessful && !uResp.body().isNullOrEmpty()) {
+                            validCreatorId = currentUid
+                        }
+                    } catch (_: Exception) {}
+                }
+                if (validCreatorId == null) {
+                    val email = SupabaseClient.getCurrentUserEmail()
+                    if (!email.isNullOrBlank()) {
+                        try {
+                            val eResp = service.getUserByEmail("eq.${email.trim().lowercase()}")
+                            if (eResp.isSuccessful && !eResp.body().isNullOrEmpty()) {
+                                validCreatorId = eResp.body()!!.first().userId
+                            }
+                        } catch (_: Exception) {}
+                    }
+                }
+
+                val finalLocation = if (!imageUrl.isNullOrBlank()) {
+                    "${location?.trim() ?: ""} [img:$imageUrl]".trim()
+                } else {
+                    location?.trim()
+                }
 
                 val newEvent = EventEntity(
                     eventId = "event_" + UUID.randomUUID().toString().replace("-", "").take(12),
-                    creatorId = creatorId,
+                    creatorId = validCreatorId,
                     title = title.trim(),
                     date = date.trim(),
-                    location = location?.trim(),
+                    location = finalLocation,
                     attendees = attendees?.trim() ?: "1 Attending",
                     createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
                         timeZone = java.util.TimeZone.getTimeZone("UTC")
                     }.format(java.util.Date())
                 )
 
-                val resp = service.createEvent(event = newEvent)
+                var resp = service.createEvent(event = newEvent)
+
+                // If rejected (e.g. 409 FK violation), retry with creatorId = null so event is successfully created
+                if (!resp.isSuccessful && validCreatorId != null) {
+                    val fallbackEvent = newEvent.copy(creatorId = null)
+                    val retryResp = service.createEvent(event = fallbackEvent)
+                    if (retryResp.isSuccessful && !retryResp.body().isNullOrEmpty()) {
+                        val created = retryResp.body()!!.first()
+                        SupabaseClient.addCreatedEventId(created.eventId)
+                        SupabaseClient.setEventAttended(created.eventId, true)
+                        return@withContext NetworkResult.Success(created)
+                    }
+                }
+
                 if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                    NetworkResult.Success(resp.body()!!.first())
+                    val created = resp.body()!!.first()
+                    SupabaseClient.addCreatedEventId(created.eventId)
+                    SupabaseClient.setEventAttended(created.eventId, true)
+                    NetworkResult.Success(created)
                 } else {
-                    NetworkResult.Success(newEvent)
+                    val err = resp.errorBody()?.string() ?: resp.message()
+                    NetworkResult.Error("Failed to create event: $err")
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Failed to create event", e)

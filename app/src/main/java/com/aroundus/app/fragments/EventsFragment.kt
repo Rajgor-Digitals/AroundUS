@@ -63,6 +63,7 @@ class EventsFragment : Fragment() {
                     putString("eventAttendees", "${event.attendeesCount} Attending")
                     putString("eventCategory", event.category)
                     putString("eventDescription", event.description)
+                    putString("eventImageUrl", event.imageUrl)
                 }
                 findNavController().navigate(R.id.action_events_to_eventDetail, bundle)
             },
@@ -103,7 +104,11 @@ class EventsFragment : Fragment() {
 
         val showCreateDialog = {
             val sheet = CreateEventBottomSheetFragment.newInstance()
-            sheet.onEventCreated = {
+            sheet.onEventCreated = { createdEntity ->
+                val uiModel = createdEntity.toUIModel()
+                allEvents.removeAll { it.id == uiModel.id }
+                allEvents.add(0, uiModel)
+                filterEventsForCurrentTab()
                 loadSupabaseEvents()
             }
             sheet.show(childFragmentManager, CreateEventBottomSheetFragment.TAG)
@@ -256,7 +261,8 @@ class EventsFragment : Fragment() {
             }
             2 -> {
                 allEvents.filter { event ->
-                    (event.creatorId != null && event.creatorId == currentUserId) ||
+                    (event.creatorId != null && currentUserId.isNotBlank() && event.creatorId == currentUserId) ||
+                    SupabaseClient.isEventCreatedByMe(event.id) ||
                     event.isAttending ||
                     SupabaseClient.isEventAttended(event.id)
                 }
@@ -268,7 +274,10 @@ class EventsFragment : Fragment() {
         val catFiltered = if (selectedCategoryFilter.equals("All", ignoreCase = true)) {
             tabFiltered
         } else {
-            tabFiltered.filter { it.category.equals(selectedCategoryFilter, ignoreCase = true) }
+            tabFiltered.filter { event ->
+                event.category.equals(selectedCategoryFilter, ignoreCase = true) ||
+                event.title.contains(selectedCategoryFilter, ignoreCase = true)
+            }
         }
 
         // 3. Search query filter

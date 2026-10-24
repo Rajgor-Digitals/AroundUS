@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bumptech.glide.Glide
 import com.aroundus.app.R
 import com.aroundus.app.databinding.FragmentEventDetailBinding
 import com.aroundus.app.network.SupabaseClient
@@ -34,6 +35,7 @@ class EventDetailFragment : Fragment() {
     private var eventAttendees: String = ""
     private var eventCategory: String = "Community"
     private var eventDescription: String = ""
+    private var eventImageUrl: String? = null
     private var attendeesCount: Int = 1
     private var isAttending: Boolean = false
 
@@ -56,6 +58,7 @@ class EventDetailFragment : Fragment() {
             eventLocation = it.getString("eventLocation", "Neighborhood Center")
             eventAttendees = it.getString("eventAttendees", "1 Attending")
             eventCategory = it.getString("eventCategory", "Community")
+            eventImageUrl = it.getString("eventImageUrl")
             eventDescription = it.getString(
                 "eventDescription",
                 "Join neighbors from across the community for $eventTitle. Everyone from the neighborhood is welcome to attend!"
@@ -97,7 +100,16 @@ class EventDetailFragment : Fragment() {
             "volunteering" -> R.drawable.img_group_clean_green
             else -> R.drawable.img_sample_event_thumb_1
         }
-        binding.ivDetailEventImage.setImageResource(coverRes)
+        if (!eventImageUrl.isNullOrBlank()) {
+            Glide.with(this)
+                .load(eventImageUrl)
+                .placeholder(coverRes)
+                .error(coverRes)
+                .centerCrop()
+                .into(binding.ivDetailEventImage)
+        } else {
+            binding.ivDetailEventImage.setImageResource(coverRes)
+        }
 
         // Parse date for badge
         parseDateToBadge(eventDate)

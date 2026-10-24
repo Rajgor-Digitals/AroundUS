@@ -225,6 +225,27 @@ object SupabaseClient {
         prefs?.edit()?.putStringSet("attended_events_$safeUid", set)?.apply()
     }
 
+    // --- EVENT CREATION TRACKING ---
+
+    fun getCreatedEventIds(userId: String = getCurrentUserId() ?: "default"): Set<String> {
+        val safeUid = userId.ifBlank { "default" }
+        return prefs?.getStringSet("created_events_$safeUid", emptySet()) ?: emptySet()
+    }
+
+    fun isEventCreatedByMe(eventId: String, userId: String = getCurrentUserId() ?: "default"): Boolean {
+        if (eventId.isBlank()) return false
+        val safeUid = userId.ifBlank { "default" }
+        return getCreatedEventIds(safeUid).contains(eventId)
+    }
+
+    fun addCreatedEventId(eventId: String, userId: String = getCurrentUserId() ?: "default") {
+        if (eventId.isBlank()) return
+        val safeUid = userId.ifBlank { "default" }
+        val set = getCreatedEventIds(safeUid).toMutableSet()
+        set.add(eventId)
+        prefs?.edit()?.putStringSet("created_events_$safeUid", set)?.apply()
+    }
+
     private var testUserId: String? = null
     private var testUserEmail: String? = null
     private var testUserName: String? = null

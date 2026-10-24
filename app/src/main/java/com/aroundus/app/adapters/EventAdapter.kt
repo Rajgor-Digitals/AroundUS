@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.aroundus.app.R
 import com.aroundus.app.databinding.ItemEventBinding
 import com.aroundus.app.models.Event
@@ -25,7 +26,17 @@ class EventAdapter(
             binding.tvLocation.text = event.location
             binding.tvAttendees.text = "${event.attendeesCount} attending"
             binding.tvCategoryBadge.text = event.category
-            binding.ivEventImage.setImageResource(event.imageRes)
+
+            if (!event.imageUrl.isNullOrBlank()) {
+                Glide.with(binding.ivEventImage.context)
+                    .load(event.imageUrl)
+                    .placeholder(event.imageRes)
+                    .error(event.imageRes)
+                    .centerCrop()
+                    .into(binding.ivEventImage)
+            } else {
+                binding.ivEventImage.setImageResource(event.imageRes)
+            }
 
             // Category icon
             val catIconRes = when (event.category.lowercase()) {

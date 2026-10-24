@@ -3,6 +3,7 @@ package com.aroundus.app.fragments
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -17,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.aroundus.app.R
 import com.aroundus.app.databinding.BottomSheetCreateEventBinding
 import com.aroundus.app.models.EventEntity
+import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.EventRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.utils.AppRefreshManager
@@ -41,14 +43,17 @@ class CreateEventBottomSheetFragment : BottomSheetDialogFragment() {
     private var selectedCategory: String = "Community"
     private var selectedDate: String = ""
     private var selectedTime: String = ""
-    private var photoCount: Int = 2
+    private var photoCount: Int = 0
+    private var selectedImageUri: Uri? = null
 
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            photoCount = (photoCount + 1).coerceAtMost(5)
-            binding.tvImageCounter.text = "$photoCount/5"
+            selectedImageUri = uri
+            photoCount = 1
+            binding.tvImageCounter.text = "1/5"
             binding.ivThumb1.setImageURI(uri)
-            Toast.makeText(requireContext(), "Photo added", Toast.LENGTH_SHORT).show()
+            binding.ivThumb1.visibility = View.VISIBLE
+            Toast.makeText(requireContext(), "Photo selected", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -256,14 +261,30 @@ class CreateEventBottomSheetFragment : BottomSheetDialogFragment() {
         setLoading(true)
 
         lifecycleScope.launch {
+            var uploadedUrl: String? = null
+            if (selectedImageUri != null) {
+                binding.btnSubmitCreateEvent.text = "Uploading Image..."
+                when (val uploadResult = eventRepository.uploadEventImage(requireContext(), selectedImageUri!!)) {
+                    is NetworkResult.Success -> {
+                        uploadedUrl = uploadResult.data
+                    }
+                    is NetworkResult.Error -> {
+                        // Log or inform, but still allow event creation or notify
+                    }
+                }
+            }
+
             when (val result = eventRepository.createEvent(
                 title = fullTitle,
                 date = eventDateStr,
                 location = location.ifBlank { "Community Center" },
-                attendees = "1 Attending"
+                attendees = "1 Attending",
+                imageUrl = uploadedUrl
             )) {
                 is NetworkResult.Success -> {
                     setLoading(false)
+                    SupabaseClient.addCreatedEventId(result.data.eventId)
+                    SupabaseClient.setEventAttended(result.data.eventId, true)
                     Toast.makeText(requireContext(), "🎉 Event created successfully!", Toast.LENGTH_SHORT).show()
                     AppRefreshManager.notifyDataChanged(RefreshTarget.EVENTS)
                     onEventCreated?.invoke(result.data)

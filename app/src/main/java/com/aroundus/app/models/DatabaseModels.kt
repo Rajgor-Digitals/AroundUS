@@ -464,6 +464,21 @@ fun EventEntity.toUIModel(): Event {
         else -> R.drawable.img_sample_event_thumb_1
     }
 
+    var cleanLocation = location?.trim() ?: "Neighborhood Event"
+    var remoteImageUrl: String? = null
+    if (cleanLocation.contains("[img:") && cleanLocation.contains("]")) {
+        remoteImageUrl = cleanLocation.substringAfter("[img:").substringBefore("]").trim()
+        cleanLocation = cleanLocation.substringBefore("[img:").trim()
+        if (cleanLocation.isBlank()) cleanLocation = "Neighborhood Event"
+    }
+
+    if (cleanTitle.contains("[img:") && cleanTitle.contains("]")) {
+        if (remoteImageUrl.isNullOrBlank()) {
+            remoteImageUrl = cleanTitle.substringAfter("[img:").substringBefore("]").trim()
+        }
+        cleanTitle = cleanTitle.substringBefore("[img:").trim()
+    }
+
     val parsedAttendees = attendees?.filter { it.isDigit() }?.toIntOrNull() ?: 1
     val isUserAttending = com.aroundus.app.network.SupabaseClient.isEventAttended(eventId)
 
@@ -473,7 +488,7 @@ fun EventEntity.toUIModel(): Event {
         month = monthStr,
         day = dayStr,
         time = date.ifBlank { "Date & Time TBA" },
-        location = location?.takeIf { it.isNotBlank() } ?: "Neighborhood Event",
+        location = cleanLocation,
         attendeesCount = parsedAttendees,
         isFree = true,
         imageRes = eventImageRes,
@@ -481,7 +496,8 @@ fun EventEntity.toUIModel(): Event {
         creatorId = creatorId,
         createdAt = createdAt,
         category = extractedCategory,
-        description = "Join neighbors for $cleanTitle. Everyone from the neighborhood is welcome to attend!"
+        description = "Join neighbors for $cleanTitle. Everyone from the neighborhood is welcome to attend!",
+        imageUrl = remoteImageUrl
     )
 }
 
