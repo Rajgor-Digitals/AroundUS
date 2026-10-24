@@ -446,20 +446,42 @@ fun EventEntity.toUIModel(): Event {
         }
     } catch (_: Exception) {}
 
+    var extractedCategory = "Community"
+    var cleanTitle = title.trim()
+    if (cleanTitle.startsWith("[") && cleanTitle.contains("]")) {
+        extractedCategory = cleanTitle.substringAfter("[").substringBefore("]").trim()
+        cleanTitle = cleanTitle.substringAfter("]").trim()
+    }
+    if (cleanTitle.isBlank()) cleanTitle = "Community Gathering"
+
+    val eventImageRes = when (extractedCategory.lowercase()) {
+        "music" -> R.drawable.img_sample_event_thumb_2
+        "sports" -> R.drawable.img_group_yoga_wellness
+        "workshop" -> R.drawable.img_sample_event_thumb_1
+        "cultural" -> R.drawable.img_events_empty
+        "food" -> R.drawable.img_group_bhujpur_buysell
+        "volunteering" -> R.drawable.img_group_clean_green
+        else -> R.drawable.img_sample_event_thumb_1
+    }
+
     val parsedAttendees = attendees?.filter { it.isDigit() }?.toIntOrNull() ?: 1
+    val isUserAttending = com.aroundus.app.network.SupabaseClient.isEventAttended(eventId)
 
     return Event(
         id = eventId,
-        title = title.ifBlank { "Community Event" },
+        title = cleanTitle,
         month = monthStr,
         day = dayStr,
         time = date.ifBlank { "Date & Time TBA" },
         location = location?.takeIf { it.isNotBlank() } ?: "Neighborhood Event",
         attendeesCount = parsedAttendees,
         isFree = true,
-        imageRes = R.drawable.bg_gradient_onboarding,
+        imageRes = eventImageRes,
+        isAttending = isUserAttending,
         creatorId = creatorId,
-        createdAt = createdAt
+        createdAt = createdAt,
+        category = extractedCategory,
+        description = "Join neighbors for $cleanTitle. Everyone from the neighborhood is welcome to attend!"
     )
 }
 

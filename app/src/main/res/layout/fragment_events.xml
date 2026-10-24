@@ -228,6 +228,162 @@
 
     </LinearLayout>
 
+    <!-- Horizontal Category Filter Bar -->
+    <HorizontalScrollView
+        android:id="@+id/scrollCategoryFilters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:clipToPadding="false"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- All -->
+            <TextView
+                android:id="@+id/filterChipAll"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_chip_category_selected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-bold"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="All Events"
+                android:textColor="#0D8A3F"
+                android:textSize="12sp" />
+
+            <!-- Community -->
+            <TextView
+                android:id="@+id/filterChipCommunity"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip_category_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Community"
+                android:textColor="#475569"
+                android:textSize="12sp" />
+
+            <!-- Music -->
+            <TextView
+                android:id="@+id/filterChipMusic"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip_category_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Music"
+                android:textColor="#475569"
+                android:textSize="12sp" />
+
+            <!-- Sports -->
+            <TextView
+                android:id="@+id/filterChipSports"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip_category_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Sports"
+                android:textColor="#475569"
+                android:textSize="12sp" />
+
+            <!-- Workshop -->
+            <TextView
+                android:id="@+id/filterChipWorkshop"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip_category_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Workshop"
+                android:textColor="#475569"
+                android:textSize="12sp" />
+
+            <!-- Food -->
+            <TextView
+                android:id="@+id/filterChipFood"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip_category_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Food"
+                android:textColor="#475569"
+                android:textSize="12sp" />
+
+            <!-- Volunteering -->
+            <TextView
+                android:id="@+id/filterChipVolunteering"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip_category_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Volunteering"
+                android:textColor="#475569"
+                android:textSize="12sp" />
+
+            <!-- Cultural -->
+            <TextView
+                android:id="@+id/filterChipCultural"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_chip_category_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Cultural"
+                android:textColor="#475569"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
     <!-- Swipe Refresh Layout containing Content & Empty State -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"

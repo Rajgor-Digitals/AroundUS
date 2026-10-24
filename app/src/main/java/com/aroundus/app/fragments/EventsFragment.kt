@@ -7,8 +7,8 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -38,6 +38,7 @@ class EventsFragment : Fragment() {
 
     private var currentTabPosition = 0
     private var searchQuery = ""
+    private var selectedCategoryFilter = "All"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEventsBinding.inflate(inflater, container, false)
@@ -60,18 +61,31 @@ class EventsFragment : Fragment() {
                     putString("eventDate", event.time)
                     putString("eventLocation", event.location)
                     putString("eventAttendees", "${event.attendeesCount} Attending")
+                    putString("eventCategory", event.category)
+                    putString("eventDescription", event.description)
                 }
                 findNavController().navigate(R.id.action_events_to_eventDetail, bundle)
             },
             onAttendClick = { event ->
+                val willAttend = !event.isAttending
+                val newCount = (event.attendeesCount + if (willAttend) 1 else -1).coerceAtLeast(1)
+
+                SupabaseClient.setEventAttended(event.id, willAttend)
+
+                // Update in memory list
+                val idx = allEvents.indexOfFirst { it.id == event.id }
+                if (idx != -1) {
+                    allEvents[idx] = allEvents[idx].copy(isAttending = willAttend, attendeesCount = newCount)
+                }
+
+                filterEventsForCurrentTab()
+
+                val msg = if (willAttend) "🎉 You're attending ${event.title}!" else "RSVP removed"
+                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+
                 lifecycleScope.launch {
-                    when (eventRepository.toggleAttendance(event.id, event.attendeesCount)) {
-                        is NetworkResult.Success -> {
-                            Toast.makeText(requireContext(), "🎉 You're attending ${event.title}!", Toast.LENGTH_SHORT).show()
-                            AppRefreshManager.notifyDataChanged(RefreshTarget.EVENTS)
-                        }
-                        is NetworkResult.Error -> {}
-                    }
+                    eventRepository.toggleAttendance(event.id, newCount)
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.EVENTS)
                 }
             }
         )
@@ -83,6 +97,7 @@ class EventsFragment : Fragment() {
 
         setupTabs()
         setupSearch()
+        setupCategoryFilters()
         setupSwipeRefresh()
         observeRefreshEvents()
 
@@ -97,6 +112,7 @@ class EventsFragment : Fragment() {
         binding.btnHeaderCreateEvent.setOnClickListener { showCreateDialog() }
         binding.btnEmptyCreateEvent.setOnClickListener { showCreateDialog() }
         binding.btnBrowseNearbyEvents.setOnClickListener {
+            selectCategoryFilter("All")
             selectTab(0)
             if (allEvents.isEmpty()) {
                 showCreateDialog()
@@ -104,7 +120,13 @@ class EventsFragment : Fragment() {
         }
 
         binding.btnFilterEvents.setOnClickListener {
-            Toast.makeText(requireContext(), "Showing all neighborhood events", Toast.LENGTH_SHORT).show()
+            val isVisible = binding.scrollCategoryFilters.visibility == View.VISIBLE
+            binding.scrollCategoryFilters.visibility = if (isVisible) View.GONE else View.VISIBLE
+            Toast.makeText(
+                requireContext(),
+                if (isVisible) "Filters hidden" else "Filter by category below",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         loadSupabaseEvents()
@@ -114,6 +136,15 @@ class EventsFragment : Fragment() {
         super.onResume()
         if (AppRefreshManager.isStale(RefreshTarget.EVENTS)) {
             loadSupabaseEvents()
+        } else {
+            // Re-sync local attendance states
+            allEvents.forEachIndexed { i, event ->
+                val attended = SupabaseClient.isEventAttended(event.id)
+                if (event.isAttending != attended) {
+                    allEvents[i] = event.copy(isAttending = attended)
+                }
+            }
+            filterEventsForCurrentTab()
         }
     }
 
@@ -163,11 +194,58 @@ class EventsFragment : Fragment() {
         })
     }
 
+    private fun setupCategoryFilters() {
+        val chips = listOf(
+            binding.filterChipAll to "All",
+            binding.filterChipCommunity to "Community",
+            binding.filterChipMusic to "Music",
+            binding.filterChipSports to "Sports",
+            binding.filterChipWorkshop to "Workshop",
+            binding.filterChipFood to "Food",
+            binding.filterChipVolunteering to "Volunteering",
+            binding.filterChipCultural to "Cultural"
+        )
+
+        for ((chipView, catName) in chips) {
+            chipView.setOnClickListener {
+                selectCategoryFilter(catName)
+            }
+        }
+    }
+
+    private fun selectCategoryFilter(category: String) {
+        selectedCategoryFilter = category
+        val chips = listOf(
+            binding.filterChipAll to "All",
+            binding.filterChipCommunity to "Community",
+            binding.filterChipMusic to "Music",
+            binding.filterChipSports to "Sports",
+            binding.filterChipWorkshop to "Workshop",
+            binding.filterChipFood to "Food",
+            binding.filterChipVolunteering to "Volunteering",
+            binding.filterChipCultural to "Cultural"
+        )
+
+        val selectedBg = R.drawable.bg_chip_category_selected
+        val unselectedBg = R.drawable.bg_chip_category_unselected
+        val greenColor = Color.parseColor("#0D8A3F")
+        val grayColor = Color.parseColor("#475569")
+
+        for ((chipView, catName) in chips) {
+            val isSelected = catName.equals(category, ignoreCase = true)
+            chipView.setBackgroundResource(if (isSelected) selectedBg else unselectedBg)
+            chipView.setTextColor(if (isSelected) greenColor else grayColor)
+        }
+
+        filterEventsForCurrentTab()
+    }
+
     private fun filterEventsForCurrentTab() {
         val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
         displayedEvents.clear()
 
-        val baseList = when (currentTabPosition) {
+        // 1. Tab filter
+        val tabFiltered = when (currentTabPosition) {
             0 -> allEvents
             1 -> {
                 val weekKeywords = listOf("TODAY", "TOMORROW", "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
@@ -178,23 +256,34 @@ class EventsFragment : Fragment() {
             }
             2 -> {
                 allEvents.filter { event ->
-                    (event.creatorId != null && event.creatorId == currentUserId) || event.isAttending
+                    (event.creatorId != null && event.creatorId == currentUserId) ||
+                    event.isAttending ||
+                    SupabaseClient.isEventAttended(event.id)
                 }
             }
             else -> allEvents
         }
 
-        val filtered = if (searchQuery.isNotBlank()) {
-            baseList.filter { event ->
-                event.title.contains(searchQuery, ignoreCase = true) ||
-                event.location.contains(searchQuery, ignoreCase = true) ||
-                event.time.contains(searchQuery, ignoreCase = true)
-            }
+        // 2. Category filter
+        val catFiltered = if (selectedCategoryFilter.equals("All", ignoreCase = true)) {
+            tabFiltered
         } else {
-            baseList
+            tabFiltered.filter { it.category.equals(selectedCategoryFilter, ignoreCase = true) }
         }
 
-        displayedEvents.addAll(filtered)
+        // 3. Search query filter
+        val searchFiltered = if (searchQuery.isNotBlank()) {
+            catFiltered.filter { event ->
+                event.title.contains(searchQuery, ignoreCase = true) ||
+                event.location.contains(searchQuery, ignoreCase = true) ||
+                event.time.contains(searchQuery, ignoreCase = true) ||
+                event.category.contains(searchQuery, ignoreCase = true)
+            }
+        } else {
+            catFiltered
+        }
+
+        displayedEvents.addAll(searchFiltered)
         eventAdapter.notifyDataSetChanged()
         updateEmptyState()
     }
@@ -207,6 +296,10 @@ class EventsFragment : Fragment() {
                 searchQuery.isNotBlank() -> {
                     binding.tvEmptyTitle.text = "No Matching Events"
                     binding.tvEmptySubtitle.text = "No events matched \"$searchQuery\". Try a different search."
+                }
+                !selectedCategoryFilter.equals("All", ignoreCase = true) -> {
+                    binding.tvEmptyTitle.text = "No $selectedCategoryFilter Events"
+                    binding.tvEmptySubtitle.text = "There are no $selectedCategoryFilter events scheduled right now."
                 }
                 currentTabPosition == 1 -> {
                     binding.tvEmptyTitle.text = "No Events This Week"

@@ -1,8 +1,10 @@
 package com.aroundus.app.adapters
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.aroundus.app.R
 import com.aroundus.app.databinding.ItemEventBinding
 import com.aroundus.app.models.Event
 
@@ -22,22 +24,39 @@ class EventAdapter(
             binding.tvTime.text = event.time
             binding.tvLocation.text = event.location
             binding.tvAttendees.text = "${event.attendeesCount} attending"
-            binding.chipFree.text = if (event.isFree) "Free" else "Paid"
+            binding.tvCategoryBadge.text = event.category
             binding.ivEventImage.setImageResource(event.imageRes)
+
+            // Category icon
+            val catIconRes = when (event.category.lowercase()) {
+                "music" -> R.drawable.ic_trending
+                "sports" -> R.drawable.ic_activity_joined
+                "workshop" -> R.drawable.ic_school
+                "cultural" -> R.drawable.ic_star
+                "volunteering" -> R.drawable.ic_support_heart
+                "food" -> R.drawable.ic_restaurant
+                else -> R.drawable.ic_event
+            }
+            binding.ivCategoryIcon.setImageResource(catIconRes)
+
+            updateAttendButton(event.isAttending)
+
             binding.root.setOnClickListener { onEventClick(event) }
 
-            binding.btnAttend.text = if (event.isAttending) "Attending ✓" else "Attend"
-            binding.btnAttend.alpha = if (event.isAttending) 0.85f else 1.0f
-
             binding.btnAttend.setOnClickListener {
-                if (!event.isAttending) {
-                    event.isAttending = true
-                    val newCount = event.attendeesCount + 1
-                    binding.tvAttendees.text = "$newCount attending"
-                    binding.btnAttend.text = "Attending ✓"
-                    binding.btnAttend.alpha = 0.85f
-                    onAttendClick?.invoke(event)
-                }
+                onAttendClick?.invoke(event)
+            }
+        }
+
+        private fun updateAttendButton(isAttending: Boolean) {
+            if (isAttending) {
+                binding.btnAttend.setBackgroundResource(R.drawable.bg_green_pill_outlined)
+                binding.btnAttend.text = "Attending ✓"
+                binding.btnAttend.setTextColor(Color.parseColor("#0D8A3F"))
+            } else {
+                binding.btnAttend.setBackgroundResource(R.drawable.bg_green_pill_button)
+                binding.btnAttend.text = "Attend"
+                binding.btnAttend.setTextColor(Color.parseColor("#FFFFFF"))
             }
         }
     }

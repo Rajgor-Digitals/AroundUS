@@ -200,6 +200,31 @@ object SupabaseClient {
         return isNowSaved
     }
 
+    // --- EVENT ATTENDANCE PERSISTENCE ---
+
+    fun getAttendedEventIds(userId: String = getCurrentUserId() ?: "default"): Set<String> {
+        val safeUid = userId.ifBlank { "default" }
+        return prefs?.getStringSet("attended_events_$safeUid", emptySet()) ?: emptySet()
+    }
+
+    fun isEventAttended(eventId: String, userId: String = getCurrentUserId() ?: "default"): Boolean {
+        if (eventId.isBlank()) return false
+        val safeUid = userId.ifBlank { "default" }
+        return getAttendedEventIds(safeUid).contains(eventId)
+    }
+
+    fun setEventAttended(eventId: String, attended: Boolean, userId: String = getCurrentUserId() ?: "default") {
+        if (eventId.isBlank()) return
+        val safeUid = userId.ifBlank { "default" }
+        val set = getAttendedEventIds(safeUid).toMutableSet()
+        if (attended) {
+            set.add(eventId)
+        } else {
+            set.remove(eventId)
+        }
+        prefs?.edit()?.putStringSet("attended_events_$safeUid", set)?.apply()
+    }
+
     private var testUserId: String? = null
     private var testUserEmail: String? = null
     private var testUserName: String? = null

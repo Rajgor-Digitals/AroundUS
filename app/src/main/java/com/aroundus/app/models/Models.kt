@@ -80,7 +80,9 @@ data class Event(
     val imageRes: Int,
     var isAttending: Boolean = false,
     val creatorId: String? = null,
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    val category: String = "Community",
+    val description: String = ""
 )
 
 data class ChatItem(
