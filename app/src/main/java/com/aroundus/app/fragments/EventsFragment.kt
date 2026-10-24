@@ -1,10 +1,14 @@
 package com.aroundus.app.fragments
 
+import android.graphics.Color
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -20,7 +24,6 @@ import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.utils.AppRefreshManager
 import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.applyAroundUsTheme
-import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
 
 class EventsFragment : Fragment() {
@@ -34,6 +37,7 @@ class EventsFragment : Fragment() {
     private lateinit var eventAdapter: EventAdapter
 
     private var currentTabPosition = 0
+    private var searchQuery = ""
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEventsBinding.inflate(inflater, container, false)
@@ -43,7 +47,7 @@ class EventsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.toolbar.setNavigationOnClickListener {
+        binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
         }
 
@@ -78,6 +82,7 @@ class EventsFragment : Fragment() {
         }
 
         setupTabs()
+        setupSearch()
         setupSwipeRefresh()
         observeRefreshEvents()
 
@@ -89,8 +94,18 @@ class EventsFragment : Fragment() {
             sheet.show(childFragmentManager, CreateEventBottomSheetFragment.TAG)
         }
 
-        binding.fabCreateEvent.setOnClickListener { showCreateDialog() }
+        binding.btnHeaderCreateEvent.setOnClickListener { showCreateDialog() }
         binding.btnEmptyCreateEvent.setOnClickListener { showCreateDialog() }
+        binding.btnBrowseNearbyEvents.setOnClickListener {
+            selectTab(0)
+            if (allEvents.isEmpty()) {
+                showCreateDialog()
+            }
+        }
+
+        binding.btnFilterEvents.setOnClickListener {
+            Toast.makeText(requireContext(), "Showing all neighborhood events", Toast.LENGTH_SHORT).show()
+        }
 
         loadSupabaseEvents()
     }
@@ -103,13 +118,48 @@ class EventsFragment : Fragment() {
     }
 
     private fun setupTabs() {
-        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab?) {
-                currentTabPosition = tab?.position ?: 0
+        binding.tabUpcoming.setOnClickListener { selectTab(0) }
+        binding.tabThisWeek.setOnClickListener { selectTab(1) }
+        binding.tabMyEvents.setOnClickListener { selectTab(2) }
+        updateTabUI(0)
+    }
+
+    private fun selectTab(position: Int) {
+        currentTabPosition = position
+        updateTabUI(position)
+        filterEventsForCurrentTab()
+    }
+
+    private fun updateTabUI(selectedPos: Int) {
+        val selectedBg = R.drawable.bg_tab_pill_selected
+        val unselectedBg = R.drawable.bg_tab_pill_unselected
+        val greenColor = Color.parseColor("#0D8A3F")
+        val grayColor = Color.parseColor("#64748B")
+
+        // Tab 0: Upcoming
+        binding.tabUpcoming.setBackgroundResource(if (selectedPos == 0) selectedBg else unselectedBg)
+        binding.ivTabUpcoming.setColorFilter(if (selectedPos == 0) greenColor else grayColor)
+        binding.tvTabUpcoming.setTextColor(if (selectedPos == 0) greenColor else grayColor)
+
+        // Tab 1: This Week
+        binding.tabThisWeek.setBackgroundResource(if (selectedPos == 1) selectedBg else unselectedBg)
+        binding.ivTabThisWeek.setColorFilter(if (selectedPos == 1) greenColor else grayColor)
+        binding.tvTabThisWeek.setTextColor(if (selectedPos == 1) greenColor else grayColor)
+
+        // Tab 2: My Events
+        binding.tabMyEvents.setBackgroundResource(if (selectedPos == 2) selectedBg else unselectedBg)
+        binding.ivTabMyEvents.setColorFilter(if (selectedPos == 2) greenColor else grayColor)
+        binding.tvTabMyEvents.setTextColor(if (selectedPos == 2) greenColor else grayColor)
+    }
+
+    private fun setupSearch() {
+        binding.etSearchEvents.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchQuery = s?.toString()?.trim() ?: ""
                 filterEventsForCurrentTab()
             }
-            override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
+            override fun afterTextChanged(s: Editable?) {}
         })
     }
 
@@ -117,32 +167,34 @@ class EventsFragment : Fragment() {
         val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
         displayedEvents.clear()
 
-        when (currentTabPosition) {
-            0 -> {
-                // Upcoming: all events
-                displayedEvents.addAll(allEvents)
-            }
+        val baseList = when (currentTabPosition) {
+            0 -> allEvents
             1 -> {
-                // This Week
                 val weekKeywords = listOf("TODAY", "TOMORROW", "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
-                val thisWeekList = allEvents.filter { event ->
+                val filtered = allEvents.filter { event ->
                     weekKeywords.any { kw -> event.time.uppercase().contains(kw) } || event.isAttending
                 }
-                if (thisWeekList.isNotEmpty()) {
-                    displayedEvents.addAll(thisWeekList)
-                } else {
-                    displayedEvents.addAll(allEvents.take(5))
-                }
+                if (filtered.isNotEmpty()) filtered else allEvents.take(5)
             }
             2 -> {
-                // My Events
-                val myEvents = allEvents.filter { event ->
+                allEvents.filter { event ->
                     (event.creatorId != null && event.creatorId == currentUserId) || event.isAttending
                 }
-                displayedEvents.addAll(myEvents)
             }
+            else -> allEvents
         }
 
+        val filtered = if (searchQuery.isNotBlank()) {
+            baseList.filter { event ->
+                event.title.contains(searchQuery, ignoreCase = true) ||
+                event.location.contains(searchQuery, ignoreCase = true) ||
+                event.time.contains(searchQuery, ignoreCase = true)
+            }
+        } else {
+            baseList
+        }
+
+        displayedEvents.addAll(filtered)
         eventAdapter.notifyDataSetChanged()
         updateEmptyState()
     }
@@ -150,12 +202,17 @@ class EventsFragment : Fragment() {
     private fun updateEmptyState() {
         if (displayedEvents.isEmpty()) {
             binding.layoutEmptyEvents.visibility = View.VISIBLE
-            when (currentTabPosition) {
-                1 -> {
+            binding.rvEvents.visibility = View.GONE
+            when {
+                searchQuery.isNotBlank() -> {
+                    binding.tvEmptyTitle.text = "No Matching Events"
+                    binding.tvEmptySubtitle.text = "No events matched \"$searchQuery\". Try a different search."
+                }
+                currentTabPosition == 1 -> {
                     binding.tvEmptyTitle.text = "No Events This Week"
                     binding.tvEmptySubtitle.text = "Check back soon or create an event for your neighbors this week!"
                 }
-                2 -> {
+                currentTabPosition == 2 -> {
                     binding.tvEmptyTitle.text = "No Saved or Hosted Events"
                     binding.tvEmptySubtitle.text = "You haven't created or RSVP'd to any events yet."
                 }
@@ -166,6 +223,7 @@ class EventsFragment : Fragment() {
             }
         } else {
             binding.layoutEmptyEvents.visibility = View.GONE
+            binding.rvEvents.visibility = View.VISIBLE
         }
     }
 

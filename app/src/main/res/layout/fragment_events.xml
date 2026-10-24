@@ -1,149 +1,496 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="#FFFFFF"
+    android:orientation="vertical">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
+    <!-- Top App Bar -->
+    <RelativeLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
-        android:elevation="2dp">
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="10dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            style="@style/Widget.AroundUS.Toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:navigationIcon="@drawable/ic_arrow_back"
-            app:navigationIconTint="#0F172A"
-            app:title="@string/events"
-            app:titleTextAppearance="@style/TextAppearance.AroundUS.Title"
-            app:menu="@menu/menu_home" />
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="#0F172A" />
 
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayout"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            app:tabGravity="fill"
-            app:tabIndicatorColor="#2563EB"
-            app:tabIndicatorHeight="3dp"
-            app:tabMode="fixed"
-            app:tabSelectedTextColor="#2563EB"
-            app:tabTextColor="@color/text_secondary">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="8dp"
+            android:layout_toEndOf="@id/btnBack"
+            android:orientation="vertical">
 
-            <com.google.android.material.tabs.TabItem
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Upcoming" />
+                android:fontFamily="sans-serif-black"
+                android:text="Events"
+                android:textColor="#0F172A"
+                android:textSize="22sp" />
 
-            <com.google.android.material.tabs.TabItem
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="This Week" />
+                android:layout_marginTop="1dp"
+                android:fontFamily="sans-serif"
+                android:text="Discover and join local events"
+                android:textColor="#64748B"
+                android:textSize="12sp" />
 
-            <com.google.android.material.tabs.TabItem
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnHeaderCreateEvent"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Create Event"
+            android:src="@drawable/ic_calendar_add" />
+
+    </RelativeLayout>
+
+    <!-- Custom Segmented Tab Bar -->
+    <LinearLayout
+        android:id="@+id/layoutTabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="horizontal">
+
+        <!-- Tab 1: Upcoming -->
+        <LinearLayout
+            android:id="@+id/tabUpcoming"
+            android:layout_width="0dp"
+            android:layout_height="42dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tab_pill_selected"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/ivTabUpcoming"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_event"
+                app:tint="#0D8A3F" />
+
+            <TextView
+                android:id="@+id/tvTabUpcoming"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="My Events" />
+                android:layout_marginStart="6dp"
+                android:fontFamily="sans-serif-bold"
+                android:text="Upcoming"
+                android:textColor="#0D8A3F"
+                android:textSize="13sp" />
 
-        </com.google.android.material.tabs.TabLayout>
+        </LinearLayout>
 
-    </com.google.android.material.appbar.AppBarLayout>
+        <!-- Tab 2: This Week -->
+        <LinearLayout
+            android:id="@+id/tabThisWeek"
+            android:layout_width="0dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tab_pill_unselected"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal">
 
+            <ImageView
+                android:id="@+id/ivTabThisWeek"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_schedule_clock"
+                app:tint="#64748B" />
+
+            <TextView
+                android:id="@+id/tvTabThisWeek"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="This Week"
+                android:textColor="#64748B"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <!-- Tab 3: My Events -->
+        <LinearLayout
+            android:id="@+id/tabMyEvents"
+            android:layout_width="0dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tab_pill_unselected"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/ivTabMyEvents"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_person"
+                app:tint="#64748B" />
+
+            <TextView
+                android:id="@+id/tvTabMyEvents"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="My Events"
+                android:textColor="#64748B"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Search & Filter Row -->
+    <LinearLayout
+        android:id="@+id/layoutSearchRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_search_input_rounded"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_search"
+                app:tint="#94A3B8" />
+
+            <EditText
+                android:id="@+id/etSearchEvents"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="10dp"
+                android:background="@null"
+                android:fontFamily="sans-serif"
+                android:hint="Search events..."
+                android:inputType="text"
+                android:textColor="#0F172A"
+                android:textColorHint="#94A3B8"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnFilterEvents"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_filter_button_green"
+            android:contentDescription="Filter Events"
+            android:src="@drawable/ic_filter_sliders"
+            app:tint="#0D8A3F" />
+
+    </LinearLayout>
+
+    <!-- Swipe Refresh Layout containing Content & Empty State -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:layout_marginTop="8dp">
 
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+            <!-- Events List -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvEvents"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:paddingStart="12dp"
-                android:paddingTop="8dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="88dp"
+                android:paddingStart="16dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="96dp"
                 android:scrollbars="none" />
 
-            <LinearLayout
+            <!-- Empty State Illustration & Action (Exact Match to Screenshot) -->
+            <androidx.core.widget.NestedScrollView
                 android:id="@+id/layoutEmptyEvents"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="32dp"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:fillViewport="true"
+                android:paddingBottom="96dp"
                 android:visibility="gone">
 
-                <ImageView
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
-                    android:src="@drawable/ic_event"
-                    app:tint="#94A3B8" />
-
-                <TextView
-                    android:id="@+id/tvEmptyTitle"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:fontFamily="sans-serif-bold"
-                    android:text="No Events Found"
-                    android:textColor="#334155"
-                    android:textSize="18sp" />
-
-                <TextView
-                    android:id="@+id/tvEmptySubtitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:fontFamily="sans-serif"
-                    android:gravity="center"
-                    android:text="Be the first to create a community event for your neighborhood!"
-                    android:textColor="#64748B"
-                    android:textSize="13sp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnEmptyCreateEvent"
-                    android:layout_width="wrap_content"
-                    android:layout_height="44dp"
-                    android:layout_marginTop="18dp"
-                    android:background="@drawable/bg_primary_button"
-                    android:fontFamily="sans-serif-bold"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
                     android:paddingStart="24dp"
-                    android:paddingEnd="24dp"
-                    android:text="+ Create Event"
-                    android:textAllCaps="false"
-                    android:textColor="#FFFFFF" />
+                    android:paddingEnd="24dp">
 
-            </LinearLayout>
+                    <!-- Central Calendar Graphic Illustration -->
+                    <ImageView
+                        android:id="@+id/ivEmptyIllustration"
+                        android:layout_width="220dp"
+                        android:layout_height="220dp"
+                        android:layout_marginTop="12dp"
+                        android:adjustViewBounds="true"
+                        android:contentDescription="No Events"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/img_events_empty" />
+
+                    <!-- Headline & Subtext -->
+                    <TextView
+                        android:id="@+id/tvEmptyTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:fontFamily="sans-serif-black"
+                        android:text="No Community Events Yet"
+                        android:textColor="#0F172A"
+                        android:textSize="22sp" />
+
+                    <TextView
+                        android:id="@+id/tvEmptySubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="sans-serif"
+                        android:gravity="center"
+                        android:lineSpacingMultiplier="1.2"
+                        android:text="Be the first to create a community event\nfor your neighborhood!"
+                        android:textColor="#64748B"
+                        android:textSize="14sp" />
+
+                    <!-- 3 Feature Highlights with Circles -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="28dp"
+                        android:orientation="horizontal">
+
+                        <!-- Feature 1: Bring people together -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="52dp"
+                                android:layout_height="52dp"
+                                android:background="@drawable/bg_circle_green_light">
+
+                                <ImageView
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_people"
+                                    app:tint="#0D8A3F" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:text="Bring people\ntogether"
+                                android:textColor="#334155"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <!-- Feature 2: Share local activities -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="52dp"
+                                android:layout_height="52dp"
+                                android:background="@drawable/bg_circle_green_light">
+
+                                <ImageView
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_event"
+                                    app:tint="#0D8A3F" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:text="Share local\nactivities"
+                                android:textColor="#334155"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <!-- Feature 3: Build a stronger community -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="52dp"
+                                android:layout_height="52dp"
+                                android:background="@drawable/bg_circle_green_light">
+
+                                <ImageView
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:layout_gravity="center"
+                                    android:src="@drawable/ic_location"
+                                    app:tint="#0D8A3F" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:text="Build a stronger\ncommunity"
+                                android:textColor="#334155"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- Primary Big Green Button: + Create Event → -->
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnEmptyCreateEvent"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="32dp"
+                        android:background="@drawable/bg_green_pill_button"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="+   Create Event   →"
+                        android:textAllCaps="false"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp" />
+
+                    <!-- Divider: — or — -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1"
+                            android:background="#E2E8F0" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_marginEnd="14dp"
+                            android:fontFamily="sans-serif"
+                            android:text="or"
+                            android:textColor="#94A3B8"
+                            android:textSize="13sp" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1"
+                            android:background="#E2E8F0" />
+
+                    </LinearLayout>
+
+                    <!-- Secondary Outlined Button: 📅 Browse Nearby Events -->
+                    <LinearLayout
+                        android:id="@+id/btnBrowseNearbyEvents"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_green_pill_outlined"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_event"
+                            app:tint="#0D8A3F" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="Browse Nearby Events"
+                            android:textColor="#0D8A3F"
+                            android:textSize="14sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.core.widget.NestedScrollView>
 
         </FrameLayout>
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fabCreateEvent"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="18dp"
-        android:layout_marginBottom="90dp"
-        android:fontFamily="sans-serif-bold"
-        android:text="Create Event"
-        android:textColor="#FFFFFF"
-        app:backgroundTint="#2563EB"
-        app:cornerRadius="24dp"
-        app:elevation="6dp"
-        app:icon="@drawable/ic_event"
-        app:iconTint="#FFFFFF" />
-
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</LinearLayout>

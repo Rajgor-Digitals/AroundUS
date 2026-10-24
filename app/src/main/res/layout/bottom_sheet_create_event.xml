@@ -8,7 +8,7 @@
     android:orientation="vertical"
     android:paddingStart="20dp"
     android:paddingEnd="20dp"
-    android:paddingBottom="28dp">
+    android:paddingBottom="24dp">
 
     <!-- Top Drag Handle -->
     <View
@@ -18,16 +18,35 @@
         android:layout_marginTop="12dp"
         android:background="@drawable/bg_sheet_drag_handle" />
 
-    <!-- Header: Title, Subtitle, Close Button -->
+    <!-- Top Row: Close button (Right aligned) -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp">
+        android:layout_marginTop="4dp">
+
+        <ImageButton
+            android:id="@+id/btnCloseSheet"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_alignParentEnd="true"
+            android:background="@drawable/bg_circle_icon_button"
+            android:contentDescription="Close"
+            android:src="@drawable/ic_close"
+            app:tint="#64748B" />
+
+    </RelativeLayout>
+
+    <!-- Header: Title, Subtitle, and Right Circular Graphic Badge -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_toStartOf="@id/btnCloseSheet"
+            android:layout_marginEnd="12dp"
+            android:layout_toStartOf="@id/ivHeaderBadge"
             android:orientation="vertical">
 
             <TextView
@@ -36,199 +55,917 @@
                 android:fontFamily="sans-serif-black"
                 android:text="Create Event"
                 android:textColor="#0F172A"
-                android:textSize="22sp" />
+                android:textSize="24sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="4dp"
                 android:fontFamily="sans-serif"
-                android:text="Share a local gathering, workshop, or meet-up"
+                android:lineSpacingMultiplier="1.2"
+                android:text="Share a local gathering, workshop, or meet-up with your community."
                 android:textColor="#64748B"
                 android:textSize="13sp" />
 
         </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/btnCloseSheet"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivHeaderBadge"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:background="@drawable/bg_circle_icon_button"
-            android:contentDescription="Close"
-            android:src="@drawable/ic_close"
-            app:tint="#64748B" />
+            android:scaleType="centerCrop"
+            android:src="@drawable/img_events_create_badge"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
     </RelativeLayout>
 
-    <View
+    <!-- Scrollable Form Container -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="16dp"
-        android:background="#F1F5F9" />
+        android:layout_height="0dp"
+        android:layout_marginTop="14dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
-    <!-- Event Title Input -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:fontFamily="sans-serif-bold"
-        android:text="Event Title *"
-        android:textColor="#1E293B"
-        android:textSize="13sp" />
-
-    <EditText
-        android:id="@+id/etEventTitle"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/bg_search_input_rounded"
-        android:fontFamily="sans-serif"
-        android:hint="e.g. Weekend Farmers Market"
-        android:inputType="textCapWords"
-        android:maxLength="80"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:textColor="#0F172A"
-        android:textColorHint="#94A3B8"
-        android:textSize="14sp" />
-
-    <!-- Event Date & Time Input -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:fontFamily="sans-serif-bold"
-            android:text="Date &amp; Time *"
-            android:textColor="#1E293B"
-            android:textSize="13sp" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/btnPickDateTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-bold"
-            android:paddingStart="8dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="2dp"
-            android:text="📅 Choose Date"
-            android:textColor="#2563EB"
-            android:textSize="12sp" />
+            <!-- 1. Event Image (Optional) Section -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
-    </LinearLayout>
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-    <EditText
-        android:id="@+id/etEventDate"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/bg_search_input_rounded"
-        android:fontFamily="sans-serif"
-        android:hint="e.g. Sat, Nov 15 · 10:00 AM"
-        android:inputType="text"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:textColor="#0F172A"
-        android:textColorHint="#94A3B8"
-        android:textSize="14sp" />
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_image"
+                        app:tint="#0D8A3F" />
 
-    <!-- Location Input -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Event Image"
+                        android:textColor="#0F172A"
+                        android:textSize="13sp" />
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:fontFamily="sans-serif-bold"
-            android:text="Location / Venue"
-            android:textColor="#1E293B"
-            android:textSize="13sp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif"
+                        android:text="(Optional)"
+                        android:textColor="#64748B"
+                        android:textSize="12sp" />
 
-        <TextView
-            android:id="@+id/btnUseCurrentLocation"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-bold"
-            android:paddingStart="8dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="2dp"
-            android:text="📍 Use Current"
-            android:textColor="#2563EB"
-            android:textSize="12sp" />
+                </LinearLayout>
 
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/tvImageCounter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:fontFamily="sans-serif"
+                    android:text="2/5"
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp" />
 
-    <EditText
-        android:id="@+id/etEventLocation"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/bg_search_input_rounded"
-        android:fontFamily="sans-serif"
-        android:hint="e.g. Community Center, Main St"
-        android:inputType="textCapWords"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:textColor="#0F172A"
-        android:textColorHint="#94A3B8"
-        android:textSize="14sp" />
+            </RelativeLayout>
 
-    <!-- Community Notice -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        android:background="@drawable/bg_community_guideline_banner"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="12dp">
+            <!-- Horizontal Photo Upload Row -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:scrollbars="none">
 
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_shield_check"
-            app:tint="#2563EB" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1"
-            android:fontFamily="sans-serif"
-            android:text="Events in AroundUS are visible to all neighbors in your selected locality."
-            android:textColor="#1E3A8A"
-            android:textSize="12sp" />
+                    <!-- Dashed Card: Add Event Photos -->
+                    <LinearLayout
+                        android:id="@+id/cardAddPhotos"
+                        android:layout_width="150dp"
+                        android:layout_height="96dp"
+                        android:background="@drawable/bg_dashed_photo_picker"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="8dp">
 
-    </LinearLayout>
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_image"
+                            app:tint="#0D8A3F" />
 
-    <!-- Submit Button & Progress -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="Add Event Photos"
+                            android:textColor="#0D8A3F"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:fontFamily="sans-serif"
+                            android:text="Upload up to 5 photos"
+                            android:textColor="#94A3B8"
+                            android:textSize="10sp" />
+
+                    </LinearLayout>
+
+                    <!-- Thumbnail 1 -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivThumb1"
+                        android:layout_width="72dp"
+                        android:layout_height="96dp"
+                        android:layout_marginStart="10dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/img_sample_event_thumb_1"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium" />
+
+                    <!-- Thumbnail 2 -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivThumb2"
+                        android:layout_width="72dp"
+                        android:layout_height="96dp"
+                        android:layout_marginStart="10dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/img_sample_event_thumb_2"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium" />
+
+                    <!-- Plus Square Button -->
+                    <FrameLayout
+                        android:id="@+id/btnAddMorePhotos"
+                        android:layout_width="56dp"
+                        android:layout_height="96dp"
+                        android:layout_marginStart="10dp"
+                        android:background="@drawable/bg_add_photo_square"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_add"
+                            app:tint="#64748B" />
+
+                    </FrameLayout>
+
+                </LinearLayout>
+
+            </HorizontalScrollView>
+
+            <!-- 2. Event Title * Section -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-black"
+                    android:text="T"
+                    android:textColor="#0D8A3F"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Event Title *"
+                    android:textColor="#0F172A"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/etEventTitle"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_event_input_rounded"
+                android:fontFamily="sans-serif"
+                android:hint="e.g. Weekend Farmers Market"
+                android:inputType="textCapWords"
+                android:maxLength="80"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="#0F172A"
+                android:textColorHint="#94A3B8"
+                android:textSize="14sp" />
+
+            <!-- 3. Category * Section -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:src="@drawable/ic_grid_category"
+                    app:tint="#0D8A3F" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Category *"
+                    android:textColor="#0F172A"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+            <!-- Category Chips: Row 1 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <!-- Community (Selected) -->
+                <LinearLayout
+                    android:id="@+id/chipCatCommunity"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_category_selected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivCatCommunity"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_event"
+                        app:tint="#0D8A3F" />
+
+                    <TextView
+                        android:id="@+id/tvCatCommunity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Community"
+                        android:textColor="#0D8A3F"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- Music -->
+                <LinearLayout
+                    android:id="@+id/chipCatMusic"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_category_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivCatMusic"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_trending"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvCatMusic"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Music"
+                        android:textColor="#475569"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- Sports -->
+                <LinearLayout
+                    android:id="@+id/chipCatSports"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_category_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivCatSports"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_activity_joined"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvCatSports"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Sports"
+                        android:textColor="#475569"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- Workshop -->
+                <LinearLayout
+                    android:id="@+id/chipCatWorkshop"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_category_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivCatWorkshop"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_school"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvCatWorkshop"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Workshop"
+                        android:textColor="#475569"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Category Chips: Row 2 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <!-- Cultural -->
+                <LinearLayout
+                    android:id="@+id/chipCatCultural"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_category_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivCatCultural"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_star"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvCatCultural"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Cultural"
+                        android:textColor="#475569"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- Volunteering -->
+                <LinearLayout
+                    android:id="@+id/chipCatVolunteering"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_category_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivCatVolunteering"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_support_heart"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvCatVolunteering"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Volunteering"
+                        android:textColor="#475569"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- Food -->
+                <LinearLayout
+                    android:id="@+id/chipCatFood"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_category_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivCatFood"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_restaurant"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvCatFood"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Food"
+                        android:textColor="#475569"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- Other -->
+                <LinearLayout
+                    android:id="@+id/chipCatOther"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_category_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivCatOther"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_more_horiz"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvCatOther"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Other"
+                        android:textColor="#475569"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- 4. Date & Time * Section -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_event"
+                    app:tint="#0D8A3F" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Date &amp; Time *"
+                    android:textColor="#0F172A"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <!-- Select Date Box -->
+                <LinearLayout
+                    android:id="@+id/boxSelectDate"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_event_input_rounded"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_event"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvSelectedDate"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif"
+                        android:text="Select Date"
+                        android:textColor="#94A3B8"
+                        android:textSize="13sp" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_tc_chevron_down"
+                        app:tint="#64748B" />
+
+                </LinearLayout>
+
+                <!-- Select Time Box -->
+                <LinearLayout
+                    android:id="@+id/boxSelectTime"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_event_input_rounded"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_access_time"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvSelectedTime"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif"
+                        android:text="Select Time"
+                        android:textColor="#94A3B8"
+                        android:textSize="13sp" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_tc_chevron_down"
+                        app:tint="#64748B" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- 5. Location / Venue * Section -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_location"
+                        app:tint="#0D8A3F" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Location / Venue *"
+                        android:textColor="#0F172A"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnUseCurrentLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_my_location"
+                        app:tint="#0D8A3F" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Use Current Location"
+                        android:textColor="#0D8A3F"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </RelativeLayout>
+
+            <!-- Location Input Box with Pin & Clear -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_event_input_rounded"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_location"
+                    app:tint="#0F172A" />
+
+                <EditText
+                    android:id="@+id/etEventLocation"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:fontFamily="sans-serif"
+                    android:hint="Enter location name"
+                    android:inputType="textCapWords"
+                    android:text="Bhujpur, Gujarat"
+                    android:textColor="#0F172A"
+                    android:textSize="14sp" />
+
+                <ImageButton
+                    android:id="@+id/btnClearLocation"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Clear Location"
+                    android:src="@drawable/ic_close"
+                    app:tint="#64748B" />
+
+            </LinearLayout>
+
+            <!-- 6. Event Description * Section -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_document_text"
+                    app:tint="#0D8A3F" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Event Description *"
+                    android:textColor="#0F172A"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/etEventDescription"
+                android:layout_width="match_parent"
+                android:layout_height="110dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_event_input_rounded"
+                android:fontFamily="sans-serif"
+                android:gravity="top|start"
+                android:hint="Tell people about your event..."
+                android:inputType="textMultiLine|textCapSentences"
+                android:lines="5"
+                android:maxLength="500"
+                android:padding="12dp"
+                android:textColor="#0F172A"
+                android:textColorHint="#94A3B8"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvDescriptionCounter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="3dp"
+                android:fontFamily="sans-serif"
+                android:text="0/500"
+                android:textColor="#94A3B8"
+                android:textSize="11sp" />
+
+            <!-- 7. Additional Options Section -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_settings"
+                    app:tint="#0D8A3F" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Additional Options"
+                    android:textColor="#0F172A"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+            <!-- Option 1: Allow comments and discussions -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp">
+
+                <ImageView
+                    android:id="@+id/ivOptComments"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:src="@drawable/ic_people"
+                    app:tint="#475569" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="12dp"
+                    android:layout_toStartOf="@id/switchAllowComments"
+                    android:layout_toEndOf="@id/ivOptComments"
+                    android:fontFamily="sans-serif"
+                    android:text="Allow comments and discussions"
+                    android:textColor="#1E293B"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchAllowComments"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:checked="true"
+                    app:thumbTint="@color/switch_thumb_tint"
+                    app:trackTint="@color/switch_track_tint" />
+
+            </RelativeLayout>
+
+            <!-- Option 2: Send notification to nearby users -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp">
+
+                <ImageView
+                    android:id="@+id/ivOptNotif"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:src="@drawable/ic_bell_outline"
+                    app:tint="#475569" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="12dp"
+                    android:layout_toStartOf="@id/switchSendNotification"
+                    android:layout_toEndOf="@id/ivOptNotif"
+                    android:fontFamily="sans-serif"
+                    android:text="Send notification to nearby users"
+                    android:textColor="#1E293B"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchSendNotification"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:checked="true"
+                    app:thumbTint="@color/switch_thumb_tint"
+                    app:trackTint="@color/switch_track_tint" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Bottom Action Button: Create Event → -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp">
+        android:layout_marginTop="16dp">
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnSubmitCreateEvent"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="@drawable/bg_primary_button"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_green_pill_button"
             android:fontFamily="sans-serif-bold"
-            android:text="Create Event"
+            android:text="Create Event   →"
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
             android:textSize="15sp" />
