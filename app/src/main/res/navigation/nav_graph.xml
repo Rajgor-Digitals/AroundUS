@@ -125,7 +125,8 @@
     <fragment
         android:id="@+id/eventDetailFragment"
         android:name="com.aroundus.app.fragments.EventDetailFragment"
-        android:label="Event" />
+        android:label="Event"
+        tools:layout="@layout/fragment_event_detail" />
 
     <!-- Community -->
     <fragment

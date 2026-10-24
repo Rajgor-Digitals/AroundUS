@@ -78,7 +78,9 @@ data class Event(
     val attendeesCount: Int,
     val isFree: Boolean,
     val imageRes: Int,
-    var isAttending: Boolean = false
+    var isAttending: Boolean = false,
+    val creatorId: String? = null,
+    val createdAt: String? = null
 )
 
 data class ChatItem(

@@ -1974,6 +1974,7 @@ class MessageRepository {
  */
 class EventRepository {
     private val service get() = SupabaseClient.getService()
+    private val userRepo = UserRepository()
 
     suspend fun fetchEvents(): NetworkResult<List<EventEntity>> =
         withContext(Dispatchers.IO) {
@@ -1992,25 +1993,32 @@ class EventRepository {
     suspend fun createEvent(
         title: String,
         date: String,
-        location: String
+        location: String?,
+        attendees: String? = "1 Attending"
     ): NetworkResult<EventEntity> =
         withContext(Dispatchers.IO) {
             try {
                 if (title.isBlank()) {
                     return@withContext NetworkResult.Error("Event title is required.")
                 }
-                val creatorId = SupabaseClient.getCurrentUserId()
-                if (creatorId.isNullOrBlank()) {
-                    return@withContext NetworkResult.Error("User must be logged in to create an event.")
+                if (date.isBlank()) {
+                    return@withContext NetworkResult.Error("Event date & time are required.")
                 }
 
+                val creatorId = userRepo.resolveValidAuthorId().ifBlank {
+                    SupabaseClient.getCurrentUserId() ?: ""
+                }.takeIf { it.isNotBlank() }
+
                 val newEvent = EventEntity(
-                    eventId = "event_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12),
+                    eventId = "event_" + UUID.randomUUID().toString().replace("-", "").take(12),
                     creatorId = creatorId,
                     title = title.trim(),
                     date = date.trim(),
-                    location = location.trim(),
-                    attendees = "1 Attending"
+                    location = location?.trim(),
+                    attendees = attendees?.trim() ?: "1 Attending",
+                    createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+                        timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    }.format(java.util.Date())
                 )
 
                 val resp = service.createEvent(event = newEvent)
@@ -2021,6 +2029,33 @@ class EventRepository {
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Failed to create event", e)
+            }
+        }
+
+    suspend fun toggleAttendance(eventId: String, currentCount: Int): NetworkResult<EventEntity> =
+        withContext(Dispatchers.IO) {
+            try {
+                val updatedCount = (currentCount + 1).coerceAtLeast(1)
+                val updatedAttendees = "$updatedCount Attending"
+
+                val resp = service.updateEvent(
+                    queryFilter = "eq.$eventId",
+                    eventMap = mapOf("attendees" to updatedAttendees)
+                )
+                if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                    NetworkResult.Success(resp.body()!!.first())
+                } else {
+                    NetworkResult.Success(
+                        EventEntity(
+                            eventId = eventId,
+                            title = "",
+                            date = "",
+                            attendees = updatedAttendees
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to update attendance", e)
             }
         }
 }

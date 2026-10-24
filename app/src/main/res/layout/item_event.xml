@@ -178,16 +178,18 @@
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
 
-                <com.google.android.material.button.MaterialButton
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btnAttend"
-                    style="@style/Widget.AroundUS.Button.Small"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="36dp"
                     android:background="@drawable/bg_primary_button"
-                    app:backgroundTint="@null"
                     android:fontFamily="sans-serif-bold"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
                     android:text="@string/attend"
-                    android:textColor="#FFFFFF" />
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
 
             </LinearLayout>
 

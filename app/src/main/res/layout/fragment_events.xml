@@ -17,6 +17,8 @@
             style="@style/Widget.AroundUS.Toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:navigationIconTint="#0F172A"
             app:title="@string/events"
             app:titleTextAppearance="@style/TextAppearance.AroundUS.Title"
             app:menu="@menu/menu_home" />
@@ -57,16 +59,74 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvEvents"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingStart="12dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="88dp"
-            android:scrollbars="none" />
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvEvents"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingStart="12dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="88dp"
+                android:scrollbars="none" />
+
+            <LinearLayout
+                android:id="@+id/layoutEmptyEvents"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:src="@drawable/ic_event"
+                    app:tint="#94A3B8" />
+
+                <TextView
+                    android:id="@+id/tvEmptyTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="No Events Found"
+                    android:textColor="#334155"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/tvEmptySubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="sans-serif"
+                    android:gravity="center"
+                    android:text="Be the first to create a community event for your neighborhood!"
+                    android:textColor="#64748B"
+                    android:textSize="13sp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnEmptyCreateEvent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_primary_button"
+                    android:fontFamily="sans-serif-bold"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:text="+ Create Event"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF" />
+
+            </LinearLayout>
+
+        </FrameLayout>
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
@@ -75,13 +135,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="24dp"
-        android:background="@drawable/bg_primary_button"
-        app:backgroundTint="@null"
+        android:layout_marginEnd="18dp"
+        android:layout_marginBottom="90dp"
         android:fontFamily="sans-serif-bold"
         android:text="Create Event"
         android:textColor="#FFFFFF"
+        app:backgroundTint="#2563EB"
+        app:cornerRadius="24dp"
         app:elevation="6dp"
         app:icon="@drawable/ic_event"
         app:iconTint="#FFFFFF" />

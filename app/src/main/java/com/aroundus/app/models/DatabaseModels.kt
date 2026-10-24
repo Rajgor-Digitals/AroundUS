@@ -173,7 +173,7 @@ data class EventEntity(
     @SerializedName(value = "event_id", alternate = ["eventId"])
     val eventId: String = "",
     @SerializedName(value = "creator_id", alternate = ["creatorId"])
-    val creatorId: String = "",
+    val creatorId: String? = null,
     @SerializedName("title")
     val title: String = "",
     @SerializedName("date")
@@ -181,7 +181,9 @@ data class EventEntity(
     @SerializedName("location")
     val location: String? = null,
     @SerializedName("attendees")
-    val attendees: String? = null // Can store attendee count or list of user IDs
+    val attendees: String? = null,
+    @SerializedName(value = "created_at", alternate = ["createdAt"])
+    val createdAt: String? = null
 )
 
 /**
@@ -413,16 +415,51 @@ fun GroupEntity.toUIModel(currentUserId: String? = null): Group {
 }
 
 fun EventEntity.toUIModel(): Event {
+    var monthStr = "EVENT"
+    var dayStr = "★"
+
+    try {
+        val cleanDate = date.trim()
+        val parts = cleanDate.split(" ", "-", "/", ",", "·")
+            .filter { it.isNotBlank() }
+
+        val monthNames = listOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
+        val foundMonth = parts.firstOrNull { p ->
+            monthNames.any { p.uppercase().startsWith(it) }
+        }
+
+        if (foundMonth != null) {
+            monthStr = foundMonth.uppercase().take(3)
+            val foundDay = parts.firstOrNull { it.all { c -> c.isDigit() } && (it.toIntOrNull() in 1..31) }
+            if (foundDay != null) dayStr = foundDay
+        } else {
+            val digits = parts.filter { it.all { c -> c.isDigit() } }
+            if (digits.size >= 3 && digits[0].length == 4) {
+                val mIdx = digits[1].toIntOrNull() ?: 1
+                if (mIdx in 1..12) monthStr = monthNames[mIdx - 1]
+                dayStr = digits[2].toIntOrNull()?.toString() ?: "1"
+            } else if (digits.isNotEmpty()) {
+                val d = digits.firstOrNull { (it.toIntOrNull() in 1..31) }
+                if (d != null) dayStr = d
+                monthStr = "UPCOMING"
+            }
+        }
+    } catch (_: Exception) {}
+
+    val parsedAttendees = attendees?.filter { it.isDigit() }?.toIntOrNull() ?: 1
+
     return Event(
         id = eventId,
-        title = title,
-        month = "TODAY",
-        day = "1",
-        time = date,
-        location = location ?: "Bhujpur, Kutch",
-        attendeesCount = 1,
+        title = title.ifBlank { "Community Event" },
+        month = monthStr,
+        day = dayStr,
+        time = date.ifBlank { "Date & Time TBA" },
+        location = location?.takeIf { it.isNotBlank() } ?: "Neighborhood Event",
+        attendeesCount = parsedAttendees,
         isFree = true,
-        imageRes = R.drawable.bg_gradient_onboarding
+        imageRes = R.drawable.bg_gradient_onboarding,
+        creatorId = creatorId,
+        createdAt = createdAt
     )
 }
 

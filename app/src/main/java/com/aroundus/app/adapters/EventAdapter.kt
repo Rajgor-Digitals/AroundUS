@@ -8,7 +8,8 @@ import com.aroundus.app.models.Event
 
 class EventAdapter(
     private val events: List<Event>,
-    private val onEventClick: (Event) -> Unit
+    private val onEventClick: (Event) -> Unit,
+    private val onAttendClick: ((Event) -> Unit)? = null
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
     inner class EventViewHolder(private val binding: ItemEventBinding) :
@@ -25,9 +26,18 @@ class EventAdapter(
             binding.ivEventImage.setImageResource(event.imageRes)
             binding.root.setOnClickListener { onEventClick(event) }
 
+            binding.btnAttend.text = if (event.isAttending) "Attending ✓" else "Attend"
+            binding.btnAttend.alpha = if (event.isAttending) 0.85f else 1.0f
+
             binding.btnAttend.setOnClickListener {
-                event.isAttending = !event.isAttending
-                binding.btnAttend.text = if (event.isAttending) "Attending" else "Attend"
+                if (!event.isAttending) {
+                    event.isAttending = true
+                    val newCount = event.attendeesCount + 1
+                    binding.tvAttendees.text = "$newCount attending"
+                    binding.btnAttend.text = "Attending ✓"
+                    binding.btnAttend.alpha = 0.85f
+                    onAttendClick?.invoke(event)
+                }
             }
         }
     }
