@@ -19,6 +19,8 @@ import androidx.core.view.children
 import androidx.lifecycle.lifecycleScope
 import com.aroundus.app.R
 import com.aroundus.app.databinding.ActivityProfileSetupBinding
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.models.UserEntity
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.NetworkResult
@@ -155,6 +157,35 @@ class ProfileSetupActivity : AppCompatActivity() {
             binding.etNeighborhood.setText(detected)
         } else {
             binding.etNeighborhood.setText("")
+        }
+
+        val isFromSettings = intent.getBooleanExtra("isFromSettings", false)
+        if (isFromSettings) {
+            binding.llStepHeader.visibility = View.GONE
+            binding.tvSetupTitle.text = "Edit Your Profile"
+            binding.tvSetupSubtitle.text = "Update your neighborhood display information and avatar."
+            binding.btnSaveProfile.text = "Save Profile Changes"
+            binding.btnSkip.visibility = View.GONE
+            binding.btnSkipBottom.visibility = View.GONE
+
+            lifecycleScope.launch {
+                when (val result = userRepository.getUserProfile(targetUserId)) {
+                    is NetworkResult.Success -> {
+                        val p = result.data
+                        if (p.name.isNotBlank()) binding.etFullName.setText(p.name)
+                        if (!p.location.isNullOrBlank()) binding.etNeighborhood.setText(p.location)
+                        if (!p.bio.isNullOrBlank()) binding.etBio.setText(p.bio)
+                        if (!p.profilePhoto.isNullOrBlank()) {
+                            Glide.with(this@ProfileSetupActivity)
+                                .load(p.profilePhoto)
+                                .centerCrop()
+                                .into(binding.ivAvatar)
+                            binding.badgePhotoSelected.visibility = View.VISIBLE
+                        }
+                    }
+                    is NetworkResult.Error -> {}
+                }
+            }
         }
     }
 
@@ -427,6 +458,15 @@ class ProfileSetupActivity : AppCompatActivity() {
     }
 
     private fun proceedToMain(showToast: Boolean, userName: String = "") {
+        val isFromSettings = intent.getBooleanExtra("isFromSettings", false)
+        if (isFromSettings) {
+            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+            Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
         if (showToast) {
             val displayName = if (userName.isNotBlank()) userName else "Neighbor"
             Toast.makeText(this, "Welcome to AroundUS, $displayName!", Toast.LENGTH_SHORT).show()
