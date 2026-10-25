@@ -149,6 +149,40 @@ class ConversationActivity : AppCompatActivity() {
         }
     }
 
+    private fun showEncryptionDetailsDialog() {
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(
+            this,
+            R.style.Theme_AroundUS_BottomSheetDialog
+        )
+        val dialogBinding = com.aroundus.app.databinding.DialogE2eeSecurityBinding.inflate(layoutInflater)
+        dialog.setContentView(dialogBinding.root)
+
+        val partnerName = recipientName.ifBlank { if (isGroupChat) "Group members" else "Neighbor" }
+        val authorId = currentUserId.ifBlank {
+            SupabaseClient.getCurrentUserId() ?: ""
+        }
+
+        if (isGroupChat) {
+            dialogBinding.tvSecuritySubtitle.text = "Group Chat • Secured with 256-bit AES-GCM"
+            dialogBinding.tvSecurityDescription.text = "All messages and inquiries in this group are end-to-end encrypted. Only verified members belonging to '$partnerName' hold the decryption key. Neither AroundUS nor third parties can read them."
+            val secret = CryptoManager.generateGroupSharedSecret(groupId)
+            dialogBinding.tvSafetyNumber.text = CryptoManager.getSafetyNumber(secret)
+            dialogBinding.tvSafetyNumberHint.text = "Group verification fingerprint for '$partnerName'. All participants in this group share this cryptographic safety number."
+        } else {
+            dialogBinding.tvSecuritySubtitle.text = "Direct Chat • Secured with 256-bit AES-GCM"
+            dialogBinding.tvSecurityDescription.text = "Messages and product inquiries exchanged with $partnerName are end-to-end encrypted. They are encrypted on your device and can only be decrypted on $partnerName's device. Neither AroundUS nor third parties can read them."
+            val secret = CryptoManager.generateSharedSecret(authorId, recipientUserId)
+            dialogBinding.tvSafetyNumber.text = CryptoManager.getSafetyNumber(secret)
+            dialogBinding.tvSafetyNumberHint.text = "Compare this 60-digit number with $partnerName to verify that end-to-end encryption is active and keys match."
+        }
+
+        dialogBinding.btnDoneSecurity.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
     private fun updateHeaderStatusUI(isOnline: Boolean, statusText: String) {
         binding.tvStatus.text = statusText
         val activeGreen = Color.parseColor("#16A34A")
@@ -168,13 +202,18 @@ class ConversationActivity : AppCompatActivity() {
 
     private fun showOptionsMenu(anchorView: View) {
         val popup = PopupMenu(this, anchorView)
-        popup.menu.add(0, 1, 0, "Simulate Neighbor Typing (Demo)")
-        popup.menu.add(0, 2, 1, "Simulate Neighbor Seen Messages (Demo)")
-        popup.menu.add(0, 3, 2, "Toggle Neighbor Active / Last Active (Demo)")
-        popup.menu.add(0, 4, 3, "Mute Notifications")
-        popup.menu.add(0, 5, 4, "Clear Chat")
+        popup.menu.add(0, 6, 0, "Verify End-to-End Encryption 🔒")
+        popup.menu.add(0, 1, 1, "Simulate Neighbor Typing (Demo)")
+        popup.menu.add(0, 2, 2, "Simulate Neighbor Seen Messages (Demo)")
+        popup.menu.add(0, 3, 3, "Toggle Neighbor Active / Last Active (Demo)")
+        popup.menu.add(0, 4, 4, "Mute Notifications")
+        popup.menu.add(0, 5, 5, "Clear Chat")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
+                6 -> {
+                    showEncryptionDetailsDialog()
+                    true
+                }
                 1 -> {
                     simulatePartnerTyping()
                     true
@@ -660,8 +699,15 @@ class ConversationActivity : AppCompatActivity() {
             if (groupId.isBlank()) return
             when (val result = messageRepository.fetchGroupMessages(groupId)) {
                 is NetworkResult.Success -> {
+                    val groupSecret = CryptoManager.generateGroupSharedSecret(groupId)
+                    val groupKey = CryptoManager.deriveKey(groupSecret)
                     val fetchedMessages = result.data.map { entity ->
-                        val (cleanText, productCard) = ProductMessageUtils.parseMessage(entity.text)
+                        val plainText = if (CryptoManager.isEncrypted(entity.text)) {
+                            CryptoManager.decrypt(entity.text, groupKey)
+                        } else {
+                            entity.text
+                        }
+                        val (cleanText, productCard) = ProductMessageUtils.parseMessage(plainText)
                         val timestampLong = entity.timestamp.toLongOrNull() ?: 0L
                         val timeFormatted = if (timestampLong > 0L) timeFormat.format(Date(timestampLong)) else "Now"
                         val isSentByMe = entity.senderId == authorId
@@ -730,7 +776,7 @@ class ConversationActivity : AppCompatActivity() {
                 }
 
                 val fetchedMessages = result.data.map { entity ->
-                    val plainText = if (entity.text.startsWith("E2EE:")) {
+                    val plainText = if (CryptoManager.isEncrypted(entity.text)) {
                         CryptoManager.decrypt(entity.text, secretKey)
                     } else {
                         entity.text

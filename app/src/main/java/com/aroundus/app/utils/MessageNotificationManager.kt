@@ -225,11 +225,17 @@ object MessageNotificationManager {
                                 val senderAvatar = senderInfo?.second
 
                                 // Decrypt message if end-to-end encrypted
-                                val plainText = if (msg.text.startsWith("E2EE:")) {
+                                val plainText = if (CryptoManager.isEncrypted(msg.text)) {
                                     try {
-                                        val sharedSecret = CryptoManager.generateSharedSecret(currentUserId, msg.senderId)
-                                        val key = CryptoManager.deriveKey(sharedSecret)
-                                        CryptoManager.decrypt(msg.text, key)
+                                        if (!msg.groupId.isNullOrBlank()) {
+                                            val sharedSecret = CryptoManager.generateGroupSharedSecret(msg.groupId)
+                                            val key = CryptoManager.deriveKey(sharedSecret)
+                                            CryptoManager.decrypt(msg.text, key)
+                                        } else {
+                                            val sharedSecret = CryptoManager.generateSharedSecret(currentUserId, msg.senderId)
+                                            val key = CryptoManager.deriveKey(sharedSecret)
+                                            CryptoManager.decrypt(msg.text, key)
+                                        }
                                     } catch (_: Exception) {
                                         "New encrypted message"
                                     }

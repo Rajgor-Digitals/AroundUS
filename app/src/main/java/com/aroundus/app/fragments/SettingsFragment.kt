@@ -59,6 +59,7 @@ class SettingsFragment : Fragment() {
         setupLanguage()
         setupEditProfile()
         setupPrivacy()
+        setupEncryptionInfo()
         setupNotificationSettings()
         setupHelpCenter()
         setupFeedback()
@@ -150,6 +151,21 @@ class SettingsFragment : Fragment() {
                     Toast.makeText(requireContext(), "Privacy preferences updated", Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Cancel", null)
+                .show()
+        }
+    }
+
+    private fun setupEncryptionInfo() {
+        binding.itemEncryption.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("🔒 End-to-End Encryption")
+                .setMessage(
+                    "All personal conversations, group discussions, and marketplace inquiries in AroundUS are secured with authenticated 256-bit AES-GCM encryption.\n\n" +
+                    "• End-to-End: Messages are encrypted directly on your device before network transmission and can only be decrypted by the intended recipient.\n\n" +
+                    "• Authenticated: 128-bit AEAD tags ensure that no message can be altered, intercepted, or tampered with in transit.\n\n" +
+                    "• Private: Not even AroundUS or cloud database administrators have access to your private conversations."
+                )
+                .setPositiveButton("Got It", null)
                 .show()
         }
     }

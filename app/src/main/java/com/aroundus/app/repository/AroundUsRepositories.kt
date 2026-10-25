@@ -1890,7 +1890,7 @@ class MessageRepository {
 
                     val latestMsg = msgs.maxByOrNull { it.timestamp.toLongOrNull() ?: 0L }
                     val plainText = if (latestMsg != null) {
-                        if (latestMsg.text.startsWith("E2EE:")) {
+                        if (com.aroundus.app.utils.CryptoManager.isEncrypted(latestMsg.text)) {
                             val sharedSecret = com.aroundus.app.utils.CryptoManager.generateSharedSecret(currentUserId, partnerId)
                             val key = com.aroundus.app.utils.CryptoManager.deriveKey(sharedSecret)
                             com.aroundus.app.utils.CryptoManager.decrypt(latestMsg.text, key)
@@ -1948,12 +1948,28 @@ class MessageRepository {
                     return@withContext NetworkResult.Error("User must be logged in to send messages.")
                 }
 
+                // Apply End-to-End Encryption (AES-GCM 256-bit)
+                val encryptedText = when {
+                    com.aroundus.app.utils.CryptoManager.isEncrypted(text) -> text
+                    !receiverId.isNullOrBlank() -> {
+                        val sharedSecret = com.aroundus.app.utils.CryptoManager.generateSharedSecret(senderId, receiverId)
+                        val key = com.aroundus.app.utils.CryptoManager.deriveKey(sharedSecret)
+                        com.aroundus.app.utils.CryptoManager.encrypt(text.trim(), key)
+                    }
+                    !groupId.isNullOrBlank() -> {
+                        val groupSecret = com.aroundus.app.utils.CryptoManager.generateGroupSharedSecret(groupId)
+                        val key = com.aroundus.app.utils.CryptoManager.deriveKey(groupSecret)
+                        com.aroundus.app.utils.CryptoManager.encrypt(text.trim(), key)
+                    }
+                    else -> text.trim()
+                }
+
                 val newMsg = MessageEntity(
                     messageId = "msg_" + UUID.randomUUID().toString().replace("-", "").take(12),
                     senderId = senderId,
                     receiverId = receiverId,
                     groupId = groupId,
-                    text = text.trim(),
+                    text = encryptedText,
                     timestamp = System.currentTimeMillis().toString()
                 )
 
