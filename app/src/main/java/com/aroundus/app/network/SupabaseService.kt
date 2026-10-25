@@ -30,6 +30,16 @@ interface SupabaseService {
         @Body request: OtpRequest
     ): Response<Unit>
 
+    @GET("auth/v1/user")
+    suspend fun getAuthUser(
+        @Header("Authorization") authHeader: String
+    ): Response<AuthUser>
+
+    @POST("auth/v1/token?grant_type=pkce")
+    suspend fun exchangePkceCode(
+        @Body request: Map<String, String>
+    ): Response<AuthResponse>
+
     // --- USERS TABLE ---
 
     @GET("rest/v1/users")

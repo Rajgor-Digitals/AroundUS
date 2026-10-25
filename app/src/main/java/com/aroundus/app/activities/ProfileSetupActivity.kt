@@ -102,7 +102,8 @@ class ProfileSetupActivity : AppCompatActivity() {
             ?: targetEmail.substringBefore("@").replace(".", " ").split(" ")
                 .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
 
-        targetUserId = SupabaseClient.getCurrentUserId()
+        targetUserId = intent.getStringExtra("userId")
+            ?: SupabaseClient.getCurrentUserId()
             ?: SupabaseClient.getAccountUserId(targetEmail)
             ?: ("usr_" + Math.abs(targetEmail.hashCode()))
     }
@@ -157,6 +158,16 @@ class ProfileSetupActivity : AppCompatActivity() {
             binding.etNeighborhood.setText(detected)
         } else {
             binding.etNeighborhood.setText("")
+        }
+
+        val googleAvatar = intent.getStringExtra("avatarUrl")
+        if (!googleAvatar.isNullOrBlank()) {
+            Glide.with(this)
+                .load(googleAvatar)
+                .centerCrop()
+                .into(binding.ivAvatar)
+            binding.badgePhotoSelected.visibility = View.VISIBLE
+            binding.tvAddPhoto.text = "Google Account Photo"
         }
 
         val isFromSettings = intent.getBooleanExtra("isFromSettings", false)
@@ -411,6 +422,13 @@ class ProfileSetupActivity : AppCompatActivity() {
                 } else if (selectedPresetResId != null) {
                     // Save preset avatar key locally
                     SupabaseClient.saveAvatarPath(targetUserId, "res:${selectedPresetResId}")
+                } else {
+                    val googleAvatar = intent.getStringExtra("avatarUrl")
+                    if (!googleAvatar.isNullOrBlank()) {
+                        remoteAvatarUrl = googleAvatar
+                        SupabaseClient.saveAvatarPath(targetUserId, googleAvatar)
+                        if (targetEmail.isNotBlank()) SupabaseClient.saveAvatarPath(targetEmail, googleAvatar)
+                    }
                 }
 
                 // 2. Build UserEntity

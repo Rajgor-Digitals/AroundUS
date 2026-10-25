@@ -164,10 +164,7 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         binding.btnGoogle.setOnClickListener {
-            Toast.makeText(this, "Signing up with Google...", Toast.LENGTH_SHORT).show()
-            val intent = Intent(this, ProfileSetupActivity::class.java)
-            startActivity(intent)
-            finish()
+            com.aroundus.app.utils.GoogleAuthManager.startGoogleSignIn(this)
         }
 
         binding.btnLogin.setOnClickListener {

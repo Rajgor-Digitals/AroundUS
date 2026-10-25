@@ -206,7 +206,9 @@ data class AuthUser(
     @SerializedName("id")
     val id: String = "",
     @SerializedName("email")
-    val email: String? = null
+    val email: String? = null,
+    @SerializedName("user_metadata")
+    val userMetadata: Map<String, Any>? = null
 )
 
 data class SignUpRequest(

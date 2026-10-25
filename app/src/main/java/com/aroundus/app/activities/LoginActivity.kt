@@ -106,7 +106,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         binding.btnGoogle.setOnClickListener {
-            Toast.makeText(this, "Google sign-in coming soon!", Toast.LENGTH_SHORT).show()
+            com.aroundus.app.utils.GoogleAuthManager.startGoogleSignIn(this)
         }
 
         binding.btnRegister.setOnClickListener {

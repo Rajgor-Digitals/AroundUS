@@ -56,6 +56,54 @@
             android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- OAuth Callback Activity (Supabase Google Sign-In) -->
+        <activity
+            android:name=".activities.AuthCallbackActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.AroundUS">
+            <!-- aroundus://auth/callback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="auth"
+                    android:pathPrefix="/callback"
+                    android:scheme="aroundus" />
+            </intent-filter>
+
+            <!-- aroundus://login-callback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="login-callback"
+                    android:scheme="aroundus" />
+            </intent-filter>
+
+            <!-- com.aroundus.app://auth -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="auth"
+                    android:scheme="com.aroundus.app" />
+            </intent-filter>
+
+            <!-- com.aroundus.app://login-callback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="login-callback"
+                    android:scheme="com.aroundus.app" />
+            </intent-filter>
+        </activity>
+
         <!-- Main Activity -->
         <activity
             android:name=".activities.MainActivity"
