@@ -10,13 +10,14 @@ import com.aroundus.app.databinding.ActivityAuthCallbackBinding
 import com.aroundus.app.models.UserEntity
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.utils.GoogleAuthManager
+import com.aroundus.app.utils.OAuthLoopbackServer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URLDecoder
 
 /**
- * Intercepts Supabase OAuth redirects (e.g., aroundus://auth/callback)
+ * Intercepts Supabase OAuth redirects (e.g., aroundus://auth/callback or localhost:3000)
  * after Google Authentication.
  *
  * Flow:
@@ -45,7 +46,13 @@ class AuthCallbackActivity : AppCompatActivity() {
         handleAuthIntent(intent)
     }
 
+    override fun onDestroy() {
+        OAuthLoopbackServer.stop()
+        super.onDestroy()
+    }
+
     private fun handleAuthIntent(intent: Intent?) {
+        OAuthLoopbackServer.stop()
         val uri = intent?.data
         if (uri == null) {
             Toast.makeText(this, "Authentication failed: No callback data received", Toast.LENGTH_SHORT).show()
@@ -80,6 +87,7 @@ class AuthCallbackActivity : AppCompatActivity() {
                     when (key) {
                         "access_token" -> accessToken = value
                         "refresh_token" -> refreshToken = value
+                        "code" -> if (code == null) code = value
                         "error" -> if (error == null) error = value
                         "error_description" -> error = value
                     }
@@ -208,6 +216,7 @@ class AuthCallbackActivity : AppCompatActivity() {
                             putExtra("name", name)
                             putExtra("avatarUrl", avatarUrl)
                             putExtra("isFirstTimeGoogle", true)
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }
                         startActivity(intent)
                         finish()

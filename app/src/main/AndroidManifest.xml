@@ -19,6 +19,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/Theme.AroundUS"
         tools:targetApi="31">
 
@@ -101,6 +102,39 @@
                 <data
                     android:host="login-callback"
                     android:scheme="com.aroundus.app" />
+            </intent-filter>
+
+            <!-- http://localhost:3000 fallback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="localhost"
+                    android:port="3000"
+                    android:scheme="http" />
+            </intent-filter>
+
+            <!-- https://localhost:3000 fallback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="localhost"
+                    android:port="3000"
+                    android:scheme="https" />
+            </intent-filter>
+
+            <!-- http://127.0.0.1:3000 fallback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="127.0.0.1"
+                    android:port="3000"
+                    android:scheme="http" />
             </intent-filter>
         </activity>
 

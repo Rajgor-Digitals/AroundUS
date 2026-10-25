@@ -34,6 +34,9 @@ object GoogleAuthManager {
             return
         }
 
+        // Start local loopback server to intercept localhost:3000 if Supabase falls back
+        OAuthLoopbackServer.start(context)
+
         try {
             val url = getGoogleOAuthUrl()
             val uri = Uri.parse(url)
@@ -50,6 +53,7 @@ object GoogleAuthManager {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getGoogleOAuthUrl()))
                 context.startActivity(intent)
             } catch (err: Exception) {
+                OAuthLoopbackServer.stop()
                 Toast.makeText(context, "No web browser found to open Google Sign-In", Toast.LENGTH_SHORT).show()
             }
         }
