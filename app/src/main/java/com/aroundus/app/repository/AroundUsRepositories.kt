@@ -846,6 +846,91 @@ class UserRepository {
         }
     }
 
+    suspend fun sendPasswordResetLink(email: String): NetworkResult<String> =
+        withContext(Dispatchers.IO) {
+            try {
+                val cleanEmail = email.trim().lowercase()
+                if (cleanEmail.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()) {
+                    return@withContext NetworkResult.Error("Please enter a valid email address.")
+                }
+
+                // Call Supabase password recovery API with redirect_to
+                val recoverResp = service.recoverPassword(
+                    redirectTo = "aroundus://auth/callback",
+                    request = RecoverPasswordRequest(email = cleanEmail)
+                )
+                if (recoverResp.isSuccessful) {
+                    NetworkResult.Success("Password reset link sent to $cleanEmail. Please check your inbox.")
+                } else {
+                    val rawError = recoverResp.errorBody()?.string()
+                    val errorMsg = extractSupabaseError(rawError, "Failed to send recovery email (HTTP ${recoverResp.code()}).")
+                    NetworkResult.Error(errorMsg)
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to connect to recovery service", e)
+            }
+        }
+
+    suspend fun updatePasswordWithRecoverySession(accessToken: String, newPassword: String): NetworkResult<Boolean> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (accessToken.isBlank()) {
+                    return@withContext NetworkResult.Error("Recovery session expired or missing. Please request a new link.")
+                }
+                if (newPassword.length < 6) {
+                    return@withContext NetworkResult.Error("New password must be at least 6 characters.")
+                }
+
+                val cleanToken = accessToken.trim().removePrefix("Bearer ").removePrefix("bearer ").trim()
+                val updateResp = service.updateAuthUser(
+                    authHeader = "Bearer $cleanToken",
+                    request = UpdateAuthUserRequest(password = newPassword)
+                )
+
+                if (!updateResp.isSuccessful) {
+                    val updateErr = updateResp.errorBody()?.string()
+                    val errorMsg = extractSupabaseError(updateErr, "Failed to update password (HTTP ${updateResp.code()}).")
+                    return@withContext NetworkResult.Error(errorMsg)
+                }
+
+                val authUser = updateResp.body()
+                val userId = authUser?.id ?: ""
+                val email = authUser?.email ?: ""
+                if (userId.isNotBlank() && email.isNotBlank()) {
+                    val userName = email.substringBefore("@")
+                    SupabaseClient.saveAccount(email, newPassword, userId, userName)
+                    SupabaseClient.saveSession(cleanToken, userId, email, userName)
+                }
+
+                NetworkResult.Success(true)
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to update password", e)
+            }
+        }
+
+    private fun extractSupabaseError(rawJson: String?, defaultMessage: String): String {
+        if (rawJson.isNullOrBlank()) return defaultMessage
+        try {
+            val json = org.json.JSONObject(rawJson)
+            val msg = when {
+                json.has("msg") -> json.optString("msg")
+                json.has("message") -> json.optString("message")
+                json.has("error_description") -> json.optString("error_description")
+                json.has("description") -> json.optString("description")
+                else -> null
+            }
+            if (!msg.isNullOrBlank()) {
+                val errorCode = json.optString("error_code")
+                return if (errorCode.isNotBlank() && !errorCode.equals("unexpected_failure", ignoreCase = true)) {
+                    "$msg ($errorCode)"
+                } else {
+                    msg
+                }
+            }
+        } catch (_: Exception) {}
+        return rawJson.take(120)
+    }
+
     private fun parseErrorMessage(raw: String): String {
         return if (raw.contains("Invalid login credentials")) "Invalid email or password."
         else if (raw.contains("User already registered")) "User with this email is already registered."

@@ -7,6 +7,7 @@ import retrofit2.http.*
 /**
  * Retrofit Service Interface for Supabase PostgREST & Auth APIs
  */
+@JvmSuppressWildcards
 interface SupabaseService {
 
     // --- SUPABASE STORAGE ---
@@ -39,6 +40,18 @@ interface SupabaseService {
     suspend fun exchangePkceCode(
         @Body request: Map<String, String>
     ): Response<AuthResponse>
+
+    @POST("auth/v1/recover")
+    suspend fun recoverPassword(
+        @Query("redirect_to") redirectTo: String? = "aroundus://auth/callback",
+        @Body request: RecoverPasswordRequest
+    ): Response<Unit>
+
+    @PUT("auth/v1/user")
+    suspend fun updateAuthUser(
+        @Header("Authorization") authHeader: String,
+        @Body request: UpdateAuthUserRequest
+    ): Response<AuthUser>
 
     // --- USERS TABLE ---
 

@@ -38,7 +38,7 @@ object OAuthLoopbackServer {
     private val scope = CoroutineScope(Dispatchers.IO)
 
     @Synchronized
-    fun start(context: Context) {
+    fun start(context: Context, timeoutMs: Long = 1_800_000L) {
         stop()
 
         serverJob = scope.launch {
@@ -49,9 +49,9 @@ object OAuthLoopbackServer {
                 serverSocket = socket
                 Log.d(TAG, "OAuth loopback server successfully started on port $PORT")
 
-                // Auto stop after 3 minutes if login flow is abandoned
+                // Auto stop after timeout (default 30 minutes)
                 val timeoutJob = launch {
-                    delay(180_000)
+                    delay(timeoutMs)
                     stop()
                 }
 
@@ -184,7 +184,7 @@ object OAuthLoopbackServer {
                             <div class="spinner"></div>
                         </div>
                         <h2>Returning to AroundUS...</h2>
-                        <p>Google sign-in completed! Redirecting you back to the app to complete your profile.</p>
+                        <p>Verification completed! Redirecting you back to the app...</p>
                         <a id="appBtn" href="#" class="btn">Open AroundUS App</a>
                     </div>
                     <script>

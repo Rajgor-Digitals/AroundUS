@@ -234,6 +234,16 @@ data class OtpRequest(
     val createUser: Boolean = true
 )
 
+data class RecoverPasswordRequest(
+    @SerializedName("email")
+    val email: String
+)
+
+data class UpdateAuthUserRequest(
+    @SerializedName("password")
+    val password: String
+)
+
 data class FollowEntity(
     @SerializedName(value = "follower_id", alternate = ["followerId"])
     val followerId: String = "",

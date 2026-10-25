@@ -69,9 +69,10 @@ class AuthCallbackActivity : AppCompatActivity() {
         var accessToken: String? = uri.getQueryParameter("access_token")
         var refreshToken: String? = uri.getQueryParameter("refresh_token")
         var code: String? = uri.getQueryParameter("code")
+        var type: String? = uri.getQueryParameter("type")
         var error: String? = uri.getQueryParameter("error_description") ?: uri.getQueryParameter("error")
 
-        // Parse Fragment (#access_token=...&refresh_token=...)
+        // Parse Fragment (#access_token=...&refresh_token=...&type=recovery)
         val fragment = uri.fragment
         if (!fragment.isNullOrBlank()) {
             val params = fragment.split("&")
@@ -88,6 +89,7 @@ class AuthCallbackActivity : AppCompatActivity() {
                         "access_token" -> accessToken = value
                         "refresh_token" -> refreshToken = value
                         "code" -> if (code == null) code = value
+                        "type" -> if (type == null) type = value
                         "error" -> if (error == null) error = value
                         "error_description" -> error = value
                     }
@@ -96,7 +98,7 @@ class AuthCallbackActivity : AppCompatActivity() {
         }
 
         if (!error.isNullOrBlank()) {
-            Toast.makeText(this, "Google Sign-In canceled or failed: $error", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Authentication failed: $error", Toast.LENGTH_LONG).show()
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
             return
@@ -116,8 +118,34 @@ class AuthCallbackActivity : AppCompatActivity() {
         }
 
         if (accessToken.isNullOrBlank()) {
-            Toast.makeText(this, "Unable to extract authentication token from Google callback.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Unable to extract authentication token from callback.", Toast.LENGTH_LONG).show()
             startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
+        // --- CHECK IF THIS IS PASSWORD RECOVERY LINK CALLBACK ---
+        if (type.equals("recovery", ignoreCase = true) || uri.path?.contains("recovery") == true || uri.host.equals("reset-password", ignoreCase = true)) {
+            val jwtData = GoogleAuthManager.parseJwtPayload(accessToken!!)
+            var email = jwtData?.email ?: ""
+            if (email.isBlank()) {
+                withContext(Dispatchers.IO) {
+                    try {
+                        val authUserResp = service.getAuthUser("Bearer $accessToken")
+                        if (authUserResp.isSuccessful && authUserResp.body() != null) {
+                            email = authUserResp.body()?.email ?: ""
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+
+            val resetIntent = Intent(this@AuthCallbackActivity, ForgotPasswordActivity::class.java).apply {
+                putExtra("access_token", accessToken)
+                putExtra("email", email)
+                putExtra("is_recovery_flow", true)
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            startActivity(resetIntent)
             finish()
             return
         }

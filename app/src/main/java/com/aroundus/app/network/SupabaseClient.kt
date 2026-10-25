@@ -38,11 +38,23 @@ object SupabaseClient {
         if (supabaseService == null) {
             val authInterceptor = Interceptor { chain ->
                 val originalRequest = chain.request()
-                val token = getAccessToken()
-                val authHeaderValue = if (!token.isNullOrBlank() && token.startsWith("eyJ")) {
-                    "Bearer $token"
+                val existingAuth = originalRequest.header("Authorization")
+                
+                // If caller already passed an explicit Authorization header (e.g. Bearer token for updateAuthUser or getAuthUser),
+                // do NOT clobber it with the anon key or default session!
+                val authHeaderValue = if (!existingAuth.isNullOrBlank() && !existingAuth.equals("Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}", ignoreCase = true)) {
+                    if (existingAuth.startsWith("Bearer ", ignoreCase = true)) {
+                        existingAuth
+                    } else {
+                        "Bearer $existingAuth"
+                    }
                 } else {
-                    "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
+                    val token = getAccessToken()
+                    if (!token.isNullOrBlank() && token.startsWith("eyJ")) {
+                        "Bearer $token"
+                    } else {
+                        "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
+                    }
                 }
 
                 val requestBuilder = originalRequest.newBuilder()
@@ -54,8 +66,15 @@ object SupabaseClient {
                 chain.proceed(requestBuilder.build())
             }
 
+            val loggingInterceptor = HttpLoggingInterceptor { message ->
+                android.util.Log.d("SupabaseHttp", message)
+            }.apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }
+
             val clientBuilder = OkHttpClient.Builder()
                 .addInterceptor(authInterceptor)
+                .addInterceptor(loggingInterceptor)
                 .connectionPool(okhttp3.ConnectionPool(10, 5, TimeUnit.MINUTES))
                 .connectTimeout(12, TimeUnit.SECONDS)
                 .readTimeout(12, TimeUnit.SECONDS)

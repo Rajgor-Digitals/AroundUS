@@ -50,14 +50,14 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activities.ForgotPasswordActivity"
-            android:exported="false"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".activities.ProfileSetupActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- OAuth Callback Activity (Supabase Google Sign-In) -->
+        <!-- OAuth Callback Activity (Supabase Google Sign-In & Password Recovery) -->
         <activity
             android:name=".activities.AuthCallbackActivity"
             android:exported="true"
@@ -71,6 +71,16 @@
                 <data
                     android:host="auth"
                     android:pathPrefix="/callback"
+                    android:scheme="aroundus" />
+            </intent-filter>
+
+            <!-- aroundus://reset-password -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="reset-password"
                     android:scheme="aroundus" />
             </intent-filter>
 
