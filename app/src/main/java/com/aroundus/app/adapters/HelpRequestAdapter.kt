@@ -1,6 +1,9 @@
 package com.aroundus.app.adapters
 
 import android.graphics.Color
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -50,9 +53,18 @@ class HelpRequestAdapter(
                 }
             }
 
-            // 2. Location & Time
-            binding.tvLocation.text = post.neighborhood.ifBlank { "Nearby" }
-            binding.tvDotTime.text = "• ${post.timeAgo}"
+            // 2. Location & Time on single line
+            val loc = post.neighborhood.ifBlank { "Nearby" }
+            val time = post.timeAgo.ifBlank { "Just now" }
+            val fullSubtitle = "$loc  •  $time"
+            val spannable = SpannableStringBuilder(fullSubtitle)
+            spannable.setSpan(
+                ForegroundColorSpan(Color.parseColor("#2563EB")),
+                0,
+                loc.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            binding.tvSubtitle.text = spannable
 
             // 3. Category Badge styling
             setupCategoryBadge(post.category)
@@ -173,11 +185,11 @@ class HelpRequestAdapter(
             val ctx = binding.root.context
             val d = ContextCompat.getDrawable(ctx, resId)?.mutate()
             if (d != null) {
-                val size = (13 * ctx.resources.displayMetrics.density).toInt()
+                val size = (10 * ctx.resources.displayMetrics.density).toInt()
                 d.setBounds(0, 0, size, size)
                 d.setTint(color)
                 binding.tvCategoryBadge.setCompoundDrawables(d, null, null, null)
-                binding.tvCategoryBadge.compoundDrawablePadding = (5 * ctx.resources.displayMetrics.density).toInt()
+                binding.tvCategoryBadge.compoundDrawablePadding = (3 * ctx.resources.displayMetrics.density).toInt()
             } else {
                 binding.tvCategoryBadge.setCompoundDrawables(null, null, null, null)
             }

@@ -4,11 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="16dp"
-    android:layout_marginEnd="16dp"
-    android:layout_marginBottom="14dp"
+    android:layout_marginStart="12dp"
+    android:layout_marginEnd="12dp"
+    android:layout_marginBottom="12dp"
     app:cardBackgroundColor="#FFFFFF"
-    app:cardCornerRadius="18dp"
+    app:cardCornerRadius="16dp"
     app:cardElevation="1dp"
     app:strokeColor="#F1F5F9"
     app:strokeWidth="1dp">
@@ -17,9 +17,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="13dp">
 
-        <!-- Top Row: Author, Verification, Location, Category Badge, More -->
+        <!-- Top Header: Avatar, Name, Verified, Badge, Location & Time, Options -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -27,29 +27,29 @@
             <!-- Avatar Container -->
             <FrameLayout
                 android:id="@+id/avatarContainer"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
                 <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/ivAvatar"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:contentDescription="Author Avatar"
                     android:src="@drawable/shape_avatar_placeholder" />
 
-                <!-- Circular Initial Avatar fallback for Ramesh Patel etc -->
+                <!-- Circular Initial Avatar fallback -->
                 <TextView
                     android:id="@+id/tvInitialAvatar"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:background="@drawable/shape_circle_primary"
                     android:backgroundTint="#22C55E"
                     android:fontFamily="sans-serif-bold"
                     android:gravity="center"
                     android:textColor="#FFFFFF"
-                    android:textSize="18sp"
+                    android:textSize="16sp"
                     android:visibility="gone"
                     tools:text="R" />
             </FrameLayout>
@@ -57,51 +57,51 @@
             <!-- Options Menu -->
             <ImageView
                 android:id="@+id/btnMore"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="More options"
-                android:padding="3dp"
+                android:padding="2dp"
                 android:src="@drawable/ic_more_vert"
-                app:layout_constraintBottom_toBottomOf="@id/avatarContainer"
+                app:layout_constraintBottom_toBottomOf="@id/userRow"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/avatarContainer"
+                app:layout_constraintTop_toTopOf="@id/userRow"
                 app:tint="#64748B" />
 
-            <!-- Category Badge -->
+            <!-- Category Badge (pill) -->
             <TextView
                 android:id="@+id/tvCategoryBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
+                android:layout_marginEnd="4dp"
                 android:background="@drawable/bg_badge_general_help"
                 android:fontFamily="sans-serif-bold"
                 android:gravity="center"
-                android:paddingStart="10dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="5dp"
+                android:includeFontPadding="false"
+                android:paddingStart="7dp"
+                android:paddingTop="2.5dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="2.5dp"
                 android:textColor="#059669"
-                android:textSize="11sp"
-                app:layout_constraintBottom_toBottomOf="@id/avatarContainer"
+                android:textSize="10sp"
+                app:layout_constraintBottom_toBottomOf="@id/userRow"
                 app:layout_constraintEnd_toStartOf="@id/btnMore"
-                app:layout_constraintTop_toTopOf="@id/avatarContainer"
+                app:layout_constraintTop_toTopOf="@id/userRow"
                 tools:text="General Help" />
 
-            <!-- Author Name + Verified -->
+            <!-- User Row: Name + Verified Check -->
             <LinearLayout
                 android:id="@+id/userRow"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="8dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="6dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                app:layout_constraintBottom_toTopOf="@id/metaRow"
                 app:layout_constraintEnd_toStartOf="@id/tvCategoryBadge"
+                app:layout_constraintHorizontal_bias="0"
                 app:layout_constraintStart_toEndOf="@id/avatarContainer"
-                app:layout_constraintTop_toTopOf="@id/avatarContainer"
-                app:layout_constraintVertical_chainStyle="packed">
+                app:layout_constraintTop_toTopOf="@id/avatarContainer">
 
                 <TextView
                     android:id="@+id/tvAuthorName"
@@ -110,63 +110,53 @@
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-black"
                     android:maxLines="1"
-                    android:textColor="#111827"
-                    android:textSize="14.5sp"
+                    android:singleLine="true"
+                    android:textColor="#0F172A"
+                    android:textSize="13.5sp"
                     tools:text="SHRIKANT RAJGOR" />
 
                 <ImageView
                     android:id="@+id/ivVerified"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="3dp"
                     android:contentDescription="Verified"
                     android:src="@drawable/ic_verified_blue"
                     android:visibility="gone"
                     tools:visibility="visible" />
             </LinearLayout>
 
-            <!-- Location & Time Row -->
+            <!-- Meta Row: Location & Time -->
             <LinearLayout
                 android:id="@+id/metaRow"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="8dp"
-                android:layout_marginTop="2dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="3dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                app:layout_constraintBottom_toBottomOf="@id/avatarContainer"
-                app:layout_constraintEnd_toStartOf="@id/tvCategoryBadge"
+                app:layout_constraintEnd_toStartOf="@id/btnMore"
                 app:layout_constraintStart_toEndOf="@id/avatarContainer"
                 app:layout_constraintTop_toBottomOf="@id/userRow">
 
                 <ImageView
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
                     android:src="@drawable/ic_location"
                     app:tint="#2563EB" />
 
                 <TextView
-                    android:id="@+id/tvLocation"
+                    android:id="@+id/tvSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="3dp"
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
                     android:maxLines="1"
-                    android:textColor="#2563EB"
-                    android:textSize="12sp"
-                    tools:text="Bhujpur, Kutch" />
-
-                <TextView
-                    android:id="@+id/tvDotTime"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:fontFamily="sans-serif"
+                    android:singleLine="true"
                     android:textColor="#64748B"
-                    android:textSize="12sp"
-                    tools:text="• 3h ago" />
+                    android:textSize="11.5sp"
+                    tools:text="Bhujpur, Kutch  •  3h ago" />
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -174,8 +164,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center_vertical"
+            android:layout_marginTop="10dp"
+            android:gravity="top"
             android:orientation="horizontal">
 
             <LinearLayout
@@ -189,30 +179,31 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-black"
-                    android:textColor="#111827"
-                    android:textSize="16sp"
+                    android:textColor="#0F172A"
+                    android:textSize="15.5sp"
                     tools:text="Need a Plumber" />
 
                 <TextView
                     android:id="@+id/tvDescription"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="4dp"
                     android:fontFamily="sans-serif"
-                    android:lineSpacingExtra="3dp"
+                    android:lineSpacingExtra="2dp"
                     android:textColor="#475569"
-                    android:textSize="14sp"
-                    tools:text="Hi everyone, I need a reliable plumber to fix a water leakage issue at my home. If anyone knows a good and affordable plumber in Bhujpur, please share the contact details. Thank you! 🙏" />
+                    android:textSize="13.5sp"
+                    tools:text="Hi everyone, I need a reliable plumber to fix a water leakage issue at my home." />
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardThumbnail"
-                android:layout_width="110dp"
-                android:layout_height="80dp"
+                android:layout_width="104dp"
+                android:layout_height="74dp"
                 android:layout_marginStart="12dp"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="10dp"
                 app:cardElevation="0dp"
-                app:strokeWidth="0dp">
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
 
                 <ImageView
                     android:id="@+id/ivThumbnail"
@@ -228,9 +219,9 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="14dp"
-            android:layout_marginBottom="12dp"
-            android:background="#F8FAFC" />
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="10dp"
+            android:background="#F1F5F9" />
 
         <!-- Bottom Action Row: Likes, Comments, Share, Bookmark -->
         <LinearLayout
@@ -251,8 +242,8 @@
 
                 <ImageView
                     android:id="@+id/ivLikeIcon"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
                     android:src="@drawable/ic_favorite_border"
                     app:tint="#64748B" />
 
@@ -260,7 +251,7 @@
                     android:id="@+id/tvLikeCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="5dp"
                     android:fontFamily="sans-serif-medium"
                     android:textColor="#64748B"
                     android:textSize="13sp"
@@ -279,8 +270,8 @@
                 android:paddingEnd="12dp">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
                     android:src="@drawable/ic_chat_bubble"
                     app:tint="#64748B" />
 
@@ -288,7 +279,7 @@
                     android:id="@+id/tvCommentCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="5dp"
                     android:fontFamily="sans-serif-medium"
                     android:textColor="#64748B"
                     android:textSize="13sp"
@@ -307,15 +298,15 @@
                 android:paddingEnd="12dp">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="19dp"
+                    android:layout_height="19dp"
                     android:src="@drawable/ic_share"
                     app:tint="#64748B" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="5dp"
                     android:fontFamily="sans-serif-medium"
                     android:text="Share"
                     android:textColor="#64748B"
@@ -330,8 +321,8 @@
             <!-- Bookmark -->
             <ImageView
                 android:id="@+id/btnBookmark"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Bookmark"
                 android:padding="2dp"
