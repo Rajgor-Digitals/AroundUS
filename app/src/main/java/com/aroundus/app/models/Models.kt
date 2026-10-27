@@ -136,7 +136,8 @@ data class Group(
     val isAdmin: Boolean = false,
     val iconBadgeRes: Int = 0,
     var isJoined: Boolean = false,
-    var isNotificationOn: Boolean = true
+    var isNotificationOn: Boolean = true,
+    val imageUrl: String? = null
 )
 
 data class GroupCategory(

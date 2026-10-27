@@ -1776,7 +1776,89 @@ class GroupRepository {
             }
         }
 
-    suspend fun createGroup(name: String, description: String, category: String): NetworkResult<GroupEntity> =
+    suspend fun uploadGroupImage(context: Context, imageUri: Uri): NetworkResult<String> =
+        withContext(Dispatchers.IO) {
+            try {
+                val contentResolver = context.contentResolver
+                val inputStream = contentResolver.openInputStream(imageUri)
+                    ?: return@withContext NetworkResult.Error("Unable to open selected image.")
+                val rawBytes = inputStream.use { it.readBytes() }
+                if (rawBytes.isEmpty()) {
+                    return@withContext NetworkResult.Error("Image file is empty.")
+                }
+
+                // High-quality compress (1024px max, 85% JPEG)
+                val uploadBytes: ByteArray
+                val bmp = android.graphics.BitmapFactory.decodeByteArray(rawBytes, 0, rawBytes.size)
+                if (bmp != null) {
+                    val maxDim = 1024f
+                    val scale = (maxDim / maxOf(bmp.width, bmp.height)).coerceAtMost(1.0f)
+                    val scaled = if (scale < 1.0f) {
+                        android.graphics.Bitmap.createScaledBitmap(
+                            bmp,
+                            (bmp.width * scale).toInt().coerceAtLeast(1),
+                            (bmp.height * scale).toInt().coerceAtLeast(1),
+                            true
+                        )
+                    } else bmp
+                    val baos = java.io.ByteArrayOutputStream()
+                    scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, baos)
+                    uploadBytes = baos.toByteArray()
+                    if (scaled != bmp) scaled.recycle()
+                    bmp.recycle()
+                } else {
+                    uploadBytes = rawBytes
+                }
+
+                val timestamp = System.currentTimeMillis()
+                val uniqueToken = UUID.randomUUID().toString().take(8)
+                val filename = "group_${timestamp}_${uniqueToken}.jpg"
+                val objectPath = "groups/$filename"
+
+                val baseUrl = SupabaseConfig.SUPABASE_URL.trimEnd('/')
+                val uploadUrl = "$baseUrl/storage/v1/object/post-media/$objectPath"
+
+                val token = SupabaseClient.getAccessToken()
+                val authHeaderValue = if (!token.isNullOrBlank() && token.startsWith("eyJ")) {
+                    "Bearer $token"
+                } else {
+                    "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
+                }
+
+                val requestBody = uploadBytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
+                val request = okhttp3.Request.Builder()
+                    .url(uploadUrl)
+                    .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
+                    .addHeader("Authorization", authHeaderValue)
+                    .addHeader("Content-Type", "image/jpeg")
+                    .post(requestBody)
+                    .build()
+
+                val client = okhttp3.OkHttpClient.Builder()
+                    .connectTimeout(25, java.util.concurrent.TimeUnit.SECONDS)
+                    .writeTimeout(45, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(25, java.util.concurrent.TimeUnit.SECONDS)
+                    .build()
+
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val publicUrl = "$baseUrl/storage/v1/object/public/post-media/$objectPath"
+                    NetworkResult.Success(publicUrl)
+                } else {
+                    val err = response.body?.string() ?: response.message
+                    NetworkResult.Error("Upload failed: $err")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to upload group image", e)
+            }
+        }
+
+    suspend fun createGroup(
+        name: String,
+        description: String,
+        category: String,
+        imageUrl: String? = null
+    ): NetworkResult<GroupEntity> =
         withContext(Dispatchers.IO) {
             try {
                 if (name.isBlank()) {
@@ -1786,10 +1868,15 @@ class GroupRepository {
                     SupabaseClient.getCurrentUserId() ?: ""
                 }
                 val initialMembers = if (currentUserId.isNotBlank()) currentUserId else "1 Member"
+                val finalDescription = if (!imageUrl.isNullOrBlank()) {
+                    "${description.trim()}\n[img:$imageUrl]".trim()
+                } else {
+                    description.trim()
+                }
                 val newGroup = GroupEntity(
                     groupId = "group_" + UUID.randomUUID().toString().replace("-", "").take(12),
                     name = name.trim(),
-                    description = description.trim(),
+                    description = finalDescription,
                     category = category.trim().ifBlank { "Local" },
                     members = initialMembers,
                     createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
@@ -1805,6 +1892,34 @@ class GroupRepository {
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Failed to create group", e)
+            }
+        }
+
+    suspend fun updateGroupImage(groupId: String, imageUrl: String): NetworkResult<GroupEntity> =
+        withContext(Dispatchers.IO) {
+            try {
+                val groupResult = fetchGroupById(groupId)
+                val currentGroup = when (groupResult) {
+                    is NetworkResult.Success -> groupResult.data
+                    is NetworkResult.Error -> return@withContext groupResult
+                }
+                var cleanDesc = currentGroup.description.orEmpty()
+                if (cleanDesc.contains("[img:") && cleanDesc.contains("]")) {
+                    cleanDesc = cleanDesc.substringBefore("[img:").trim()
+                }
+                val updatedDesc = if (imageUrl.isNotBlank()) {
+                    "$cleanDesc\n[img:$imageUrl]".trim()
+                } else cleanDesc
+
+                val updateMap = mapOf("description" to updatedDesc)
+                val resp = service.updateGroup(queryFilter = "eq.$groupId", groupMap = updateMap)
+                if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                    NetworkResult.Success(resp.body()!!.first())
+                } else {
+                    NetworkResult.Error("Failed to update group image.")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to update group image", e)
             }
         }
 

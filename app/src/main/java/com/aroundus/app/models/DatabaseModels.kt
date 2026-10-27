@@ -415,14 +415,23 @@ fun resolveGroupCoverRes(category: String?, name: String?): Int {
 fun GroupEntity.toUIModel(currentUserId: String? = null): Group {
     val isJoined = if (currentUserId.isNullOrBlank()) false else isMember(currentUserId)
     val displayMembers = if (getMemberList().isNotEmpty()) formatMembersDisplay() else (members ?: "1 Member")
+
+    var cleanDesc = description.orEmpty()
+    var remoteImageUrl: String? = null
+    if (cleanDesc.contains("[img:") && cleanDesc.contains("]")) {
+        remoteImageUrl = cleanDesc.substringAfter("[img:").substringBefore("]").trim()
+        cleanDesc = cleanDesc.substringBefore("[img:").trim()
+    }
+
     return Group(
         id = groupId,
         name = name,
-        description = description ?: "",
+        description = cleanDesc,
         coverRes = resolveGroupCoverRes(category, name),
         membersText = displayMembers,
         category = category ?: "Local",
-        isJoined = isJoined
+        isJoined = isJoined,
+        imageUrl = remoteImageUrl
     )
 }
 

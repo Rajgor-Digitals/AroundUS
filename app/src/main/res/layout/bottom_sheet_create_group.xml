@@ -68,6 +68,91 @@
         android:layout_marginTop="16dp"
         android:background="#F1F5F9" />
 
+    <!-- Group Icon / Cover Image Picker -->
+    <LinearLayout
+        android:id="@+id/layoutGroupImagePicker"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:id="@+id/containerGroupImage"
+            android:layout_width="92dp"
+            android:layout_height="92dp"
+            android:background="@drawable/bg_circle_group_picker"
+            android:clickable="true"
+            android:focusable="true">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivGroupIconPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/img_group_bhujpur_residents"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+            <!-- Camera Badge Overlay -->
+            <FrameLayout
+                android:id="@+id/btnCameraBadge"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="bottom|end"
+                android:background="@drawable/bg_notification_badge_green"
+                android:elevation="4dp">
+
+                <ImageView
+                    android:id="@+id/ivCameraBadge"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_camera"
+                    app:tint="#FFFFFF" />
+            </FrameLayout>
+
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvGroupImageAction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-bold"
+                android:text="+ Add Group Icon"
+                android:textColor="#0D8A3F"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/btnRemoveGroupIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Remove"
+                android:textColor="#EF4444"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif"
+            android:text="Tap to pick a photo or logo for your group"
+            android:textColor="#94A3B8"
+            android:textSize="11.5sp" />
+
+    </LinearLayout>
+
     <!-- Group Name Input -->
     <TextView
         android:layout_width="wrap_content"

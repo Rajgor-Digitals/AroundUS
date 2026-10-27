@@ -2,11 +2,13 @@ package com.aroundus.app.fragments
 
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -23,6 +25,7 @@ import com.aroundus.app.repository.UserRepository
 import com.aroundus.app.utils.AppRefreshManager
 import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.applyAroundUsTheme
+import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
 
 class GroupDetailFragment : Fragment() {
@@ -40,9 +43,16 @@ class GroupDetailFragment : Fragment() {
     private var groupMembersText: String = "1 Member"
     private var isJoined: Boolean = false
     private var coverRes: Int = R.drawable.img_group_bhujpur_residents
+    private var imageUrl: String? = null
 
     private var currentUserId: String = ""
     private var currentGroupEntity: GroupEntity? = null
+
+    private val pickCoverLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            uploadAndSetGroupCover(uri)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +64,7 @@ class GroupDetailFragment : Fragment() {
             groupMembersText = it.getString("membersText", "1 Member")
             isJoined = it.getBoolean("isJoined", false)
             coverRes = it.getInt("coverRes", resolveGroupCoverRes(groupCategory, groupName))
+            imageUrl = it.getString("imageUrl")
         }
     }
 
@@ -90,7 +101,16 @@ class GroupDetailFragment : Fragment() {
         binding.tvDetailDescription.text = groupDescription.ifBlank {
             "Welcome to $groupName. A community space for neighbors in Bhujpur to connect, collaborate, and share."
         }
-        binding.ivGroupCover.setImageResource(coverRes)
+        if (!imageUrl.isNullOrBlank()) {
+            Glide.with(this)
+                .load(imageUrl)
+                .placeholder(coverRes)
+                .error(coverRes)
+                .centerCrop()
+                .into(binding.ivGroupCover)
+        } else {
+            binding.ivGroupCover.setImageResource(coverRes)
+        }
 
         updateJoinButtonUI()
     }
@@ -115,6 +135,10 @@ class GroupDetailFragment : Fragment() {
 
         binding.btnShareGroup()
 
+        binding.btnChangeGroupCover.setOnClickListener {
+            pickCoverLauncher.launch("image/*")
+        }
+
         binding.tvInviteMembers.setOnClickListener {
             shareGroupInvite()
         }
@@ -125,6 +149,39 @@ class GroupDetailFragment : Fragment() {
 
         binding.btnGroupChat.setOnClickListener {
             openGroupChat()
+        }
+    }
+
+    private fun uploadAndSetGroupCover(uri: Uri) {
+        if (groupId.isBlank()) return
+
+        // Instant visual feedback
+        Glide.with(this)
+            .load(uri)
+            .centerCrop()
+            .into(binding.ivGroupCover)
+
+        Toast.makeText(requireContext(), "Uploading group cover...", Toast.LENGTH_SHORT).show()
+
+        lifecycleScope.launch {
+            when (val uploadResult = groupRepository.uploadGroupImage(requireContext(), uri)) {
+                is NetworkResult.Success -> {
+                    val publicUrl = uploadResult.data
+                    when (val updateResult = groupRepository.updateGroupImage(groupId, publicUrl)) {
+                        is NetworkResult.Success -> {
+                            imageUrl = publicUrl
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.GROUPS)
+                            Toast.makeText(requireContext(), "Group cover updated!", Toast.LENGTH_SHORT).show()
+                        }
+                        is NetworkResult.Error -> {
+                            Toast.makeText(requireContext(), "Failed to save cover: ${updateResult.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+                is NetworkResult.Error -> {
+                    Toast.makeText(requireContext(), "Upload failed: ${uploadResult.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
@@ -149,6 +206,7 @@ class GroupDetailFragment : Fragment() {
             putExtra("groupId", groupId)
             putExtra("userName", groupName)
             putExtra("avatarRes", coverRes)
+            putExtra("avatarUrl", imageUrl)
             putExtra("category", groupCategory)
             putExtra("members", groupMembersText)
         }
@@ -173,7 +231,18 @@ class GroupDetailFragment : Fragment() {
                         currentGroupEntity = entity
                         groupName = entity.name
                         groupCategory = entity.category ?: "Local"
-                        groupDescription = entity.description.orEmpty()
+                        
+                        var cleanDesc = entity.description.orEmpty()
+                        var remoteImageUrl: String? = null
+                        if (cleanDesc.contains("[img:") && cleanDesc.contains("]")) {
+                            remoteImageUrl = cleanDesc.substringAfter("[img:").substringBefore("]").trim()
+                            cleanDesc = cleanDesc.substringBefore("[img:").trim()
+                        }
+                        if (!remoteImageUrl.isNullOrBlank()) {
+                            imageUrl = remoteImageUrl
+                        }
+                        groupDescription = cleanDesc
+
                         groupMembersText = entity.formatMembersDisplay()
                         isJoined = entity.isMember(currentUserId)
                         coverRes = resolveGroupCoverRes(groupCategory, groupName)

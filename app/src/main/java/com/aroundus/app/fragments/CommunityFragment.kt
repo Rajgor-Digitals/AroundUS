@@ -289,6 +289,7 @@ class CommunityFragment : Fragment() {
             putString("membersText", group.membersText)
             putBoolean("isJoined", group.isJoined)
             putInt("coverRes", group.coverRes)
+            putString("imageUrl", group.imageUrl)
         }
         findNavController().navigate(R.id.action_community_to_groupDetail, bundle)
     }

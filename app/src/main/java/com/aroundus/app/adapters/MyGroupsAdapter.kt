@@ -30,7 +30,16 @@ class MyGroupsAdapter(
         val context = holder.itemView.context
 
         holder.binding.apply {
-            ivCover.setImageResource(group.coverRes)
+            if (!group.imageUrl.isNullOrBlank()) {
+                com.bumptech.glide.Glide.with(context)
+                    .load(group.imageUrl)
+                    .placeholder(group.coverRes)
+                    .error(group.coverRes)
+                    .centerCrop()
+                    .into(ivCover)
+            } else {
+                ivCover.setImageResource(group.coverRes)
+            }
             tvGroupName.text = group.name
             tvMemberCount.text = group.membersText
             tvDescription.text = group.description

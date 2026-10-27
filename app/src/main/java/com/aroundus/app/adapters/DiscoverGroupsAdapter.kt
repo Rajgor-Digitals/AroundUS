@@ -28,7 +28,16 @@ class DiscoverGroupsAdapter(
         val context = holder.itemView.context
 
         holder.binding.apply {
-            ivGroupThumb.setImageResource(group.coverRes)
+            if (!group.imageUrl.isNullOrBlank()) {
+                com.bumptech.glide.Glide.with(context)
+                    .load(group.imageUrl)
+                    .placeholder(group.coverRes)
+                    .error(group.coverRes)
+                    .centerCrop()
+                    .into(ivGroupThumb)
+            } else {
+                ivGroupThumb.setImageResource(group.coverRes)
+            }
             tvDiscoverGroupName.text = group.name
             tvDiscoverMembers.text = group.membersText
             tvDiscoverCategory.text = group.category
