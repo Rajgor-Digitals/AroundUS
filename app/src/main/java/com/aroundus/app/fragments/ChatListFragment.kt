@@ -19,6 +19,8 @@ import com.aroundus.app.activities.MainActivity
 import com.aroundus.app.adapters.ChatAdapter
 import com.aroundus.app.databinding.FragmentChatListBinding
 import com.aroundus.app.models.ChatItem
+import com.aroundus.app.models.resolveGroupCoverRes
+import com.aroundus.app.models.toUIModel
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.GroupRepository
 import com.aroundus.app.repository.MessageRepository
@@ -40,6 +42,8 @@ class ChatListFragment : Fragment() {
     private val postRepository = PostRepository()
 
     private val allChatsList = mutableListOf<ChatItem>()
+    private val allGroupsList = mutableListOf<ChatItem>()
+    private val allAnnouncementsList = mutableListOf<ChatItem>()
     private val displayedChatsList = mutableListOf<ChatItem>()
     private lateinit var chatAdapter: ChatAdapter
     private var currentTab = TabType.CHATS
@@ -114,6 +118,8 @@ class ChatListFragment : Fragment() {
                     putExtra("groupId", chat.id)
                     putExtra("userName", chat.userName)
                     putExtra("avatarRes", chat.avatarRes)
+                    putExtra("avatarUrl", chat.avatarUrl)
+                    putExtra("members", chat.time)
                     putExtra("isGroup", true)
                 } else {
                     putExtra("userId", chat.id)
@@ -235,21 +241,31 @@ class ChatListFragment : Fragment() {
                 }
             }
             TabType.GROUPS -> {
+                if (allGroupsList.isNotEmpty()) {
+                    displayedChatsList.addAll(allGroupsList)
+                    if (::chatAdapter.isInitialized) {
+                        chatAdapter.notifyDataSetChanged()
+                    }
+                }
                 lifecycleScope.launch {
                     val groupRes = groupRepository.fetchGroups()
                     if (groupRes is NetworkResult.Success && currentTab == TabType.GROUPS) {
-                        displayedChatsList.clear()
-                        displayedChatsList.addAll(groupRes.data.map {
+                        allGroupsList.clear()
+                        allGroupsList.addAll(groupRes.data.map { entity ->
+                            val uiGroup = entity.toUIModel()
                             ChatItem(
-                                id = it.groupId,
-                                userName = it.name,
-                                avatarRes = R.drawable.img_group_bhujpur_residents,
-                                lastMessage = it.description.orEmpty().ifBlank { "Group conversation" },
-                                time = it.members.orEmpty().ifBlank { "Active" },
+                                id = uiGroup.id,
+                                userName = uiGroup.name,
+                                avatarRes = uiGroup.coverRes,
+                                lastMessage = uiGroup.description.ifBlank { "Group conversation" },
+                                time = uiGroup.membersText,
                                 unreadCount = 0,
-                                isOnline = false
+                                isOnline = false,
+                                avatarUrl = uiGroup.imageUrl
                             )
                         })
+                        displayedChatsList.clear()
+                        displayedChatsList.addAll(allGroupsList)
                         if (::chatAdapter.isInitialized) {
                             chatAdapter.notifyDataSetChanged()
                         }
@@ -257,6 +273,12 @@ class ChatListFragment : Fragment() {
                 }
             }
             TabType.ANNOUNCEMENTS -> {
+                if (allAnnouncementsList.isNotEmpty()) {
+                    displayedChatsList.addAll(allAnnouncementsList)
+                    if (::chatAdapter.isInitialized) {
+                        chatAdapter.notifyDataSetChanged()
+                    }
+                }
                 lifecycleScope.launch {
                     val postRes = postRepository.fetchPostsWithAuthors(context?.applicationContext)
                     if (postRes is NetworkResult.Success && currentTab == TabType.ANNOUNCEMENTS) {
@@ -265,8 +287,8 @@ class ChatListFragment : Fragment() {
                             it.category.equals("Alert", ignoreCase = true) ||
                             it.category.equals("Notice", ignoreCase = true)
                         }
-                        displayedChatsList.clear()
-                        displayedChatsList.addAll(announcementPosts.map {
+                        allAnnouncementsList.clear()
+                        allAnnouncementsList.addAll(announcementPosts.map {
                             ChatItem(
                                 id = it.id,
                                 userName = it.userName,
@@ -278,6 +300,8 @@ class ChatListFragment : Fragment() {
                                 avatarUrl = it.userAvatarPath
                             )
                         })
+                        displayedChatsList.clear()
+                        displayedChatsList.addAll(allAnnouncementsList)
                         if (::chatAdapter.isInitialized) {
                             chatAdapter.notifyDataSetChanged()
                         }
@@ -291,7 +315,12 @@ class ChatListFragment : Fragment() {
         if (query.isBlank()) {
             filterListByCurrentTab()
         } else {
-            val filtered = allChatsList.filter {
+            val sourceList = when (currentTab) {
+                TabType.CHATS -> allChatsList
+                TabType.GROUPS -> allGroupsList
+                TabType.ANNOUNCEMENTS -> allAnnouncementsList
+            }
+            val filtered = sourceList.filter {
                 it.userName.contains(query, ignoreCase = true) ||
                 it.lastMessage.contains(query, ignoreCase = true)
             }

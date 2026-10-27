@@ -24,9 +24,12 @@ import com.aroundus.app.R
 import com.aroundus.app.adapters.MessageAdapter
 import com.aroundus.app.databinding.ActivityConversationBinding
 import com.aroundus.app.models.Message
+import com.aroundus.app.models.resolveGroupCoverRes
+import com.aroundus.app.models.toUIModel
 import com.aroundus.app.utils.ProductMessageUtils
 import com.aroundus.app.network.RealtimeTypingManager
 import com.aroundus.app.network.SupabaseClient
+import com.aroundus.app.repository.GroupRepository
 import com.aroundus.app.repository.MessageRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.UserRepository
@@ -51,6 +54,7 @@ class ConversationActivity : AppCompatActivity() {
     private val messages = mutableListOf<Message>()
     private val messageRepository = MessageRepository()
     private val userRepository = UserRepository()
+    private val groupRepository = GroupRepository()
 
     private var currentUserId: String = ""
     private var recipientUserId: String = ""
@@ -85,9 +89,19 @@ class ConversationActivity : AppCompatActivity() {
         isGroupChat = groupId.isNotBlank() || intent.getBooleanExtra("isGroup", false)
 
         recipientUserId = intent.getStringExtra("userId") ?: ""
-        recipientName = intent.getStringExtra("userName") ?: if (isGroupChat) "Group" else "Neighbor"
+        val passedUserName = intent.getStringExtra("userName")
+        recipientName = if (!passedUserName.isNullOrBlank() && passedUserName != "Group") {
+            passedUserName
+        } else if (isGroupChat) {
+            "Group"
+        } else {
+            "Neighbor"
+        }
         val avatarUrl = intent.getStringExtra("avatarUrl")
-        val avatarRes = intent.getIntExtra("avatarRes", 0)
+        var avatarRes = intent.getIntExtra("avatarRes", 0)
+        if (isGroupChat && avatarRes == 0) {
+            avatarRes = resolveGroupCoverRes(intent.getStringExtra("category"), recipientName)
+        }
 
         // Resolve initial presence & last active status
         if (isGroupChat) {
@@ -106,8 +120,32 @@ class ConversationActivity : AppCompatActivity() {
         setupInputBar()
         loadInitialMessages()
         startAutoRefreshLoop()
-        if (!isGroupChat) {
+        if (isGroupChat && groupId.isNotBlank()) {
+            loadGroupDetailsIfGroupChat()
+        } else {
             setupRealtimeChat()
+        }
+    }
+
+    private fun loadGroupDetailsIfGroupChat() {
+        if (!isGroupChat || groupId.isBlank()) return
+        lifecycleScope.launch {
+            when (val res = groupRepository.fetchGroupById(groupId)) {
+                is NetworkResult.Success -> {
+                    val entity = res.data
+                    val uiGroup = entity.toUIModel()
+                    if (uiGroup.name.isNotBlank()) {
+                        recipientName = uiGroup.name
+                    }
+                    val displayAvatarUrl = uiGroup.imageUrl
+                    val displayAvatarRes = uiGroup.coverRes
+                    val membersText = uiGroup.membersText
+                    originalStatusText = "Group • $membersText"
+
+                    setupHeader(recipientName, displayAvatarUrl, displayAvatarRes)
+                }
+                is NetworkResult.Error -> {}
+            }
         }
     }
 
@@ -121,7 +159,10 @@ class ConversationActivity : AppCompatActivity() {
         if (!avatarUrl.isNullOrBlank()) {
             binding.tvAvatarInitial.visibility = View.GONE
             binding.ivAvatar.visibility = View.VISIBLE
-            binding.ivAvatar.loadUserAvatar(avatarUrl)
+            binding.ivAvatar.loadUserAvatar(
+                avatarUrl,
+                placeholderRes = if (avatarRes != 0) avatarRes else R.drawable.shape_avatar_placeholder
+            )
         } else if (avatarRes != 0) {
             binding.tvAvatarInitial.visibility = View.GONE
             binding.ivAvatar.visibility = View.VISIBLE

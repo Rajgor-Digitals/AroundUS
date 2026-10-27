@@ -31,7 +31,10 @@ class ChatAdapter(
             if (!chat.avatarUrl.isNullOrBlank()) {
                 binding.tvAvatarInitial.visibility = View.GONE
                 binding.ivAvatar.visibility = View.VISIBLE
-                binding.ivAvatar.loadUserAvatar(chat.avatarUrl)
+                binding.ivAvatar.loadUserAvatar(
+                    chat.avatarUrl,
+                    placeholderRes = if (chat.avatarRes != 0) chat.avatarRes else R.drawable.shape_avatar_placeholder
+                )
             } else if (chat.avatarRes != 0) {
                 binding.tvAvatarInitial.visibility = View.GONE
                 binding.ivAvatar.visibility = View.VISIBLE
