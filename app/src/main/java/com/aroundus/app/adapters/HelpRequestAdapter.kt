@@ -16,6 +16,12 @@ import com.aroundus.app.utils.PostActionUtils
 import com.aroundus.app.utils.loadPostImage
 import com.aroundus.app.utils.loadUserAvatar
 
+import android.widget.Toast
+import com.aroundus.app.network.SupabaseClient
+import com.aroundus.app.utils.AppRefreshManager
+import com.aroundus.app.utils.RefreshTarget
+import java.util.concurrent.ConcurrentHashMap
+
 class HelpRequestAdapter(
     private val posts: List<Post>,
     private val onPostClick: (Post) -> Unit,
@@ -24,6 +30,18 @@ class HelpRequestAdapter(
     private val onShareClick: (Post) -> Unit,
     private val onAuthorClick: (Post) -> Unit
 ) : RecyclerView.Adapter<HelpRequestAdapter.HelpViewHolder>() {
+
+    private val optimisticLikedStatus = ConcurrentHashMap<String, Boolean>()
+    private val optimisticLikesCount = ConcurrentHashMap<String, Int>()
+
+    fun rollbackLike(postId: String, previousLiked: Boolean, previousCount: Int) {
+        optimisticLikedStatus[postId] = previousLiked
+        optimisticLikesCount[postId] = previousCount
+        val idx = posts.indexOfFirst { it.id == postId }
+        if (idx != -1) {
+            notifyItemChanged(idx)
+        }
+    }
 
     inner class HelpViewHolder(private val binding: ItemHelpRequestBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -101,33 +119,73 @@ class HelpRequestAdapter(
                 binding.cardThumbnail.visibility = View.GONE
             }
 
-            // 6. Action counts
-            binding.tvLikeCount.text = post.likesCount.toString()
+            // 6. Dynamic Likes with Optimistic UI
+            val isLiked = optimisticLikedStatus[post.id] ?: post.isLiked
+            val likesCount = optimisticLikesCount[post.id] ?: post.likesCount
+
+            binding.tvLikeCount.text = likesCount.toString()
+            if (isLiked) {
+                binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite)
+                binding.ivLikeIcon.setColorFilter(Color.parseColor("#EF4444"))
+                binding.tvLikeCount.setTextColor(Color.parseColor("#EF4444"))
+            } else {
+                binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite_border)
+                binding.ivLikeIcon.setColorFilter(Color.parseColor("#64748B"))
+                binding.tvLikeCount.setTextColor(Color.parseColor("#64748B"))
+            }
+
+            // Dynamic Comments Count
             binding.tvCommentCount.text = post.commentsCount.toString()
 
-            val likeColor = if (post.isLiked) ContextCompat.getColor(context, R.color.primary) else Color.parseColor("#64748B")
-            binding.ivLikeIcon.setImageResource(if (post.isLiked) R.drawable.ic_favorite else R.drawable.ic_favorite_border)
-            binding.ivLikeIcon.setColorFilter(likeColor)
-
-            val bookmarkColor = if (post.isSaved) ContextCompat.getColor(context, R.color.primary) else Color.parseColor("#64748B")
-            binding.btnBookmark.setImageResource(if (post.isSaved) R.drawable.ic_bookmark else R.drawable.ic_bookmark_outline)
-            binding.btnBookmark.setColorFilter(bookmarkColor)
+            // Dynamic Bookmark / Saved status
+            val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
+            var isSaved = if (currentUserId.isNotBlank()) SupabaseClient.getSavedPostIds(currentUserId).contains(post.id) else post.isSaved
+            binding.btnBookmark.setImageResource(if (isSaved) R.drawable.ic_bookmark else R.drawable.ic_bookmark_outline)
+            binding.btnBookmark.setColorFilter(if (isSaved) Color.parseColor("#0D8A3F") else Color.parseColor("#64748B"))
 
             // 7. Click Listeners
             binding.root.setOnClickListener { onPostClick(post) }
 
             binding.btnLike.setOnClickListener {
-                post.isLiked = !post.isLiked
-                onLikeClick(post)
-                notifyItemChanged(bindingAdapterPosition)
+                val wasLiked = optimisticLikedStatus[post.id] ?: post.isLiked
+                val prevCount = optimisticLikesCount[post.id] ?: post.likesCount
+                val nextLiked = !wasLiked
+                val nextCount = if (nextLiked) prevCount + 1 else (prevCount - 1).coerceAtLeast(0)
+
+                optimisticLikedStatus[post.id] = nextLiked
+                optimisticLikesCount[post.id] = nextCount
+
+                binding.tvLikeCount.text = nextCount.toString()
+                if (nextLiked) {
+                    binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite)
+                    binding.ivLikeIcon.setColorFilter(Color.parseColor("#EF4444"))
+                    binding.tvLikeCount.setTextColor(Color.parseColor("#EF4444"))
+                    binding.ivLikeIcon.scaleX = 0.7f
+                    binding.ivLikeIcon.scaleY = 0.7f
+                    binding.ivLikeIcon.animate().scaleX(1.25f).scaleY(1.25f).setDuration(150).withEndAction {
+                        binding.ivLikeIcon.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+                    }.start()
+                } else {
+                    binding.ivLikeIcon.setImageResource(R.drawable.ic_favorite_border)
+                    binding.ivLikeIcon.setColorFilter(Color.parseColor("#64748B"))
+                    binding.tvLikeCount.setTextColor(Color.parseColor("#64748B"))
+                }
+
+                onLikeClick(post.copy(isLiked = wasLiked, likesCount = prevCount))
             }
 
             binding.btnComment.setOnClickListener { onCommentClick(post) }
             binding.btnShare.setOnClickListener { onShareClick(post) }
 
             binding.btnBookmark.setOnClickListener {
-                post.isSaved = !post.isSaved
-                notifyItemChanged(bindingAdapterPosition)
+                if (currentUserId.isNotBlank()) {
+                    isSaved = SupabaseClient.toggleSavedPost(currentUserId, post.id)
+                    binding.btnBookmark.setImageResource(if (isSaved) R.drawable.ic_bookmark else R.drawable.ic_bookmark_outline)
+                    binding.btnBookmark.setColorFilter(if (isSaved) Color.parseColor("#0D8A3F") else Color.parseColor("#64748B"))
+                    val msg = if (isSaved) "Post saved to your profile" else "Post removed from saved"
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                }
             }
 
             binding.ivAvatar.setOnClickListener { onAuthorClick(post) }

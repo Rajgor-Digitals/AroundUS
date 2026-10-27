@@ -200,13 +200,21 @@ class HelpSupportFragment : Fragment() {
             },
             onLikeClick = { post ->
                 viewLifecycleOwner.lifecycleScope.launch {
-                    likeRepository.toggleLike(post.id, post.isLiked)
-                    AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                    when (val res = likeRepository.toggleLike(post.id, post.isLiked)) {
+                        is NetworkResult.Success -> {
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                            AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                        }
+                        is NetworkResult.Error -> {
+                            Toast.makeText(context, "Could not update like: ${res.message}", Toast.LENGTH_SHORT).show()
+                            helpAdapter.rollbackLike(post.id, post.isLiked, post.likesCount)
+                        }
+                    }
                 }
             },
             onCommentClick = { post ->
                 val bundle = Bundle().apply { putString("postId", post.id) }
-                findNavController().navigate(R.id.action_global_postDetail, bundle)
+                findNavController().navigate(R.id.action_helpSupport_to_comments, bundle)
             },
             onShareClick = { post ->
                 PostActionUtils.sharePost(requireContext(), post)
@@ -385,6 +393,13 @@ class HelpSupportFragment : Fragment() {
         }
 
         bottomSheet.show()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (allHelpPosts.isNotEmpty()) {
+            loadHelpPosts(showLoading = false)
+        }
     }
 
     override fun onDestroyView() {
