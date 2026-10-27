@@ -82,10 +82,10 @@
             android:layout_height="40dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_primary_button"
+            android:contentDescription="@string/btn_post"
             android:padding="10dp"
             android:src="@drawable/ic_send"
-            android:tint="@color/on_primary" />
-
+            app:tint="@color/on_primary" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
