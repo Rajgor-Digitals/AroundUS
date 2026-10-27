@@ -248,22 +248,10 @@ class ChatListFragment : Fragment() {
                     }
                 }
                 lifecycleScope.launch {
-                    val groupRes = groupRepository.fetchGroups()
+                    val groupRes = messageRepository.fetchGroupConversations()
                     if (groupRes is NetworkResult.Success && currentTab == TabType.GROUPS) {
                         allGroupsList.clear()
-                        allGroupsList.addAll(groupRes.data.map { entity ->
-                            val uiGroup = entity.toUIModel()
-                            ChatItem(
-                                id = uiGroup.id,
-                                userName = uiGroup.name,
-                                avatarRes = uiGroup.coverRes,
-                                lastMessage = uiGroup.description.ifBlank { "Group conversation" },
-                                time = uiGroup.membersText,
-                                unreadCount = 0,
-                                isOnline = false,
-                                avatarUrl = uiGroup.imageUrl
-                            )
-                        })
+                        allGroupsList.addAll(groupRes.data)
                         displayedChatsList.clear()
                         displayedChatsList.addAll(allGroupsList)
                         if (::chatAdapter.isInitialized) {

@@ -98,6 +98,7 @@ class CommunityFragment : Fragment() {
         val showCreateDialog = {
             val bottomSheet = CreateGroupBottomSheetFragment.newInstance()
             bottomSheet.onGroupCreated = { createdGroup ->
+                com.aroundus.app.utils.GroupJoinManager.recordGroupJoined(context, createdGroup.groupId, System.currentTimeMillis())
                 loadSupabaseGroups()
             }
             bottomSheet.show(childFragmentManager, CreateGroupBottomSheetFragment.TAG)
@@ -157,6 +158,15 @@ class CommunityFragment : Fragment() {
                 discoverGroupsList.add(uiModel)
             }
         }
+
+        // Sort My Groups newest to lowest (most recently joined first, fallback to creation time)
+        myGroupsList.sortWith(compareByDescending<Group> { group ->
+            val joinedTime = com.aroundus.app.utils.GroupJoinManager.getGroupJoinedTime(context, group.id)
+            if (joinedTime > 0L) joinedTime else group.createdAtMillis
+        })
+
+        // Sort Discover Groups newest to lowest (newest created first)
+        discoverGroupsList.sortByDescending { it.createdAtMillis }
 
         binding.tvMyGroupsTitle.text = "My Groups (${myGroupsList.size})"
         binding.tvDiscoverGroupsTitle.text = "Discover Groups (${discoverGroupsList.size})"
@@ -252,6 +262,7 @@ class CommunityFragment : Fragment() {
 
     private fun handleJoinGroup(group: Group) {
         lifecycleScope.launch {
+            com.aroundus.app.utils.GroupJoinManager.recordGroupJoined(context, group.id, System.currentTimeMillis())
             when (val res = groupRepository.joinGroup(group.id)) {
                 is NetworkResult.Success -> {
                     Toast.makeText(requireContext(), "Joined ${group.name}!", Toast.LENGTH_SHORT).show()
@@ -267,6 +278,7 @@ class CommunityFragment : Fragment() {
 
     private fun handleLeaveGroup(group: Group) {
         lifecycleScope.launch {
+            com.aroundus.app.utils.GroupJoinManager.removeGroupJoined(context, group.id)
             when (val res = groupRepository.leaveGroup(group.id)) {
                 is NetworkResult.Success -> {
                     Toast.makeText(requireContext(), "Left ${group.name}", Toast.LENGTH_SHORT).show()

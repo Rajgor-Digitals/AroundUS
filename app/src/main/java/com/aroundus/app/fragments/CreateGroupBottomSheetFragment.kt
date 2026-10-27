@@ -161,6 +161,7 @@ class CreateGroupBottomSheetFragment : BottomSheetDialogFragment() {
             )) {
                 is NetworkResult.Success -> {
                     setLoading(false)
+                    com.aroundus.app.utils.GroupJoinManager.recordGroupJoined(requireContext(), result.data.groupId, System.currentTimeMillis())
                     AppRefreshManager.notifyDataChanged(RefreshTarget.GROUPS)
                     AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                     Toast.makeText(requireContext(), "Group created successfully!", Toast.LENGTH_SHORT).show()

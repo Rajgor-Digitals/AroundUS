@@ -1747,7 +1747,8 @@ class GroupRepository {
             try {
                 val resp = service.getGroups()
                 if (resp.isSuccessful && resp.body() != null) {
-                    NetworkResult.Success(resp.body()!!)
+                    val sorted = resp.body()!!.sortedByDescending { it.getCreatedAtMillis() }
+                    NetworkResult.Success(sorted)
                 } else {
                     NetworkResult.Error("Failed to fetch groups.")
                 }
@@ -2049,13 +2050,91 @@ class MessageRepository {
                 if (allResp.isSuccessful && allResp.body() != null) {
                     val filtered = allResp.body()!!.filter {
                         it.groupId == groupId
-                    }.sortedBy { it.timestamp.toLongOrNull() ?: 0L }
+                    }.sortedByDescending { it.timestamp.toLongOrNull() ?: 0L }
                     NetworkResult.Success(filtered)
                 } else {
                     NetworkResult.Success(emptyList())
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            }
+        }
+
+    suspend fun fetchGroupConversations(): NetworkResult<List<ChatItem>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val groupsResp = service.getGroups()
+                val messagesResp = service.getAllMessages()
+
+                val allGroups = if (groupsResp.isSuccessful && groupsResp.body() != null) {
+                    groupsResp.body()!!
+                } else {
+                    return@withContext NetworkResult.Error("Failed to fetch groups")
+                }
+
+                val allMessages = if (messagesResp.isSuccessful && messagesResp.body() != null) {
+                    messagesResp.body()!!
+                } else {
+                    emptyList()
+                }
+
+                val groupMessagesMap = allMessages
+                    .filter { !it.groupId.isNullOrBlank() }
+                    .groupBy { it.groupId!! }
+
+                val chatListWithKey = allGroups.map { groupEntity ->
+                    val uiGroup = groupEntity.toUIModel()
+                    val groupMsgs = groupMessagesMap[groupEntity.groupId] ?: emptyList()
+                    val latestMsg = groupMsgs.maxByOrNull { it.timestamp.toLongOrNull() ?: 0L }
+
+                    val latestMsgTime = latestMsg?.timestamp?.toLongOrNull() ?: 0L
+                    val groupCreatedTime = groupEntity.getCreatedAtMillis()
+
+                    val displayLastMessage: String
+                    val displayTime: String
+
+                    if (latestMsg != null) {
+                        val groupSecret = com.aroundus.app.utils.CryptoManager.generateGroupSharedSecret(groupEntity.groupId)
+                        val groupKey = com.aroundus.app.utils.CryptoManager.deriveKey(groupSecret)
+                        val plainText = if (com.aroundus.app.utils.CryptoManager.isEncrypted(latestMsg.text)) {
+                            com.aroundus.app.utils.CryptoManager.decrypt(latestMsg.text, groupKey)
+                        } else {
+                            latestMsg.text
+                        }
+                        val (cleanText, _) = com.aroundus.app.utils.ProductMessageUtils.parseMessage(plainText)
+                        displayLastMessage = com.aroundus.app.utils.ProductMessageUtils.cleanMessagePreview(cleanText)
+                        displayTime = formatMessageTimestamp(latestMsg.timestamp)
+                    } else {
+                        displayLastMessage = uiGroup.description.ifBlank { "Group conversation" }
+                        displayTime = uiGroup.membersText
+                    }
+
+                    // Primary sort key: latest message timestamp; fallback to group creation time
+                    val sortKey = if (latestMsgTime > 0L) latestMsgTime else groupCreatedTime
+
+                    Pair(
+                        ChatItem(
+                            id = uiGroup.id,
+                            userName = uiGroup.name,
+                            avatarRes = uiGroup.coverRes,
+                            lastMessage = displayLastMessage,
+                            time = displayTime,
+                            unreadCount = 0,
+                            isOnline = false,
+                            avatarUrl = uiGroup.imageUrl
+                        ),
+                        sortKey
+                    )
+                }
+
+                // Sort newest to lowest sequence (highest timestamp first)
+                val sortedChatList = chatListWithKey
+                    .sortedByDescending { it.second }
+                    .map { it.first }
+
+                NetworkResult.Success(sortedChatList)
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Failed to load group conversations", e)
             }
         }
 

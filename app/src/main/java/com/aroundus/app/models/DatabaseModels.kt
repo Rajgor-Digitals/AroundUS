@@ -152,6 +152,32 @@ data class GroupEntity(
         val count = getMemberCount()
         return if (count == 1) "1 Member" else "$count Members"
     }
+
+    /**
+     * Parses createdAt ISO timestamp or numeric millis into Unix timestamp milliseconds.
+     */
+    fun getCreatedAtMillis(): Long {
+        val str = createdAt?.trim().orEmpty()
+        if (str.isBlank()) return 0L
+        str.toLongOrNull()?.let { return it }
+        val formats = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss"
+        )
+        for (fmt in formats) {
+            try {
+                val sdf = java.text.SimpleDateFormat(fmt, java.util.Locale.US).apply {
+                    timeZone = java.util.TimeZone.getTimeZone("UTC")
+                }
+                val date = sdf.parse(str)
+                if (date != null) return date.time
+            } catch (_: Exception) {}
+        }
+        return 0L
+    }
 }
 
 data class MessageEntity(
@@ -431,7 +457,8 @@ fun GroupEntity.toUIModel(currentUserId: String? = null): Group {
         membersText = displayMembers,
         category = category ?: "Local",
         isJoined = isJoined,
-        imageUrl = remoteImageUrl
+        imageUrl = remoteImageUrl,
+        createdAtMillis = getCreatedAtMillis()
     )
 }
 

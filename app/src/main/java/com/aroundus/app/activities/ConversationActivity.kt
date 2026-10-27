@@ -331,7 +331,7 @@ class ConversationActivity : AppCompatActivity() {
         }
         binding.rvMessages.apply {
             layoutManager = LinearLayoutManager(this@ConversationActivity).apply {
-                stackFromEnd = true
+                stackFromEnd = !isGroupChat
             }
             adapter = messageAdapter
         }
@@ -396,9 +396,15 @@ class ConversationActivity : AppCompatActivity() {
             productCard = attachment
         )
 
-        messages.add(localMsg)
-        messageAdapter.notifyItemInserted(messages.size - 1)
-        binding.rvMessages.scrollToPosition(messages.size - 1)
+        if (isGroupChat) {
+            messages.add(0, localMsg)
+            messageAdapter.notifyItemInserted(0)
+            binding.rvMessages.scrollToPosition(0)
+        } else {
+            messages.add(localMsg)
+            messageAdapter.notifyItemInserted(messages.size - 1)
+            binding.rvMessages.scrollToPosition(messages.size - 1)
+        }
 
         lifecycleScope.launch {
             if (currentUserId.isBlank()) {
@@ -459,9 +465,15 @@ class ConversationActivity : AppCompatActivity() {
                     timestampMs = now,
                     productCard = productAttachment
                 )
-                messages.add(localMsg)
-                messageAdapter.notifyItemInserted(messages.size - 1)
-                binding.rvMessages.scrollToPosition(messages.size - 1)
+                if (isGroupChat) {
+                    messages.add(0, localMsg)
+                    messageAdapter.notifyItemInserted(0)
+                    binding.rvMessages.scrollToPosition(0)
+                } else {
+                    messages.add(localMsg)
+                    messageAdapter.notifyItemInserted(messages.size - 1)
+                    binding.rvMessages.scrollToPosition(messages.size - 1)
+                }
                 binding.etMessage.text?.clear()
 
                 lifecycleScope.launch {
@@ -768,7 +780,7 @@ class ConversationActivity : AppCompatActivity() {
                             messages.clear()
                             messages.addAll(fetchedMessages)
                             messageAdapter.notifyDataSetChanged()
-                            binding.rvMessages.scrollToPosition(messages.size - 1)
+                            binding.rvMessages.scrollToPosition(0)
                         }
                     } else {
                         var hasNew = false
@@ -783,13 +795,14 @@ class ConversationActivity : AppCompatActivity() {
                                     hasNew = true
                                 }
                             } else {
-                                messages.add(newMsg)
+                                messages.add(0, newMsg)
                                 hasNew = true
                             }
                         }
                         if (hasNew) {
+                            messages.sortByDescending { it.timestampMs }
                             messageAdapter.notifyDataSetChanged()
-                            binding.rvMessages.scrollToPosition(messages.size - 1)
+                            binding.rvMessages.scrollToPosition(0)
                         }
                     }
                 }

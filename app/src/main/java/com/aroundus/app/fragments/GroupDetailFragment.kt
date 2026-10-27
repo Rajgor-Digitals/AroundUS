@@ -272,6 +272,7 @@ class GroupDetailFragment : Fragment() {
                         groupMembersText = result.data.formatMembersDisplay()
                         binding.tvDetailMembersText.text = groupMembersText
                         updateJoinButtonUI()
+                        com.aroundus.app.utils.GroupJoinManager.removeGroupJoined(context, groupId)
                         AppRefreshManager.notifyDataChanged(RefreshTarget.GROUPS)
                         AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                         Toast.makeText(requireContext(), "You left $groupName", Toast.LENGTH_SHORT).show()
@@ -289,6 +290,7 @@ class GroupDetailFragment : Fragment() {
                         groupMembersText = result.data.formatMembersDisplay()
                         binding.tvDetailMembersText.text = groupMembersText
                         updateJoinButtonUI()
+                        com.aroundus.app.utils.GroupJoinManager.recordGroupJoined(context, groupId, System.currentTimeMillis())
                         AppRefreshManager.notifyDataChanged(RefreshTarget.GROUPS)
                         AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
                         Toast.makeText(requireContext(), "Welcome to $groupName!", Toast.LENGTH_SHORT).show()
