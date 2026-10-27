@@ -268,7 +268,7 @@ class MyProfileFragment : Fragment() {
         }
 
         binding.rowHelpSupport.setOnClickListener {
-            showHelpSupportDialog()
+            findNavController().navigate(R.id.helpSupportFragment)
         }
 
         // Badges & Community Activity

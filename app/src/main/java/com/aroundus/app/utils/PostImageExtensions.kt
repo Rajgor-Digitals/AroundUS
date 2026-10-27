@@ -87,7 +87,20 @@ fun ImageView.loadPostImage(
         }
 
         else -> {
-            setImageResource(placeholderRes)
+            val resId = try {
+                context.resources.getIdentifier(trimmed, "drawable", context.packageName)
+            } catch (_: Exception) {
+                0
+            }
+            if (resId != 0) {
+                Glide.with(context)
+                    .load(resId)
+                    .placeholder(placeholderRes)
+                    .error(placeholderRes)
+                    .into(this)
+            } else {
+                setImageResource(placeholderRes)
+            }
         }
     }
 }

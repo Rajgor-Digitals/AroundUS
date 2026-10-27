@@ -287,7 +287,7 @@ class HomeFragment : Fragment() {
         }
 
         binding.catHelpSupport.setOnClickListener {
-            findNavController().navigate(R.id.communityFragment)
+            findNavController().navigate(R.id.helpSupportFragment)
         }
 
         binding.catBuySell.setOnClickListener {

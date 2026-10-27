@@ -207,25 +207,7 @@ class SettingsFragment : Fragment() {
 
     private fun setupHelpCenter() {
         binding.itemHelp.setOnClickListener {
-            val helpOptions = arrayOf(
-                "Frequently Asked Questions (FAQ)",
-                "How to create community events",
-                "Neighborhood safety guidelines",
-                "Contact AroundUS Support"
-            )
-
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("AroundUS Help & Support")
-                .setItems(helpOptions) { _, which ->
-                    when (which) {
-                        0 -> showFaqDialog()
-                        1 -> showEventHelpDialog()
-                        2 -> showSafetyGuidelinesDialog()
-                        3 -> contactSupportEmail()
-                    }
-                }
-                .setNegativeButton("Close", null)
-                .show()
+            findNavController().navigate(R.id.helpSupportFragment)
         }
     }
 

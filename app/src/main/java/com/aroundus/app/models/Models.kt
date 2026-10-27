@@ -16,7 +16,8 @@ data class Post(
     val userAvatarPath: String? = null,
     val authorId: String? = null,
     val mediaUrl: String? = null,
-    val isVerified: Boolean = false
+    val isVerified: Boolean = false,
+    val title: String? = null
 ) {
     val isVideo: Boolean
         get() = mediaUrl?.let { url ->

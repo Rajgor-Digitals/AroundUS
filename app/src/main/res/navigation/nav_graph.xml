@@ -11,6 +11,18 @@
         app:enterAnim="@anim/slide_in_right"
         app:exitAnim="@anim/slide_out_left" />
 
+    <action
+        android:id="@+id/action_global_postDetail"
+        app:destination="@id/postDetailFragment"
+        app:enterAnim="@anim/slide_in_right"
+        app:exitAnim="@anim/slide_out_left" />
+
+    <action
+        android:id="@+id/action_global_profile"
+        app:destination="@id/myProfileFragment"
+        app:enterAnim="@anim/slide_in_right"
+        app:exitAnim="@anim/slide_out_left" />
+
     <!-- Home -->
     <fragment
         android:id="@+id/homeFragment"
@@ -209,6 +221,38 @@
             app:destination="@id/commentsFragment"
             app:enterAnim="@anim/slide_in_right"
             app:exitAnim="@anim/slide_out_left" />
+
+    </fragment>
+
+    <!-- Help & Support -->
+    <fragment
+        android:id="@+id/helpSupportFragment"
+        android:name="com.aroundus.app.fragments.HelpSupportFragment"
+        android:label="Help &amp; Support"
+        tools:layout="@layout/fragment_help_support">
+
+        <action
+            android:id="@+id/action_helpSupport_to_postDetail"
+            app:destination="@id/postDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+        <action
+            android:id="@+id/action_helpSupport_to_comments"
+            app:destination="@id/commentsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+        <action
+            android:id="@+id/action_helpSupport_to_profile"
+            app:destination="@id/myProfileFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+        <action
+            android:id="@+id/action_helpSupport_to_createPost"
+            app:destination="@id/createPostFragment"
+            app:enterAnim="@anim/slide_up" />
 
     </fragment>
 
