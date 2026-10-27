@@ -47,10 +47,6 @@ class CommentAdapter(
             binding.tvUserName.setOnClickListener { onUserClick?.invoke(comment) }
             binding.ivAvatar.setOnClickListener { onUserClick?.invoke(comment) }
 
-            binding.btnLike.setOnClickListener {
-                binding.tvLikeCount.text = "❤ ${comment.likeCount + 1}"
-            }
-
             if (isCurrentAuthor) {
                 binding.root.setOnLongClickListener {
                     onDeleteClick?.invoke(comment)
