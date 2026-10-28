@@ -63,6 +63,12 @@ class SearchFragment : Fragment() {
         setupListeners()
         setupTabs()
         setupSwipeRefresh()
+
+        val initialQuery = arguments?.getString("query")
+        if (!initialQuery.isNullOrBlank()) {
+            binding.etSearchInput.setText(initialQuery)
+        }
+
         loadAllData()
     }
 

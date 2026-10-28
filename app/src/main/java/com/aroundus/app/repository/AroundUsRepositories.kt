@@ -1513,6 +1513,21 @@ class CommentRepository {
             }
         }
 
+    suspend fun fetchCommentsByUser(userId: String): NetworkResult<List<CommentEntity>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = service.getAllComments()
+                if (resp.isSuccessful && resp.body() != null) {
+                    val userComments = resp.body()!!.filter { it.userId == userId }
+                    NetworkResult.Success(userComments)
+                } else {
+                    NetworkResult.Error("Failed to fetch comments.")
+                }
+            } catch (e: Exception) {
+                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+            }
+        }
+
     suspend fun fetchCommentsCountMap(): Map<String, Int> =
         withContext(Dispatchers.IO) {
             try {

@@ -456,6 +456,45 @@ class PostDetailFragment : Fragment() {
             releasePlayer()
             binding.cardMediaContainer.visibility = View.GONE
         }
+
+        // Setup dynamic post tags with search navigation
+        setupPostTags(post)
+    }
+
+    private fun setupPostTags(post: Post) {
+        val chipGroup = binding.chipGroupTags
+        chipGroup.removeAllViews()
+
+        val tagRegex = Regex("#[A-Za-z0-9_]+")
+        val extractedTags = tagRegex.findAll(post.text ?: "").map { it.value }.toMutableList()
+
+        if (extractedTags.isEmpty()) {
+            val categoryTag = post.category?.lowercase()?.replace(" ", "") ?: "general"
+            extractedTags.add("#$categoryTag")
+            extractedTags.add("#community")
+        }
+
+        extractedTags.distinct().forEach { tag ->
+            val chip = com.google.android.material.chip.Chip(requireContext()).apply {
+                text = tag
+                isClickable = true
+                isFocusable = true
+                chipBackgroundColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#F0FDF4"))
+                setTextColor(Color.parseColor("#0D8A3F"))
+                chipStrokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#86EFAC"))
+                chipStrokeWidth = 2f
+                textSize = 12.5f
+                setOnClickListener {
+                    val query = tag.removePrefix("#")
+                    val bundle = Bundle().apply {
+                        putString("query", query)
+                    }
+                    findNavController().navigate(R.id.searchFragment, bundle)
+                }
+            }
+            chipGroup.addView(chip)
+        }
+        chipGroup.visibility = View.VISIBLE
     }
 
     private fun playVideo(videoUrl: String) {

@@ -21,11 +21,13 @@ import com.aroundus.app.models.Post
 import com.aroundus.app.models.UserEntity
 import com.aroundus.app.models.toUIModel
 import com.aroundus.app.network.SupabaseClient
+import com.aroundus.app.repository.CommentRepository
 import com.aroundus.app.repository.GroupRepository
 import com.aroundus.app.repository.LikeRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
+import android.content.DialogInterface
 import com.aroundus.app.utils.PostActionUtils
 import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
@@ -55,6 +57,7 @@ class MyProfileFragment : Fragment() {
     private val postRepository = PostRepository()
     private val groupRepository = GroupRepository()
     private val likeRepository = LikeRepository()
+    private val commentRepository = CommentRepository()
 
     private val myPostList = mutableListOf<Post>()
     private lateinit var postAdapter: PostAdapter
@@ -239,9 +242,7 @@ class MyProfileFragment : Fragment() {
         }
 
         binding.cardSaved.setOnClickListener {
-            val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
-            val savedCount = SupabaseClient.getSavedPostIds(loggedInUserId).size
-            Toast.makeText(requireContext(), "Viewing $savedCount Saved Posts", Toast.LENGTH_SHORT).show()
+            showSavedPostsDialog()
         }
 
         // Menu Navigation List Items
@@ -250,13 +251,11 @@ class MyProfileFragment : Fragment() {
         }
 
         binding.rowMyComments.setOnClickListener {
-            Toast.makeText(requireContext(), "Opening My Comments", Toast.LENGTH_SHORT).show()
+            showMyCommentsDialog()
         }
 
         binding.rowSavedPosts.setOnClickListener {
-            val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
-            val savedCount = SupabaseClient.getSavedPostIds(loggedInUserId).size
-            Toast.makeText(requireContext(), "Viewing $savedCount Saved Posts", Toast.LENGTH_SHORT).show()
+            showSavedPostsDialog()
         }
 
         binding.rowMyListings.setOnClickListener {
@@ -295,12 +294,126 @@ class MyProfileFragment : Fragment() {
             binding.rvPosts.visibility = View.GONE
             Toast.makeText(requireContext(), "Posts collapsed", Toast.LENGTH_SHORT).show()
         } else {
-            binding.rvPosts.visibility = View.VISIBLE
             if (myPostList.isNotEmpty()) {
+                binding.rvPosts.visibility = View.VISIBLE
                 binding.rvPosts.smoothScrollToPosition(0)
                 Toast.makeText(requireContext(), "Showing ${myPostList.size} posts", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(requireContext(), "No posts created yet", Toast.LENGTH_SHORT).show()
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("My Posts")
+                    .setMessage("You haven't created any neighborhood posts yet.\n\nShare updates, ask for recommendations, or inform neighbors about local events!")
+                    .setPositiveButton("+ Create Post") { _, _ ->
+                        findNavController().navigate(R.id.createPostFragment)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+    }
+
+    private fun showSavedPostsDialog() {
+        val loggedInUserId = SupabaseClient.getCurrentUserId() ?: ""
+        val savedIds = SupabaseClient.getSavedPostIds(loggedInUserId)
+
+        if (savedIds.isEmpty()) {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Saved Posts (0)")
+                .setMessage("You haven't saved any posts yet.\n\nTap the bookmark icon on any post in your neighborhood feed to save it for quick reading later.")
+                .setPositiveButton("Explore Feed") { _, _ ->
+                    findNavController().navigate(R.id.homeFragment)
+                }
+                .setNegativeButton("Close", null)
+                .show()
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            when (val postsResult = postRepository.fetchPosts()) {
+                is NetworkResult.Success -> {
+                    val savedPosts = postsResult.data.filter { savedIds.contains(it.postId) }
+                    if (savedPosts.isNotEmpty()) {
+                        val postTitles: Array<CharSequence> = savedPosts.map { p ->
+                            val cleanText = p.text.replace("\n", " ").trim()
+                            val preview = if (cleanText.length > 50) cleanText.take(50) + "…" else cleanText
+                            ("🔖 $preview") as CharSequence
+                        }.toTypedArray()
+
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Saved Posts (${savedPosts.size})")
+                            .setItems(postTitles, DialogInterface.OnClickListener { _, which ->
+                                val selectedPost = savedPosts[which]
+                                val bundle = Bundle().apply {
+                                    putString("postId", selectedPost.postId)
+                                }
+                                findNavController().navigate(R.id.postDetailFragment, bundle)
+                            })
+                            .setPositiveButton("Close", null)
+                            .show()
+                    } else {
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Saved Posts")
+                            .setMessage("None of your saved posts are currently available.")
+                            .setPositiveButton("Close", null)
+                            .show()
+                    }
+                }
+                is NetworkResult.Error -> {
+                    Toast.makeText(requireContext(), "Could not load saved posts: ${postsResult.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun showMyCommentsDialog() {
+        val targetUserId = currentUserEntity?.userId ?: SupabaseClient.getCurrentUserId() ?: ""
+        if (targetUserId.isBlank()) {
+            Toast.makeText(requireContext(), "Please sign in to view your comments", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            when (val commentsResult = commentRepository.fetchCommentsByUser(targetUserId)) {
+                is NetworkResult.Success -> {
+                    val comments = commentsResult.data
+                    if (comments.isNotEmpty()) {
+                        val commentTitles: Array<CharSequence> = comments.map { c ->
+                            val cleanText = c.text.replace("\n", " ").trim()
+                            val preview = if (cleanText.length > 50) cleanText.take(50) + "…" else cleanText
+                            ("💬 \"$preview\"") as CharSequence
+                        }.toTypedArray()
+
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("My Comments (${comments.size})")
+                            .setItems(commentTitles, DialogInterface.OnClickListener { _, which ->
+                                val selectedComment = comments[which]
+                                val bundle = Bundle().apply {
+                                    putString("postId", selectedComment.postId)
+                                }
+                                findNavController().navigate(R.id.postDetailFragment, bundle)
+                            })
+                            .setPositiveButton("Close", null)
+                            .show()
+                    } else {
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("My Comments (0)")
+                            .setMessage("You haven't commented on any posts yet.\n\nJoin conversations in your community by tapping the comment bubble on posts in your neighborhood feed.")
+                            .setPositiveButton("Explore Feed") { _, _ ->
+                                findNavController().navigate(R.id.homeFragment)
+                            }
+                            .setNegativeButton("Close", null)
+                            .show()
+                    }
+                }
+                is NetworkResult.Error -> {
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("My Comments (0)")
+                        .setMessage("You haven't commented on any posts yet.\n\nJoin conversations in your community by tapping the comment bubble on posts in your neighborhood feed.")
+                        .setPositiveButton("Explore Feed") { _, _ ->
+                            findNavController().navigate(R.id.homeFragment)
+                        }
+                        .setNegativeButton("Close", null)
+                        .show()
+                }
             }
         }
     }
