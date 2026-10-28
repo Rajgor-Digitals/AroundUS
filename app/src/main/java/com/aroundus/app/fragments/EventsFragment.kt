@@ -24,6 +24,7 @@ import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.utils.AppRefreshManager
 import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.applyAroundUsTheme
+import com.aroundus.app.utils.isPassed
 import kotlinx.coroutines.launch
 
 class EventsFragment : Fragment() {
@@ -106,9 +107,11 @@ class EventsFragment : Fragment() {
             val sheet = CreateEventBottomSheetFragment.newInstance()
             sheet.onEventCreated = { createdEntity ->
                 val uiModel = createdEntity.toUIModel()
-                allEvents.removeAll { it.id == uiModel.id }
-                allEvents.add(0, uiModel)
-                filterEventsForCurrentTab()
+                if (!uiModel.isPassed()) {
+                    allEvents.removeAll { it.id == uiModel.id }
+                    allEvents.add(0, uiModel)
+                    filterEventsForCurrentTab()
+                }
                 loadSupabaseEvents()
             }
             sheet.show(childFragmentManager, CreateEventBottomSheetFragment.TAG)
@@ -154,7 +157,8 @@ class EventsFragment : Fragment() {
         if (AppRefreshManager.isStale(RefreshTarget.EVENTS)) {
             loadSupabaseEvents()
         } else {
-            // Re-sync local attendance states
+            // Re-sync local attendance states and filter any newly passed events
+            allEvents.removeAll { it.isPassed() }
             allEvents.forEachIndexed { i, event ->
                 val attended = SupabaseClient.isEventAttended(event.id)
                 if (event.isAttending != attended) {
@@ -261,25 +265,28 @@ class EventsFragment : Fragment() {
         val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
         displayedEvents.clear()
 
+        // Filter out events whose date has already passed
+        val activeEvents = allEvents.filter { !it.isPassed() }
+
         // 1. Tab filter
         val tabFiltered = when (currentTabPosition) {
-            0 -> allEvents
+            0 -> activeEvents
             1 -> {
                 val weekKeywords = listOf("TODAY", "TOMORROW", "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
-                val filtered = allEvents.filter { event ->
+                val filtered = activeEvents.filter { event ->
                     weekKeywords.any { kw -> event.time.uppercase().contains(kw) } || event.isAttending
                 }
-                if (filtered.isNotEmpty()) filtered else allEvents.take(5)
+                if (filtered.isNotEmpty()) filtered else activeEvents.take(5)
             }
             2 -> {
-                allEvents.filter { event ->
+                activeEvents.filter { event ->
                     (event.creatorId != null && currentUserId.isNotBlank() && event.creatorId == currentUserId) ||
                     SupabaseClient.isEventCreatedByMe(event.id) ||
                     event.isAttending ||
                     SupabaseClient.isEventAttended(event.id)
                 }
             }
-            else -> allEvents
+            else -> activeEvents
         }
 
         // 2. Category filter
@@ -365,9 +372,11 @@ class EventsFragment : Fragment() {
             try {
                 when (val result = eventRepository.fetchEvents()) {
                     is NetworkResult.Success -> {
-                        val remoteEvents = result.data.map { it.toUIModel() }
+                        val activeEvents = result.data
+                            .filter { !it.isPassed() }
+                            .map { it.toUIModel() }
                         allEvents.clear()
-                        allEvents.addAll(remoteEvents)
+                        allEvents.addAll(activeEvents)
                         filterEventsForCurrentTab()
                         AppRefreshManager.markRefreshed(RefreshTarget.EVENTS)
                     }

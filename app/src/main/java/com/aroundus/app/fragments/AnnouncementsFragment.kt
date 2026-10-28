@@ -27,6 +27,7 @@ import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
 import com.aroundus.app.utils.AppRefreshManager
 import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.isPassed
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -339,7 +340,7 @@ class AnnouncementsFragment : Fragment() {
 
                     // 2. Process real Events from Supabase events table
                     if (eventsResult is NetworkResult.Success) {
-                        val events = eventsResult.data
+                        val events = eventsResult.data.filter { !it.isPassed() }
                         val mappedEvents = events.map { event ->
                             Announcement(
                                 id = event.eventId,
