@@ -116,6 +116,18 @@ class EventsFragment : Fragment() {
 
         binding.btnHeaderCreateEvent.setOnClickListener { showCreateDialog() }
         binding.btnEmptyCreateEvent.setOnClickListener { showCreateDialog() }
+        binding.fabCreateEvent.setOnClickListener { showCreateDialog() }
+
+        binding.rvEvents.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int) {
+                if (dy > 0 && binding.fabCreateEvent.isExtended) {
+                    binding.fabCreateEvent.shrink()
+                } else if (dy < 0 && !binding.fabCreateEvent.isExtended) {
+                    binding.fabCreateEvent.extend()
+                }
+            }
+        })
+
         binding.btnBrowseNearbyEvents.setOnClickListener {
             selectCategoryFilter("All")
             selectTab(0)
@@ -301,6 +313,7 @@ class EventsFragment : Fragment() {
         if (displayedEvents.isEmpty()) {
             binding.layoutEmptyEvents.visibility = View.VISIBLE
             binding.rvEvents.visibility = View.GONE
+            binding.fabCreateEvent.visibility = View.GONE
             when {
                 searchQuery.isNotBlank() -> {
                     binding.tvEmptyTitle.text = "No Matching Events"
@@ -326,6 +339,7 @@ class EventsFragment : Fragment() {
         } else {
             binding.layoutEmptyEvents.visibility = View.GONE
             binding.rvEvents.visibility = View.VISIBLE
+            binding.fabCreateEvent.visibility = View.VISIBLE
         }
     }
 
