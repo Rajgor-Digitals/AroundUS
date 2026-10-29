@@ -53,6 +53,7 @@ class HomeFragment : Fragment() {
     private lateinit var postAdapter: PostAdapter
     private lateinit var announcementAdapter: PostAdapter
     private var autoRefreshJob: Job? = null
+    private var scrollAnimator: android.animation.ValueAnimator? = null
 
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -125,6 +126,12 @@ class HomeFragment : Fragment() {
                     binding.swipeRefreshLayout.isRefreshing = false
                 }
             }
+        }
+        binding.nestedScrollView.setOnTouchListener { _, event ->
+            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                scrollAnimator?.cancel()
+            }
+            false
         }
     }
 
@@ -272,6 +279,50 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun scrollToExploreFeed() {
+        val b = _binding ?: return
+
+        // 1. Subtle tactile scale feedback on the button
+        b.btnExploreNow.animate()
+            .scaleX(0.94f)
+            .scaleY(0.94f)
+            .setDuration(100)
+            .withEndAction {
+                _binding?.btnExploreNow?.animate()
+                    ?.scaleX(1.0f)
+                    ?.scaleY(1.0f)
+                    ?.setDuration(160)
+                    ?.start()
+            }
+            .start()
+
+        // 2. Slow, gentle animated glide to the feed content
+        b.nestedScrollView.post {
+            val targetRaw = if (announcementList.isNotEmpty() && b.sectionAnnouncements.top > 0) {
+                b.sectionAnnouncements.top
+            } else if (b.sectionCommunityPosts.top > 0) {
+                b.sectionCommunityPosts.top
+            } else {
+                b.heroBannerCard.bottom + 16
+            }
+            val targetY = (targetRaw - 12).coerceAtLeast(0)
+
+            val currentY = b.nestedScrollView.scrollY
+            if (currentY == targetY) return@post
+
+            scrollAnimator?.cancel()
+            scrollAnimator = android.animation.ValueAnimator.ofInt(currentY, targetY).apply {
+                duration = 1400L // Leisurely, comfortable slow scroll speed so user can follow the feed transition
+                interpolator = androidx.interpolator.view.animation.FastOutSlowInInterpolator()
+                addUpdateListener { anim ->
+                    val value = anim.animatedValue as Int
+                    _binding?.nestedScrollView?.scrollTo(0, value)
+                }
+                start()
+            }
+        }
+    }
+
     private fun setupClickListeners() {
         binding.btnMenu.setOnClickListener {
             (activity as? MainActivity)?.toggleDrawer()
@@ -290,7 +341,7 @@ class HomeFragment : Fragment() {
         }
 
         binding.btnExploreNow.setOnClickListener {
-            findNavController().navigate(R.id.communityFragment)
+            scrollToExploreFeed()
         }
 
         binding.catAnnouncements.setOnClickListener {
@@ -547,6 +598,8 @@ class HomeFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        scrollAnimator?.cancel()
+        _binding?.btnExploreNow?.animate()?.cancel()
         _binding?.tvNotificationBadge?.animate()?.cancel()
         _binding?.ivNotificationBell?.animate()?.cancel()
         super.onDestroyView()

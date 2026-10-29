@@ -561,6 +561,7 @@
 
         <!-- 4. Announcements Section -->
         <LinearLayout
+            android:id="@+id/sectionAnnouncements"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
@@ -611,6 +612,7 @@
 
         <!-- 5. Community Posts Section -->
         <LinearLayout
+            android:id="@+id/sectionCommunityPosts"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"

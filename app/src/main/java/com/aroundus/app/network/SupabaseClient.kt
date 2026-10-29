@@ -42,19 +42,26 @@ object SupabaseClient {
                 
                 // If caller already passed an explicit Authorization header (e.g. Bearer token for updateAuthUser or getAuthUser),
                 // do NOT clobber it with the anon key or default session!
+                val token = getAccessToken()
+                val validToken = if (!token.isNullOrBlank() && !isJwtExpired(token)) {
+                    token
+                } else {
+                    if (!token.isNullOrBlank()) {
+                        prefs?.edit()?.remove(KEY_ACCESS_TOKEN)?.apply()
+                    }
+                    null
+                }
+
                 val authHeaderValue = if (!existingAuth.isNullOrBlank() && !existingAuth.equals("Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}", ignoreCase = true)) {
                     if (existingAuth.startsWith("Bearer ", ignoreCase = true)) {
                         existingAuth
                     } else {
                         "Bearer $existingAuth"
                     }
+                } else if (!validToken.isNullOrBlank() && validToken.startsWith("eyJ")) {
+                    "Bearer $validToken"
                 } else {
-                    val token = getAccessToken()
-                    if (!token.isNullOrBlank() && token.startsWith("eyJ")) {
-                        "Bearer $token"
-                    } else {
-                        "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
-                    }
+                    "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
                 }
 
                 val requestBuilder = originalRequest.newBuilder()
@@ -63,7 +70,19 @@ object SupabaseClient {
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
 
-                chain.proceed(requestBuilder.build())
+                var response = chain.proceed(requestBuilder.build())
+                if (response.code == 401 && authHeaderValue != "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}") {
+                    prefs?.edit()?.remove(KEY_ACCESS_TOKEN)?.apply()
+                    response.close()
+                    val retryRequest = originalRequest.newBuilder()
+                        .header("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
+                        .header("Authorization", "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}")
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .build()
+                    response = chain.proceed(retryRequest)
+                }
+                response
             }
 
             val loggingInterceptor = HttpLoggingInterceptor { message ->
@@ -295,4 +314,28 @@ object SupabaseClient {
     }
 
     fun isLoggedIn(): Boolean = !getCurrentUserId().isNullOrBlank()
+
+    fun isJwtExpired(token: String?): Boolean {
+        if (token.isNullOrBlank()) return true
+        try {
+            val parts = token.split(".")
+            if (parts.size >= 2) {
+                val payload = String(
+                    android.util.Base64.decode(
+                        parts[1],
+                        android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
+                    ),
+                    Charsets.UTF_8
+                )
+                val expIdx = payload.indexOf("\"exp\":")
+                if (expIdx != -1) {
+                    val numStr = payload.substring(expIdx + 6).trim().takeWhile { it.isDigit() }
+                    val expSec = numStr.toLongOrNull() ?: 0L
+                    val nowSec = System.currentTimeMillis() / 1000L
+                    return expSec <= (nowSec + 15L) // Buffer 15 seconds
+                }
+            }
+        } catch (_: Exception) {}
+        return false
+    }
 }
