@@ -361,7 +361,7 @@ class HomeFragment : Fragment() {
         }
 
         binding.catServices.setOnClickListener {
-            findNavController().navigate(R.id.marketplaceFragment)
+            findNavController().navigate(R.id.settingsFragment)
         }
 
         binding.catMore.setOnClickListener {
