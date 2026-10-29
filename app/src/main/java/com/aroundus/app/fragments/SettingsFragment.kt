@@ -54,7 +54,6 @@ class SettingsFragment : Fragment() {
         prefs = requireContext().getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
 
         setupToolbar()
-        setupLanguage()
         setupEditProfile()
         setupPrivacy()
         setupEncryptionInfo()
@@ -68,28 +67,6 @@ class SettingsFragment : Fragment() {
 
     private fun setupToolbar() {
         binding.toolbar.setNavigationOnClickListener { findNavController().popBackStack() }
-    }
-
-    private fun setupLanguage() {
-        val currentLang = prefs.getString(KEY_LANGUAGE, "English") ?: "English"
-        binding.tvSelectedLanguage.text = currentLang
-
-        binding.itemLanguage.setOnClickListener {
-            val languages = arrayOf("English", "हिन्दी (Hindi)", "ગુજરાતી (Gujarati)")
-            val checkedIndex = languages.indexOfFirst { it.startsWith(currentLang) }.coerceAtLeast(0)
-
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Select App Language")
-                .setSingleChoiceItems(languages, checkedIndex) { dialog, which ->
-                    val chosen = languages[which].split(" ").first()
-                    prefs.edit().putString(KEY_LANGUAGE, chosen).apply()
-                    binding.tvSelectedLanguage.text = chosen
-                    Toast.makeText(requireContext(), "Language set to ${languages[which]}", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-        }
     }
 
     private fun setupEditProfile() {
