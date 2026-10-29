@@ -1466,6 +1466,35 @@ class PostRepository {
     /**
      * Deletes a post from Supabase and evicts it from memory and disk caches.
      */
+    suspend fun updatePostContent(
+        postId: String,
+        newText: String,
+        context: Context? = null
+    ): NetworkResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (postId.isBlank()) {
+                return@withContext NetworkResult.Error("Invalid post ID.")
+            }
+            val resp = service.updatePost("eq.$postId", postMap = mapOf("text" to newText.trim()))
+            if (resp.isSuccessful || resp.code() in 200..299) {
+                // Update memory and disk cache
+                val currentList = (memoryCachedPosts ?: getCachedPosts(context)).toMutableList()
+                val idx = currentList.indexOfFirst { it.id == postId }
+                if (idx != -1) {
+                    currentList[idx] = currentList[idx].copy(text = newText.trim())
+                    memoryCachedPosts = currentList
+                    savePostsToCache(context, currentList)
+                }
+                NetworkResult.Success(Unit)
+            } else {
+                val err = resp.errorBody()?.string() ?: resp.message()
+                NetworkResult.Error("Failed to update post: $err")
+            }
+        } catch (e: Exception) {
+            NetworkResult.Error(e.localizedMessage ?: "Failed to update post", e)
+        }
+    }
+
     suspend fun deletePost(
         postId: String,
         context: Context? = null

@@ -23,6 +23,12 @@
         app:enterAnim="@anim/slide_in_right"
         app:exitAnim="@anim/slide_out_left" />
 
+    <action
+        android:id="@+id/action_global_myPosts"
+        app:destination="@id/myPostsFragment"
+        app:enterAnim="@anim/slide_in_right"
+        app:exitAnim="@anim/slide_out_left" />
+
     <!-- Home -->
     <fragment
         android:id="@+id/homeFragment"
@@ -187,6 +193,12 @@
             app:enterAnim="@anim/slide_in_right"
             app:exitAnim="@anim/slide_out_left" />
 
+        <action
+            android:id="@+id/action_profile_to_myPosts"
+            app:destination="@id/myPostsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
     </fragment>
 
     <!-- Chat -->
@@ -251,6 +263,26 @@
 
         <action
             android:id="@+id/action_helpSupport_to_createPost"
+            app:destination="@id/createPostFragment"
+            app:enterAnim="@anim/slide_up" />
+
+    </fragment>
+
+    <!-- My Posts -->
+    <fragment
+        android:id="@+id/myPostsFragment"
+        android:name="com.aroundus.app.fragments.MyPostsFragment"
+        android:label="My Posts"
+        tools:layout="@layout/fragment_my_posts">
+
+        <action
+            android:id="@+id/action_myPosts_to_postDetail"
+            app:destination="@id/postDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+        <action
+            android:id="@+id/action_myPosts_to_createPost"
             app:destination="@id/createPostFragment"
             app:enterAnim="@anim/slide_up" />
 

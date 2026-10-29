@@ -230,7 +230,7 @@ class MyProfileFragment : Fragment() {
 
         // 4 Metric Cards
         binding.cardPosts.setOnClickListener {
-            togglePostsVisibility()
+            openMyPostsScreen()
         }
 
         binding.cardGroups.setOnClickListener {
@@ -247,7 +247,7 @@ class MyProfileFragment : Fragment() {
 
         // Menu Navigation List Items
         binding.rowMyPosts.setOnClickListener {
-            togglePostsVisibility()
+            openMyPostsScreen()
         }
 
         binding.rowMyComments.setOnClickListener {
@@ -287,6 +287,17 @@ class MyProfileFragment : Fragment() {
         binding.cardInviteNeighbors.setOnClickListener {
             shareInviteLink()
         }
+    }
+
+    private fun openMyPostsScreen() {
+        val loggedInUid = SupabaseClient.getCurrentUserId() ?: ""
+        val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: loggedInUid
+        val targetUserName = currentUserEntity?.name ?: ""
+        val bundle = Bundle().apply {
+            putString("userId", targetUserId)
+            putString("userName", targetUserName)
+        }
+        findNavController().navigate(R.id.myPostsFragment, bundle)
     }
 
     private fun togglePostsVisibility() {
