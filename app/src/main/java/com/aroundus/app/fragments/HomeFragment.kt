@@ -364,10 +364,6 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.settingsFragment)
         }
 
-        binding.catMore.setOnClickListener {
-            findNavController().navigate(R.id.settingsFragment)
-        }
-
         binding.btnViewAllAnnouncements.setOnClickListener {
             findNavController().navigate(R.id.announcementsFragment)
         }
