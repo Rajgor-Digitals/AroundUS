@@ -1,5 +1,6 @@
 package com.aroundus.app.fragments
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aroundus.app.R
+import com.aroundus.app.activities.ConversationActivity
 import com.aroundus.app.adapters.NotificationAdapter
 import com.aroundus.app.databinding.FragmentNotificationsBinding
 import com.aroundus.app.models.Notification
@@ -59,13 +61,15 @@ class NotificationsFragment : Fragment() {
             when (menuItem.itemId) {
                 R.id.action_mark_all_read -> {
                     val allIds = notificationList.map { it.id }
-                    notificationRepository.markAllAsRead(requireContext(), allIds)
+                    val ctx = context ?: return@setOnMenuItemClickListener true
+                    notificationRepository.markAllAsRead(ctx, allIds)
                     for (i in notificationList.indices) {
                         notificationList[i] = notificationList[i].copy(isUnread = false)
                     }
                     notificationAdapter.notifyDataSetChanged()
                     AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
-                    Toast.makeText(requireContext(), "All marked as read", Toast.LENGTH_SHORT).show()
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.NOTIFICATIONS)
+                    Toast.makeText(ctx, "All marked as read", Toast.LENGTH_SHORT).show()
                     true
                 }
                 else -> false
@@ -77,13 +81,44 @@ class NotificationsFragment : Fragment() {
         notificationAdapter = NotificationAdapter(
             notifications = notificationList,
             onNotificationClick = { notif ->
+                val ctx = context ?: return@NotificationAdapter
                 if (notif.isUnread) {
-                    notificationRepository.markAsRead(requireContext(), notif.id)
+                    notificationRepository.markAsRead(ctx, notif.id)
                     val idx = notificationList.indexOfFirst { it.id == notif.id }
                     if (idx != -1) {
                         notificationList[idx] = notif.copy(isUnread = false)
                         notificationAdapter.notifyItemChanged(idx)
                         AppRefreshManager.notifyDataChanged(RefreshTarget.PROFILE)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.NOTIFICATIONS)
+                    }
+                }
+
+                // Route according to notification type
+                when (notif.type) {
+                    "message" -> {
+                        val partnerId = notif.targetId
+                        if (!partnerId.isNullOrBlank()) {
+                            val displayName = when {
+                                notif.text.startsWith("You sent a message to ", ignoreCase = true) ->
+                                    notif.text.removePrefix("You sent a message to ").substringBefore(":").trim()
+                                notif.text.contains(" sent you a message:") ->
+                                    notif.text.substringBefore(" sent you a message:").trim()
+                                else -> "Neighbor"
+                            }
+                            val intent = Intent(ctx, ConversationActivity::class.java).apply {
+                                putExtra("userId", partnerId)
+                                putExtra("userName", displayName)
+                                putExtra("avatarUrl", notif.avatarUrl)
+                            }
+                            startActivity(intent)
+                        }
+                    }
+                    "announcement", "event" -> {
+                        val postId = notif.targetId
+                        if (!postId.isNullOrBlank()) {
+                            val bundle = Bundle().apply { putString("postId", postId) }
+                            findNavController().navigate(R.id.postDetailFragment, bundle)
+                        }
                     }
                 }
             }
@@ -113,32 +148,34 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun loadLiveNotifications(showLoadingIndicator: Boolean) {
+        val b = _binding ?: return
         if (showLoadingIndicator && notificationList.isEmpty()) {
-            binding.swipeRefreshLayout.isRefreshing = true
+            b.swipeRefreshLayout.isRefreshing = true
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
+            val ctx = context ?: return@launch
             try {
-                when (val result = notificationRepository.fetchNotifications(requireContext())) {
+                when (val result = notificationRepository.fetchNotifications(ctx)) {
                     is NetworkResult.Success -> {
                         notificationList.clear()
                         notificationList.addAll(result.data)
                         notificationAdapter.notifyDataSetChanged()
 
                         val hasItems = notificationList.isNotEmpty()
-                        binding.rvNotifications.visibility = if (hasItems) View.VISIBLE else View.GONE
-                        binding.layoutEmptyNotifications.visibility = if (hasItems) View.GONE else View.VISIBLE
+                        _binding?.rvNotifications?.visibility = if (hasItems) View.VISIBLE else View.GONE
+                        _binding?.layoutEmptyNotifications?.visibility = if (hasItems) View.GONE else View.VISIBLE
 
                         AppRefreshManager.markRefreshed(RefreshTarget.NOTIFICATIONS)
                     }
                     is NetworkResult.Error -> {
                         if (notificationList.isEmpty()) {
-                            binding.layoutEmptyNotifications.visibility = View.VISIBLE
+                            _binding?.layoutEmptyNotifications?.visibility = View.VISIBLE
                         }
                     }
                 }
             } finally {
-                binding.swipeRefreshLayout.isRefreshing = false
+                _binding?.swipeRefreshLayout?.isRefreshing = false
             }
         }
     }

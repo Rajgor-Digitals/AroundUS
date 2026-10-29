@@ -119,11 +119,14 @@ data class Message(
 
 data class Notification(
     val id: String,
-    val type: String, // "like", "comment", "follow", "event"
+    val type: String, // "like", "comment", "follow", "event", "message", "announcement"
     val text: String,
     val avatarRes: Int,
     val time: String,
-    val isUnread: Boolean = true
+    val isUnread: Boolean = true,
+    val targetId: String? = null,
+    val avatarUrl: String? = null,
+    val timestampMs: Long = 0L
 )
 
 data class Group(

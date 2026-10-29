@@ -257,6 +257,9 @@ object MessageNotificationManager {
                             if (maxTimestamp > lastSeenTimestamp) {
                                 lastSeenTimestamp = maxTimestamp
                                 prefs.edit().putLong(KEY_LAST_SEEN_MSG_TIME, lastSeenTimestamp).apply()
+                                withContext(Dispatchers.Main) {
+                                    AppRefreshManager.notifyDataChanged(RefreshTarget.NOTIFICATIONS)
+                                }
                             }
                         }
                     }

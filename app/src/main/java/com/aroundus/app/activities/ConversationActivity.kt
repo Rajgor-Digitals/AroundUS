@@ -415,6 +415,7 @@ class ConversationActivity : AppCompatActivity() {
             val result = messageRepository.sendMessage(receiverId = recipientUserId, text = rawEncodedText)
             if (result is NetworkResult.Success) {
                 AppRefreshManager.notifyDataChanged(RefreshTarget.MESSAGES)
+                AppRefreshManager.notifyDataChanged(RefreshTarget.NOTIFICATIONS)
             } else if (result is NetworkResult.Error) {
                 Toast.makeText(this@ConversationActivity, "Failed to send inquiry: ${result.message}", Toast.LENGTH_SHORT).show()
             }
@@ -484,6 +485,7 @@ class ConversationActivity : AppCompatActivity() {
                     }
                     if (result is NetworkResult.Success) {
                         AppRefreshManager.notifyDataChanged(RefreshTarget.MESSAGES)
+                        AppRefreshManager.notifyDataChanged(RefreshTarget.NOTIFICATIONS)
                     } else if (result is NetworkResult.Error) {
                         Toast.makeText(this@ConversationActivity, "Failed to send: ${result.message}", Toast.LENGTH_SHORT).show()
                     }
@@ -827,6 +829,15 @@ class ConversationActivity : AppCompatActivity() {
                 val maxPartnerTimestamp = partnerMessages.mapNotNull { it.timestamp.toLongOrNull() }.maxOrNull() ?: 0L
                 if (maxPartnerTimestamp > 0L) {
                     UserPresenceManager.recordUserActive(recipientUserId, maxPartnerTimestamp)
+                }
+
+                // Mark any pending message notifications from this partner as read
+                if (partnerMessages.isNotEmpty()) {
+                    val notifRepo = com.aroundus.app.repository.NotificationRepository()
+                    for (msg in partnerMessages) {
+                        notifRepo.markAsRead(this@ConversationActivity, "msg_${msg.messageId}")
+                    }
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.NOTIFICATIONS)
                 }
 
                 val fetchedMessages = result.data.map { entity ->

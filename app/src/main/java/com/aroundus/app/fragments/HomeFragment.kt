@@ -23,8 +23,10 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.LikeRepository
+import com.aroundus.app.repository.NotificationRepository
 import com.aroundus.app.repository.UserRepository
 import com.aroundus.app.utils.AppRefreshManager
+import android.view.animation.OvershootInterpolator
 import com.aroundus.app.utils.LocationState
 import com.aroundus.app.utils.PostActionUtils
 import com.aroundus.app.utils.RefreshTarget
@@ -44,6 +46,8 @@ class HomeFragment : Fragment() {
     private val postRepository = PostRepository()
     private val likeRepository = LikeRepository()
     private val userRepository = UserRepository()
+    private val notificationRepository = NotificationRepository()
+    private var lastNotificationCount: Int = -1
     private val postList = mutableListOf<Post>()
     private val announcementList = mutableListOf<Post>()
     private lateinit var postAdapter: PostAdapter
@@ -89,6 +93,7 @@ class HomeFragment : Fragment() {
 
         // 1. Instant 0ms cache-first rendering so app opens without delay
         loadPostsFromCache()
+        refreshNotificationBadge(isInitial = true)
 
         // 2. Fetch fresh posts on initial load
         viewLifecycleOwner.lifecycleScope.launch {
@@ -100,6 +105,7 @@ class HomeFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         loadPostsFromCache()
+        refreshNotificationBadge(isInitial = false)
         if (AppRefreshManager.isStale(RefreshTarget.HOME_FEED)) {
             viewLifecycleOwner.lifecycleScope.launch {
                 fetchPostsAndCheckUpdate()
@@ -128,6 +134,9 @@ class HomeFragment : Fragment() {
                 if (target == RefreshTarget.HOME_FEED || target == RefreshTarget.ALL) {
                     fetchPostsAndCheckUpdate()
                     AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+                }
+                if (target == RefreshTarget.NOTIFICATIONS || target == RefreshTarget.ALL) {
+                    refreshNotificationBadge(isInitial = false)
                 }
             }
         }
@@ -465,7 +474,79 @@ class HomeFragment : Fragment() {
         sheet.show(parentFragmentManager, LocationBottomSheetFragment.TAG)
     }
 
+    private fun refreshNotificationBadge(isInitial: Boolean = false) {
+        val ctx = context ?: return
+
+        // 1. Instant 0ms cache-based check
+        if (isInitial || lastNotificationCount == -1) {
+            val cachedCount = notificationRepository.getCachedUnreadCount(ctx)
+            applyNotificationCount(cachedCount, animate = false)
+        }
+
+        // 2. Fresh live asynchronous count from Supabase
+        viewLifecycleOwner.lifecycleScope.launch {
+            val liveCount = notificationRepository.getUnreadNotificationCount(ctx)
+            applyNotificationCount(liveCount, animate = !isInitial && liveCount > lastNotificationCount)
+        }
+    }
+
+    private fun applyNotificationCount(count: Int, animate: Boolean) {
+        val b = _binding ?: return
+        val previousCount = lastNotificationCount
+        lastNotificationCount = count
+
+        if (count <= 0) {
+            if (b.tvNotificationBadge.visibility != View.GONE) {
+                if (animate) {
+                    b.tvNotificationBadge.animate()
+                        .scaleX(0f)
+                        .scaleY(0f)
+                        .alpha(0f)
+                        .setDuration(200)
+                        .withEndAction {
+                            _binding?.tvNotificationBadge?.visibility = View.GONE
+                        }
+                        .start()
+                } else {
+                    b.tvNotificationBadge.visibility = View.GONE
+                }
+            }
+        } else {
+            val displayCount = if (count > 9) "9+" else count.toString()
+            b.tvNotificationBadge.text = displayCount
+
+            if (b.tvNotificationBadge.visibility != View.VISIBLE) {
+                b.tvNotificationBadge.visibility = View.VISIBLE
+                b.tvNotificationBadge.alpha = 1f
+                b.tvNotificationBadge.scaleX = 0f
+                b.tvNotificationBadge.scaleY = 0f
+                b.tvNotificationBadge.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(300)
+                    .setInterpolator(OvershootInterpolator(2.5f))
+                    .start()
+            } else if (animate && count != previousCount) {
+                // Subtle bounce when count increments or changes (like Instagram / Twitter)
+                b.tvNotificationBadge.animate()
+                    .scaleX(1.3f)
+                    .scaleY(1.3f)
+                    .setDuration(120)
+                    .withEndAction {
+                        _binding?.tvNotificationBadge?.animate()
+                            ?.scaleX(1f)
+                            ?.scaleY(1f)
+                            ?.setDuration(120)
+                            ?.start()
+                    }
+                    .start()
+            }
+        }
+    }
+
     override fun onDestroyView() {
+        _binding?.tvNotificationBadge?.animate()?.cancel()
+        _binding?.ivNotificationBell?.animate()?.cancel()
         super.onDestroyView()
         autoRefreshJob?.cancel()
         _binding = null
