@@ -3,6 +3,7 @@ package com.aroundus.app.activities
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -176,14 +177,7 @@ class ConversationActivity : AppCompatActivity() {
         updateHeaderStatusUI(isPartnerOnline, originalStatusText)
 
         binding.btnBack.setOnClickListener { finish() }
-        binding.btnCall.setOnClickListener {
-            Toast.makeText(this, "Calling $name...", Toast.LENGTH_SHORT).show()
-        }
 
-        // Tapping status or more button allows options & testing
-        binding.tvStatus.setOnClickListener {
-            simulatePartnerTyping()
-        }
 
         binding.btnMore.setOnClickListener { view ->
             showOptionsMenu(view)
@@ -241,44 +235,65 @@ class ConversationActivity : AppCompatActivity() {
         }
     }
 
+    private fun getConversationKey(): String {
+        val authorId = currentUserId.ifBlank {
+            SupabaseClient.getCurrentUserId() ?: ""
+        }
+        return if (isGroupChat) {
+            "group_$groupId"
+        } else {
+            val ids = listOf(authorId, recipientUserId).filter { it.isNotBlank() }.sorted()
+            "direct_${ids.joinToString("_")}"
+        }
+    }
+
+    private fun getClearedTimestamp(): Long {
+        val key = getConversationKey()
+        return getSharedPreferences("aroundus_chat_cleared_prefs", Context.MODE_PRIVATE)
+            .getLong("cleared_$key", 0L)
+    }
+
+    private fun setClearedTimestamp(time: Long) {
+        val key = getConversationKey()
+        getSharedPreferences("aroundus_chat_cleared_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putLong("cleared_$key", time)
+            .apply()
+    }
+
     private fun showOptionsMenu(anchorView: View) {
         val popup = PopupMenu(this, anchorView)
-        popup.menu.add(0, 6, 0, "Verify End-to-End Encryption 🔒")
-        popup.menu.add(0, 1, 1, "Simulate Neighbor Typing (Demo)")
-        popup.menu.add(0, 2, 2, "Simulate Neighbor Seen Messages (Demo)")
-        popup.menu.add(0, 3, 3, "Toggle Neighbor Active / Last Active (Demo)")
-        popup.menu.add(0, 4, 4, "Mute Notifications")
-        popup.menu.add(0, 5, 5, "Clear Chat")
+        popup.menu.add(0, 1, 0, "Clear Chat")
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
-                6 -> {
-                    showEncryptionDetailsDialog()
-                    true
-                }
                 1 -> {
-                    simulatePartnerTyping()
-                    true
-                }
-                2 -> {
-                    simulatePartnerSeenMessages()
-                    true
-                }
-                3 -> {
-                    togglePartnerPresenceDemo()
-                    true
-                }
-                4 -> {
-                    Toast.makeText(this, "Notifications muted", Toast.LENGTH_SHORT).show()
-                    true
-                }
-                5 -> {
-                    Toast.makeText(this, "Chat history preserved", Toast.LENGTH_SHORT).show()
+                    showClearChatConfirmationDialog()
                     true
                 }
                 else -> false
             }
         }
         popup.show()
+    }
+
+    private fun showClearChatConfirmationDialog() {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Clear Chat")
+            .setMessage("Are you sure you want to clear all messages in this conversation?")
+            .setPositiveButton("Clear") { _, _ ->
+                clearCurrentChat()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun clearCurrentChat() {
+        val clearTime = System.currentTimeMillis()
+        setClearedTimestamp(clearTime)
+        messages.clear()
+        messageAdapter.notifyDataSetChanged()
+        Toast.makeText(this, "Chat cleared", Toast.LENGTH_SHORT).show()
+        AppRefreshManager.notifyDataChanged(RefreshTarget.MESSAGES)
     }
 
     /**
@@ -777,16 +792,19 @@ class ConversationActivity : AppCompatActivity() {
                         )
                     }
 
+                    val clearedTimestamp = getClearedTimestamp()
+                    val activeFetchedMessages = fetchedMessages.filter { it.timestampMs > clearedTimestamp }
+
                     if (isInitial || messages.isEmpty()) {
-                        if (fetchedMessages.isNotEmpty()) {
+                        if (activeFetchedMessages.isNotEmpty()) {
                             messages.clear()
-                            messages.addAll(fetchedMessages)
+                            messages.addAll(activeFetchedMessages)
                             messageAdapter.notifyDataSetChanged()
                             binding.rvMessages.scrollToPosition(0)
                         }
                     } else {
                         var hasNew = false
-                        for (newMsg in fetchedMessages) {
+                        for (newMsg in activeFetchedMessages) {
                             val existingIdx = messages.indexOfFirst {
                                 (it.id.isNotBlank() && it.id == newMsg.id) ||
                                 (it.text == newMsg.text && it.isSent == newMsg.isSent && Math.abs(it.timestampMs - newMsg.timestampMs) < 60000L)
@@ -867,10 +885,13 @@ class ConversationActivity : AppCompatActivity() {
                     )
                 }
 
+                val clearedTimestamp = getClearedTimestamp()
+                val activeFetchedMessages = fetchedMessages.filter { it.timestampMs > clearedTimestamp }
+
                 if (isInitial || messages.isEmpty()) {
-                    if (fetchedMessages.isNotEmpty()) {
+                    if (activeFetchedMessages.isNotEmpty()) {
                         messages.clear()
-                        messages.addAll(fetchedMessages)
+                        messages.addAll(activeFetchedMessages)
                         messageAdapter.notifyDataSetChanged()
                         binding.rvMessages.scrollToPosition(messages.size - 1)
 
@@ -881,7 +902,7 @@ class ConversationActivity : AppCompatActivity() {
                 } else {
                     var hasNew = false
                     var receivedPartnerMessage = false
-                    for (newMsg in fetchedMessages) {
+                    for (newMsg in activeFetchedMessages) {
                         val existingIdx = messages.indexOfFirst {
                             (it.id.isNotBlank() && it.id == newMsg.id) ||
                             (it.text == newMsg.text && it.isSent == newMsg.isSent && Math.abs(it.timestampMs - newMsg.timestampMs) < 60000L)

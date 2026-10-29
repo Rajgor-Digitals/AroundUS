@@ -107,17 +107,6 @@
 
         </LinearLayout>
 
-        <!-- Call Button (Green) -->
-        <ImageButton
-            android:id="@+id/btnCall"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Call"
-            android:padding="8dp"
-            android:src="@drawable/ic_phone_outlined"
-            app:tint="#0D8A3F" />
-
         <!-- More Options Button -->
         <ImageButton
             android:id="@+id/btnMore"
