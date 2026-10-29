@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/chatItemRoot"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackground"
@@ -17,7 +18,7 @@
         android:paddingEnd="16dp"
         android:paddingBottom="12dp">
 
-        <!-- Avatar Container with Online Indicator -->
+        <!-- Avatar Container with Online Indicator & Unread Ring -->
         <FrameLayout
             android:layout_width="50dp"
             android:layout_height="50dp">
@@ -60,20 +61,40 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvUserName"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif-bold"
-                android:maxLines="1"
-                android:textColor="#0F172A"
-                android:textSize="15sp"
-                tools:text="Priya Sharma" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvUserName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-bold"
+                    android:maxLines="1"
+                    android:textColor="#0F172A"
+                    android:textSize="15.5sp"
+                    tools:text="Priya Sharma" />
+
+                <!-- Tiny unread dot next to user name when unread -->
+                <View
+                    android:id="@+id/dotUnreadIndicator"
+                    android:layout_width="7dp"
+                    android:layout_height="7dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginEnd="2dp"
+                    android:background="@drawable/bg_unread_badge_premium"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvLastMessage"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
                 android:ellipsize="end"
@@ -85,7 +106,7 @@
 
         </LinearLayout>
 
-        <!-- Time & Unread Badge -->
+        <!-- Time & Premium Unread Badge -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -103,12 +124,17 @@
 
             <TextView
                 android:id="@+id/tvUnreadCount"
-                android:layout_width="19dp"
-                android:layout_height="19dp"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
                 android:layout_marginTop="5dp"
-                android:background="@drawable/bg_unread_badge"
+                android:background="@drawable/bg_unread_badge_premium"
+                android:elevation="1dp"
                 android:fontFamily="sans-serif-bold"
                 android:gravity="center"
+                android:includeFontPadding="false"
+                android:minWidth="20dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
                 android:textColor="#FFFFFF"
                 android:textSize="10.5sp"
                 android:visibility="visible"
@@ -123,6 +149,6 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginStart="76dp"
-        android:background="#F8FAFC" />
+        android:background="#F1F5F9" />
 
 </LinearLayout>

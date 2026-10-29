@@ -934,6 +934,11 @@ class ConversationActivity : AppCompatActivity() {
         if (currentUserId.isNotBlank()) {
             UserPresenceManager.recordUserActive(currentUserId)
         }
+        if (isGroupChat && groupId.isNotBlank()) {
+            com.aroundus.app.utils.UnreadMessageManager.markGroupAsRead(this, currentUserId, groupId)
+        } else if (recipientUserId.isNotBlank()) {
+            com.aroundus.app.utils.UnreadMessageManager.markConversationAsRead(this, currentUserId, recipientUserId)
+        }
     }
 
     override fun onPause() {
@@ -944,6 +949,7 @@ class ConversationActivity : AppCompatActivity() {
         if (currentUserId.isNotBlank()) {
             UserPresenceManager.recordUserActive(currentUserId)
         }
+        com.aroundus.app.utils.AppRefreshManager.notifyDataChanged(com.aroundus.app.utils.RefreshTarget.MESSAGES)
     }
 
     override fun onDestroy() {

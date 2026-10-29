@@ -13,6 +13,7 @@ class AroundUsApplication : Application() {
         SupabaseClient.init(this)
         com.aroundus.app.utils.UserLocationManager.init(this)
         com.aroundus.app.utils.UserPresenceManager.init(this)
+        com.aroundus.app.utils.UnreadMessageManager.init(this)
         com.aroundus.app.utils.MessageNotificationManager.initNotificationChannel(this)
 
         // Asynchronously pre-warm Retrofit client, OkHttp connection pool, Post cache, and start message notification listener

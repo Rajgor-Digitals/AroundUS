@@ -259,6 +259,7 @@ object MessageNotificationManager {
                                 prefs.edit().putLong(KEY_LAST_SEEN_MSG_TIME, lastSeenTimestamp).apply()
                                 withContext(Dispatchers.Main) {
                                     AppRefreshManager.notifyDataChanged(RefreshTarget.NOTIFICATIONS)
+                                    AppRefreshManager.notifyDataChanged(RefreshTarget.MESSAGES)
                                 }
                             }
                         }

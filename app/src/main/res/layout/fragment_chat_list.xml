@@ -29,7 +29,7 @@
             android:src="@drawable/ic_menu_custom"
             app:tint="#1E293B" />
 
-        <!-- Center Title & Subtitle -->
+        <!-- Center Title & Subtitle with Header Unread Badge -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -37,14 +37,40 @@
             android:gravity="center"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvHeaderTitle"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-bold"
-                android:text="Messages"
-                android:textColor="#0F172A"
-                android:textSize="19sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvHeaderTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Messages"
+                    android:textColor="#0F172A"
+                    android:textSize="19sp" />
+
+                <!-- Premium Header Unread Pill Chip -->
+                <TextView
+                    android:id="@+id/tvHeaderUnreadBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_header_unread_chip"
+                    android:fontFamily="sans-serif-bold"
+                    android:paddingStart="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="2dp"
+                    android:textColor="#0D8A3F"
+                    android:textSize="11sp"
+                    android:visibility="gone"
+                    tools:text="3 new"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -54,6 +80,7 @@
                 android:orientation="horizontal">
 
                 <View
+                    android:id="@+id/headerOnlineDot"
                     android:layout_width="6dp"
                     android:layout_height="6dp"
                     android:layout_marginEnd="5dp"
@@ -61,6 +88,7 @@
                     android:backgroundTint="#16A34A" />
 
                 <TextView
+                    android:id="@+id/tvHeaderSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif"
@@ -176,6 +204,24 @@
                     android:text="Chats"
                     android:textColor="#0D8A3F"
                     android:textSize="13sp" />
+
+                <!-- Chats Tab Badge -->
+                <TextView
+                    android:id="@+id/tvBadgeTabChats"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:minWidth="18dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_tab_badge_pill"
+                    android:fontFamily="sans-serif-bold"
+                    android:gravity="center"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:textColor="#0D8A3F"
+                    android:textSize="10sp"
+                    android:visibility="gone"
+                    tools:text="2"
+                    tools:visibility="visible" />
             </LinearLayout>
 
             <View
@@ -219,6 +265,23 @@
                     android:text="Groups"
                     android:textColor="#64748B"
                     android:textSize="13sp" />
+
+                <!-- Groups Tab Badge -->
+                <TextView
+                    android:id="@+id/tvBadgeTabGroups"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:minWidth="18dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_tab_badge_pill"
+                    android:fontFamily="sans-serif-bold"
+                    android:gravity="center"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:textColor="#0D8A3F"
+                    android:textSize="10sp"
+                    android:visibility="gone"
+                    tools:text="1" />
             </LinearLayout>
 
             <View
@@ -317,6 +380,24 @@
                 android:text="▾"
                 android:textColor="#64748B"
                 android:textSize="13sp" />
+
+            <!-- Pill showing unread count in filter -->
+            <TextView
+                android:id="@+id/tvFilterUnreadCount"
+                android:layout_width="wrap_content"
+                android:layout_height="18dp"
+                android:minWidth="18dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_unread_badge_premium"
+                android:fontFamily="sans-serif-bold"
+                android:gravity="center"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:visibility="gone"
+                tools:text="3"
+                tools:visibility="visible" />
         </LinearLayout>
 
         <ImageView

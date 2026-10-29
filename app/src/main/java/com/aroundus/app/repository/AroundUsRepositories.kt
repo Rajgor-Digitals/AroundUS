@@ -2078,6 +2078,7 @@ class MessageRepository {
     suspend fun fetchGroupConversations(): NetworkResult<List<ChatItem>> =
         withContext(Dispatchers.IO) {
             try {
+                val currentUserId = userRepo.resolveValidAuthorId().ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
                 val groupsResp = service.getGroups()
                 val messagesResp = service.getAllMessages()
 
@@ -2127,6 +2128,12 @@ class MessageRepository {
                     // Primary sort key: latest message timestamp; fallback to group creation time
                     val sortKey = if (latestMsgTime > 0L) latestMsgTime else groupCreatedTime
 
+                    val groupUnread = com.aroundus.app.utils.UnreadMessageManager.getUnreadCountForGroup(
+                        currentUserId,
+                        groupEntity.groupId,
+                        groupMsgs
+                    )
+
                     Pair(
                         ChatItem(
                             id = uiGroup.id,
@@ -2134,7 +2141,7 @@ class MessageRepository {
                             avatarRes = uiGroup.coverRes,
                             lastMessage = displayLastMessage,
                             time = displayTime,
-                            unreadCount = 0,
+                            unreadCount = groupUnread,
                             isOnline = false,
                             avatarUrl = uiGroup.imageUrl
                         ),
@@ -2201,6 +2208,12 @@ class MessageRepository {
                     }
                     val isPartnerOnline = com.aroundus.app.utils.UserPresenceManager.isUserOnline(partnerId)
 
+                    val partnerUnread = com.aroundus.app.utils.UnreadMessageManager.getUnreadCountForPartner(
+                        currentUserId,
+                        partnerId,
+                        msgs
+                    )
+
                     chatList.add(
                         ChatItem(
                             id = partnerId,
@@ -2208,7 +2221,7 @@ class MessageRepository {
                             avatarRes = 0,
                             lastMessage = com.aroundus.app.utils.ProductMessageUtils.cleanMessagePreview(plainText),
                             time = formattedTime,
-                            unreadCount = 0,
+                            unreadCount = partnerUnread,
                             isOnline = isPartnerOnline,
                             avatarUrl = partnerAvatar
                         )

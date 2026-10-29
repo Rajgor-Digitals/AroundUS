@@ -29,7 +29,9 @@ import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
 import com.aroundus.app.utils.AppRefreshManager
 import com.aroundus.app.utils.RefreshTarget
+import com.aroundus.app.utils.UnreadMessageManager
 import com.aroundus.app.utils.applyAroundUsTheme
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 class ChatListFragment : Fragment() {
@@ -47,9 +49,14 @@ class ChatListFragment : Fragment() {
     private val displayedChatsList = mutableListOf<ChatItem>()
     private lateinit var chatAdapter: ChatAdapter
     private var currentTab = TabType.CHATS
+    private var currentFilterMode = FilterMode.ALL
 
     enum class TabType {
         CHATS, GROUPS, ANNOUNCEMENTS
+    }
+
+    enum class FilterMode {
+        ALL, UNREAD_ONLY, UNREAD_FIRST
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -67,15 +74,14 @@ class ChatListFragment : Fragment() {
         setupTabs()
         setupSwipeRefresh()
         observeRefreshEvents()
+        observeUnreadCounts()
 
         loadSupabaseConversations()
     }
 
     override fun onResume() {
         super.onResume()
-        if (AppRefreshManager.isStale(RefreshTarget.MESSAGES)) {
-            refreshCurrentTab()
-        }
+        refreshCurrentTab()
     }
 
     private fun setupSwipeRefresh() {
@@ -95,11 +101,33 @@ class ChatListFragment : Fragment() {
         }
     }
 
+    private fun observeUnreadCounts() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            UnreadMessageManager.totalUnreadCountFlow.collect {
+                updateUnreadBadges()
+            }
+        }
+    }
+
     private fun refreshCurrentTab() {
         when (currentTab) {
             TabType.CHATS -> loadSupabaseConversations()
-            TabType.GROUPS, TabType.ANNOUNCEMENTS -> {
+            TabType.GROUPS -> {
+                lifecycleScope.launch {
+                    val groupRes = messageRepository.fetchGroupConversations()
+                    if (groupRes is NetworkResult.Success) {
+                        allGroupsList.clear()
+                        allGroupsList.addAll(groupRes.data)
+                    }
+                    filterListByCurrentTab()
+                    updateUnreadBadges()
+                    binding.swipeRefreshLayout.isRefreshing = false
+                    AppRefreshManager.markRefreshed(RefreshTarget.MESSAGES)
+                }
+            }
+            TabType.ANNOUNCEMENTS -> {
                 filterListByCurrentTab()
+                updateUnreadBadges()
                 binding.swipeRefreshLayout.isRefreshing = false
                 AppRefreshManager.markRefreshed(RefreshTarget.MESSAGES)
             }
@@ -112,30 +140,119 @@ class ChatListFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        chatAdapter = ChatAdapter(displayedChatsList) { chat ->
-            val intent = Intent(requireContext(), ConversationActivity::class.java).apply {
+        chatAdapter = ChatAdapter(
+            chats = displayedChatsList,
+            onChatClick = { chat ->
+                val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
                 if (currentTab == TabType.GROUPS) {
-                    putExtra("groupId", chat.id)
-                    putExtra("userName", chat.userName)
-                    putExtra("avatarRes", chat.avatarRes)
-                    putExtra("avatarUrl", chat.avatarUrl)
-                    putExtra("members", chat.time)
-                    putExtra("isGroup", true)
+                    UnreadMessageManager.markGroupAsRead(requireContext(), currentUserId, chat.id)
                 } else {
-                    putExtra("userId", chat.id)
-                    putExtra("userName", chat.userName)
-                    putExtra("avatarUrl", chat.avatarUrl)
-                    putExtra("avatarRes", chat.avatarRes)
-                    putExtra("isOnline", chat.isOnline)
+                    UnreadMessageManager.markConversationAsRead(requireContext(), currentUserId, chat.id)
                 }
+
+                // Optimistically clear unread on clicked item for instant feel
+                val idx = displayedChatsList.indexOfFirst { it.id == chat.id }
+                if (idx != -1) {
+                    displayedChatsList[idx] = displayedChatsList[idx].copy(unreadCount = 0)
+                    chatAdapter.notifyItemChanged(idx)
+                }
+                updateUnreadBadges()
+
+                val intent = Intent(requireContext(), ConversationActivity::class.java).apply {
+                    if (currentTab == TabType.GROUPS) {
+                        putExtra("groupId", chat.id)
+                        putExtra("userName", chat.userName)
+                        putExtra("avatarRes", chat.avatarRes)
+                        putExtra("avatarUrl", chat.avatarUrl)
+                        putExtra("members", chat.time)
+                        putExtra("isGroup", true)
+                    } else {
+                        putExtra("userId", chat.id)
+                        putExtra("userName", chat.userName)
+                        putExtra("avatarUrl", chat.avatarUrl)
+                        putExtra("avatarRes", chat.avatarRes)
+                        putExtra("isOnline", chat.isOnline)
+                    }
+                }
+                startActivity(intent)
+            },
+            onChatLongClick = { chat ->
+                showChatOptionsDialog(chat)
+                true
             }
-            startActivity(intent)
-        }
+        )
 
         binding.rvChats.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = chatAdapter
         }
+    }
+
+    private fun showChatOptionsDialog(chat: ChatItem) {
+        val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
+        val isUnread = chat.unreadCount > 0
+        val toggleReadLabel = if (isUnread) "Mark as read" else "Mark as unread"
+
+        val options = arrayOf(
+            toggleReadLabel,
+            "Mute notifications",
+            "View profile / details"
+        )
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(chat.userName)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        // Toggle Read/Unread
+                        if (isUnread) {
+                            if (currentTab == TabType.GROUPS) {
+                                UnreadMessageManager.markGroupAsRead(requireContext(), currentUserId, chat.id)
+                            } else {
+                                UnreadMessageManager.markConversationAsRead(requireContext(), currentUserId, chat.id)
+                            }
+                            updateChatUnreadState(chat.id, 0)
+                            Toast.makeText(requireContext(), "Marked as read", Toast.LENGTH_SHORT).show()
+                        } else {
+                            if (currentTab == TabType.GROUPS) {
+                                UnreadMessageManager.markGroupAsUnread(requireContext(), currentUserId, chat.id)
+                            } else {
+                                UnreadMessageManager.markConversationAsUnread(requireContext(), currentUserId, chat.id)
+                            }
+                            updateChatUnreadState(chat.id, 1)
+                            Toast.makeText(requireContext(), "Marked as unread", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    1 -> {
+                        Toast.makeText(requireContext(), "Notifications muted for ${chat.userName}", Toast.LENGTH_SHORT).show()
+                    }
+                    2 -> {
+                        // Open chat
+                        binding.rvChats.findViewHolderForAdapterPosition(displayedChatsList.indexOfFirst { it.id == chat.id })?.itemView?.performClick()
+                    }
+                }
+            }
+            .show()
+    }
+
+    private fun updateChatUnreadState(chatId: String, newCount: Int) {
+        val targetList = when (currentTab) {
+            TabType.CHATS -> allChatsList
+            TabType.GROUPS -> allGroupsList
+            TabType.ANNOUNCEMENTS -> allAnnouncementsList
+        }
+        val targetIdx = targetList.indexOfFirst { it.id == chatId }
+        if (targetIdx != -1) {
+            targetList[targetIdx] = targetList[targetIdx].copy(unreadCount = newCount)
+        }
+
+        val dispIdx = displayedChatsList.indexOfFirst { it.id == chatId }
+        if (dispIdx != -1) {
+            displayedChatsList[dispIdx] = displayedChatsList[dispIdx].copy(unreadCount = newCount)
+            chatAdapter.notifyItemChanged(dispIdx)
+        }
+
+        updateUnreadBadges()
     }
 
     private fun setupHeaderActions() {
@@ -148,15 +265,7 @@ class ChatListFragment : Fragment() {
         }
 
         binding.llFilterSelector.setOnClickListener {
-            binding.tvFilterLabel.text = if (binding.tvFilterLabel.text == "All Conversations") "Unread First" else "All Conversations"
-            if (binding.tvFilterLabel.text == "Unread First") {
-                displayedChatsList.sortByDescending { it.unreadCount }
-            } else {
-                filterListByCurrentTab()
-            }
-            if (::chatAdapter.isInitialized) {
-                chatAdapter.notifyDataSetChanged()
-            }
+            showFilterMenu()
         }
 
         binding.btnSort.setOnClickListener {
@@ -165,6 +274,57 @@ class ChatListFragment : Fragment() {
                 chatAdapter.notifyDataSetChanged()
             }
         }
+    }
+
+    private fun showFilterMenu() {
+        val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
+        val options = arrayOf(
+            "All Conversations",
+            "Unread Only",
+            "Unread First",
+            "Mark All as Read"
+        )
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Filter Conversations")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        currentFilterMode = FilterMode.ALL
+                        binding.tvFilterLabel.text = "All Conversations"
+                        filterListByCurrentTab()
+                    }
+                    1 -> {
+                        currentFilterMode = FilterMode.UNREAD_ONLY
+                        binding.tvFilterLabel.text = "Unread Only"
+                        filterListByCurrentTab()
+                    }
+                    2 -> {
+                        currentFilterMode = FilterMode.UNREAD_FIRST
+                        binding.tvFilterLabel.text = "Unread First"
+                        filterListByCurrentTab()
+                    }
+                    3 -> {
+                        // Mark all as read
+                        UnreadMessageManager.markAllAsRead(
+                            context = requireContext(),
+                            currentUserId = currentUserId,
+                            directPartnerIds = allChatsList.map { it.id },
+                            groupIds = allGroupsList.map { it.id }
+                        )
+                        for (i in allChatsList.indices) {
+                            allChatsList[i] = allChatsList[i].copy(unreadCount = 0)
+                        }
+                        for (i in allGroupsList.indices) {
+                            allGroupsList[i] = allGroupsList[i].copy(unreadCount = 0)
+                        }
+                        filterListByCurrentTab()
+                        updateUnreadBadges()
+                        Toast.makeText(requireContext(), "All conversations marked as read", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .show()
     }
 
     private fun showNewChatDialog() {
@@ -182,7 +342,7 @@ class ChatListFragment : Fragment() {
         })
 
         binding.btnFilter.setOnClickListener {
-            Toast.makeText(requireContext(), "Filter conversations", Toast.LENGTH_SHORT).show()
+            showFilterMenu()
         }
     }
 
@@ -229,20 +389,31 @@ class ChatListFragment : Fragment() {
         }
 
         filterListByCurrentTab()
+        updateUnreadBadges()
     }
 
     private fun filterListByCurrentTab() {
         displayedChatsList.clear()
         when (currentTab) {
             TabType.CHATS -> {
-                displayedChatsList.addAll(allChatsList)
+                val list = when (currentFilterMode) {
+                    FilterMode.ALL -> allChatsList
+                    FilterMode.UNREAD_ONLY -> allChatsList.filter { it.unreadCount > 0 }
+                    FilterMode.UNREAD_FIRST -> allChatsList.sortedByDescending { it.unreadCount }
+                }
+                displayedChatsList.addAll(list)
                 if (::chatAdapter.isInitialized) {
                     chatAdapter.notifyDataSetChanged()
                 }
             }
             TabType.GROUPS -> {
                 if (allGroupsList.isNotEmpty()) {
-                    displayedChatsList.addAll(allGroupsList)
+                    val list = when (currentFilterMode) {
+                        FilterMode.ALL -> allGroupsList
+                        FilterMode.UNREAD_ONLY -> allGroupsList.filter { it.unreadCount > 0 }
+                        FilterMode.UNREAD_FIRST -> allGroupsList.sortedByDescending { it.unreadCount }
+                    }
+                    displayedChatsList.addAll(list)
                     if (::chatAdapter.isInitialized) {
                         chatAdapter.notifyDataSetChanged()
                     }
@@ -253,10 +424,16 @@ class ChatListFragment : Fragment() {
                         allGroupsList.clear()
                         allGroupsList.addAll(groupRes.data)
                         displayedChatsList.clear()
-                        displayedChatsList.addAll(allGroupsList)
+                        val list = when (currentFilterMode) {
+                            FilterMode.ALL -> allGroupsList
+                            FilterMode.UNREAD_ONLY -> allGroupsList.filter { it.unreadCount > 0 }
+                            FilterMode.UNREAD_FIRST -> allGroupsList.sortedByDescending { it.unreadCount }
+                        }
+                        displayedChatsList.addAll(list)
                         if (::chatAdapter.isInitialized) {
                             chatAdapter.notifyDataSetChanged()
                         }
+                        updateUnreadBadges()
                     }
                 }
             }
@@ -297,6 +474,54 @@ class ChatListFragment : Fragment() {
                 }
             }
         }
+        updateUnreadBadges()
+    }
+
+    private fun updateUnreadBadges() {
+        val directUnread = allChatsList.sumOf { it.unreadCount }
+        val groupsUnread = allGroupsList.sumOf { it.unreadCount }
+        val totalUnread = directUnread + groupsUnread
+
+        _binding?.let { b ->
+            // 1. Header unread badge
+            if (totalUnread > 0) {
+                b.tvHeaderUnreadBadge.visibility = View.VISIBLE
+                b.tvHeaderUnreadBadge.text = if (totalUnread > 99) "99+ new" else "$totalUnread new"
+                b.tvHeaderSubtitle.text = "$totalUnread unread conversation${if (totalUnread > 1) "s" else ""} • Stay connected"
+            } else {
+                b.tvHeaderUnreadBadge.visibility = View.GONE
+                b.tvHeaderSubtitle.text = "Stay connected with your community"
+            }
+
+            // 2. Tab Chats badge
+            if (directUnread > 0) {
+                b.tvBadgeTabChats.visibility = View.VISIBLE
+                b.tvBadgeTabChats.text = if (directUnread > 99) "99+" else directUnread.toString()
+            } else {
+                b.tvBadgeTabChats.visibility = View.GONE
+            }
+
+            // 3. Tab Groups badge
+            if (groupsUnread > 0) {
+                b.tvBadgeTabGroups.visibility = View.VISIBLE
+                b.tvBadgeTabGroups.text = if (groupsUnread > 99) "99+" else groupsUnread.toString()
+            } else {
+                b.tvBadgeTabGroups.visibility = View.GONE
+            }
+
+            // 4. Subheader filter chip
+            val currentTabUnread = when (currentTab) {
+                TabType.CHATS -> directUnread
+                TabType.GROUPS -> groupsUnread
+                TabType.ANNOUNCEMENTS -> 0
+            }
+            if (currentTabUnread > 0) {
+                b.tvFilterUnreadCount.visibility = View.VISIBLE
+                b.tvFilterUnreadCount.text = if (currentTabUnread > 99) "99+" else currentTabUnread.toString()
+            } else {
+                b.tvFilterUnreadCount.visibility = View.GONE
+            }
+        }
     }
 
     private fun filterSearch(query: String) {
@@ -323,18 +548,54 @@ class ChatListFragment : Fragment() {
     private fun loadSupabaseConversations() {
         lifecycleScope.launch {
             try {
-                val currentUserId = userRepository.resolveValidAuthorId().ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
+                val currentUserId = SupabaseClient.getCurrentUserId() ?: ""
                 when (val result = messageRepository.fetchUserConversations()) {
-                is NetworkResult.Success -> {
-                    allChatsList.clear()
-                    allChatsList.addAll(result.data)
+                    is NetworkResult.Success -> {
+                        allChatsList.clear()
+                        allChatsList.addAll(result.data)
 
-                    // If user has no active chats yet, provide registered community neighbors to initiate conversations
-                    if (allChatsList.isEmpty()) {
+                        // If user has no active chats yet, provide registered community neighbors to initiate conversations
+                        if (allChatsList.isEmpty()) {
+                            val usersResult = userRepository.getAllUsers()
+                            if (usersResult is NetworkResult.Success) {
+                                val neighbors = usersResult.data.filter { it.userId != currentUserId }
+                                val neighborChats = neighbors.map { user ->
+                                    ChatItem(
+                                        id = user.userId,
+                                        userName = user.name.ifBlank { "Neighbor" },
+                                        avatarRes = 0,
+                                        lastMessage = "Tap to start conversation",
+                                        time = "New",
+                                        unreadCount = 0,
+                                        isOnline = true,
+                                        avatarUrl = user.profilePhoto
+                                    )
+                                }
+                                allChatsList.addAll(neighborChats)
+                            }
+                        }
+
+                        if (currentTab == TabType.CHATS) {
+                            displayedChatsList.clear()
+                            val list = when (currentFilterMode) {
+                                FilterMode.ALL -> allChatsList
+                                FilterMode.UNREAD_ONLY -> allChatsList.filter { it.unreadCount > 0 }
+                                FilterMode.UNREAD_FIRST -> allChatsList.sortedByDescending { it.unreadCount }
+                            }
+                            displayedChatsList.addAll(list)
+                            if (::chatAdapter.isInitialized) {
+                                chatAdapter.notifyDataSetChanged()
+                            }
+                        }
+                        updateUnreadBadges()
+                    }
+                    is NetworkResult.Error -> {
+                        // Fallback to registered neighbors if conversations fetch fails
                         val usersResult = userRepository.getAllUsers()
                         if (usersResult is NetworkResult.Success) {
+                            allChatsList.clear()
                             val neighbors = usersResult.data.filter { it.userId != currentUserId }
-                            val neighborChats = neighbors.map { user ->
+                            allChatsList.addAll(neighbors.map { user ->
                                 ChatItem(
                                     id = user.userId,
                                     userName = user.name.ifBlank { "Neighbor" },
@@ -345,53 +606,24 @@ class ChatListFragment : Fragment() {
                                     isOnline = true,
                                     avatarUrl = user.profilePhoto
                                 )
+                            })
+                            if (currentTab == TabType.CHATS) {
+                                displayedChatsList.clear()
+                                displayedChatsList.addAll(allChatsList)
+                                if (::chatAdapter.isInitialized) {
+                                    chatAdapter.notifyDataSetChanged()
+                                }
                             }
-                            allChatsList.addAll(neighborChats)
-                        }
-                    }
-
-                    if (currentTab == TabType.CHATS) {
-                        displayedChatsList.clear()
-                        displayedChatsList.addAll(allChatsList)
-                        if (::chatAdapter.isInitialized) {
-                            chatAdapter.notifyDataSetChanged()
+                            updateUnreadBadges()
                         }
                     }
                 }
-                is NetworkResult.Error -> {
-                    // Fallback to registered neighbors if conversations fetch fails
-                    val usersResult = userRepository.getAllUsers()
-                    if (usersResult is NetworkResult.Success) {
-                        allChatsList.clear()
-                        val neighbors = usersResult.data.filter { it.userId != currentUserId }
-                        allChatsList.addAll(neighbors.map { user ->
-                            ChatItem(
-                                id = user.userId,
-                                userName = user.name.ifBlank { "Neighbor" },
-                                avatarRes = 0,
-                                lastMessage = "Tap to start conversation",
-                                time = "New",
-                                unreadCount = 0,
-                                isOnline = true,
-                                avatarUrl = user.profilePhoto
-                            )
-                        })
-                        if (currentTab == TabType.CHATS) {
-                            displayedChatsList.clear()
-                            displayedChatsList.addAll(allChatsList)
-                            if (::chatAdapter.isInitialized) {
-                                chatAdapter.notifyDataSetChanged()
-                            }
-                        }
-                    }
-                }
+            } finally {
+                binding.swipeRefreshLayout.isRefreshing = false
+                AppRefreshManager.markRefreshed(RefreshTarget.MESSAGES)
             }
-        } finally {
-            binding.swipeRefreshLayout.isRefreshing = false
-            AppRefreshManager.markRefreshed(RefreshTarget.MESSAGES)
         }
     }
-}
 
     override fun onDestroyView() {
         super.onDestroyView()

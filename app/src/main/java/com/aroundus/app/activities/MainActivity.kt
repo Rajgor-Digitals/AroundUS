@@ -8,6 +8,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.aroundus.app.R
@@ -34,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
         setupBottomNavigation()
         setupDrawer()
+        setupUnreadMessagesBadgeObserver()
         requestNotificationPermission()
         handleOpenProductId(intent)
     }
@@ -72,6 +74,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshDrawerUserData()
+        updateMessagesBadge(com.aroundus.app.utils.UnreadMessageManager.getTotalUnreadCount())
         val myId = com.aroundus.app.network.SupabaseClient.getCurrentUserId()
         if (!myId.isNullOrBlank()) {
             com.aroundus.app.utils.UserPresenceManager.recordUserActive(myId)
@@ -310,6 +313,26 @@ class MainActivity : AppCompatActivity() {
     private fun highlightProfileTab() {
         binding.ivNavProfile.setColorFilter(getColor(R.color.primary))
         binding.tvNavProfile.setTextColor(getColor(R.color.primary))
+    }
+
+    private fun setupUnreadMessagesBadgeObserver() {
+        lifecycleScope.launch {
+            com.aroundus.app.utils.UnreadMessageManager.totalUnreadCountFlow.collect { count ->
+                updateMessagesBadge(count)
+            }
+        }
+    }
+
+    private fun updateMessagesBadge(count: Int) {
+        if (count > 0) {
+            binding.tvNavMessagesBadge.visibility = android.view.View.VISIBLE
+            binding.tvNavMessagesBadge.text = if (count > 99) "99+" else count.toString()
+            binding.navigationDrawer.tvDrawerMessagesBadge.visibility = android.view.View.VISIBLE
+            binding.navigationDrawer.tvDrawerMessagesBadge.text = if (count > 99) "99+" else count.toString()
+        } else {
+            binding.tvNavMessagesBadge.visibility = android.view.View.GONE
+            binding.navigationDrawer.tvDrawerMessagesBadge.visibility = android.view.View.GONE
+        }
     }
 
     private fun resetNavTabs() {
