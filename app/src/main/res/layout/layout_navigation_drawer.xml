@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="320dp"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:background="@color/surface"
     android:clickable="true"
     android:focusable="true"
     android:orientation="vertical">
@@ -14,7 +14,7 @@
         android:id="@+id/drawerHeaderContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#F0FDF4"
+        android:background="@color/drawer_header_background"
         android:paddingStart="20dp"
         android:paddingTop="44dp"
         android:paddingEnd="16dp"
@@ -30,7 +30,7 @@
             android:src="@drawable/ic_close"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="#334155" />
+            app:tint="@color/text_primary" />
 
         <!-- User Avatar -->
         <de.hdodenhof.circleimageview.CircleImageView
@@ -54,7 +54,7 @@
             android:fontFamily="sans-serif-black"
             android:maxLines="1"
             android:text="Neighbor"
-            android:textColor="#0F172A"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             app:layout_constraintEnd_toStartOf="@id/btnCloseDrawer"
             app:layout_constraintStart_toStartOf="@id/ivDrawerAvatar"
@@ -115,7 +115,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#E2E8F0" />
+        android:background="@color/divider" />
 
     <!-- 2. Scrollable Navigation Items -->
     <androidx.core.widget.NestedScrollView
@@ -171,14 +171,14 @@
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
                     android:text="Home &amp; Feed"
-                    android:textColor="#1E293B"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    app:tint="#CBD5E1" />
+                    app:tint="@color/text_tertiary" />
             </LinearLayout>
 
             <!-- Item: Community & Groups -->
@@ -207,14 +207,14 @@
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
                     android:text="Groups &amp; Community"
-                    android:textColor="#1E293B"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    app:tint="#CBD5E1" />
+                    app:tint="@color/text_tertiary" />
             </LinearLayout>
 
             <!-- Item: Marketplace -->
@@ -243,14 +243,14 @@
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
                     android:text="Marketplace (Buy &amp; Sell)"
-                    android:textColor="#1E293B"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    app:tint="#CBD5E1" />
+                    app:tint="@color/text_tertiary" />
             </LinearLayout>
 
             <!-- Item: Events -->
@@ -279,14 +279,14 @@
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
                     android:text="Neighborhood Events"
-                    android:textColor="#1E293B"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    app:tint="#CBD5E1" />
+                    app:tint="@color/text_tertiary" />
             </LinearLayout>
 
             <!-- Section Title: Personal -->
@@ -328,7 +328,7 @@
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
                     android:text="Direct Messages"
-                    android:textColor="#1E293B"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
                 <TextView
@@ -353,7 +353,7 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    app:tint="#CBD5E1" />
+                    app:tint="@color/text_tertiary" />
             </LinearLayout>
 
             <!-- Item: Notifications -->
@@ -382,14 +382,14 @@
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
                     android:text="Notifications &amp; Alerts"
-                    android:textColor="#1E293B"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    app:tint="#CBD5E1" />
+                    app:tint="@color/text_tertiary" />
             </LinearLayout>
 
             <!-- Item: My Profile -->
@@ -418,14 +418,14 @@
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
                     android:text="My Profile"
-                    android:textColor="#1E293B"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    app:tint="#CBD5E1" />
+                    app:tint="@color/text_tertiary" />
             </LinearLayout>
 
             <!-- Item: Settings -->
@@ -454,14 +454,14 @@
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-medium"
                     android:text="Settings &amp; Privacy"
-                    android:textColor="#1E293B"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp" />
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    app:tint="#CBD5E1" />
+                    app:tint="@color/text_tertiary" />
             </LinearLayout>
 
         </LinearLayout>
@@ -471,7 +471,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
+        android:background="@color/surface"
         android:orientation="vertical"
         android:paddingStart="16dp"
         android:paddingTop="12dp"
@@ -482,7 +482,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginBottom="12dp"
-            android:background="#F1F5F9" />
+            android:background="@color/divider" />
 
         <!-- Premium Refined Logout Card / Button -->
         <LinearLayout

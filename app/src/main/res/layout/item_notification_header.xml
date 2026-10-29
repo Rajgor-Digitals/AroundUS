@@ -17,7 +17,7 @@
         android:layout_weight="1"
         android:fontFamily="sans-serif-bold"
         android:text="Today"
-        android:textColor="#334155"
+        android:textColor="@color/text_primary"
         android:textSize="15sp" />
 
     <LinearLayout

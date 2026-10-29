@@ -33,7 +33,6 @@ class SettingsFragment : Fragment() {
 
     companion object {
         private const val PREFS_SETTINGS = "aroundus_settings_prefs"
-        private const val KEY_DARK_MODE = "dark_mode"
         private const val KEY_LANGUAGE = "selected_language"
         private const val KEY_PRIVACY_ONLINE = "privacy_online_status"
         private const val KEY_PRIVACY_MESSAGES = "privacy_allow_messages"
@@ -55,7 +54,6 @@ class SettingsFragment : Fragment() {
         prefs = requireContext().getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
 
         setupToolbar()
-        setupDarkMode()
         setupLanguage()
         setupEditProfile()
         setupPrivacy()
@@ -70,19 +68,6 @@ class SettingsFragment : Fragment() {
 
     private fun setupToolbar() {
         binding.toolbar.setNavigationOnClickListener { findNavController().popBackStack() }
-    }
-
-    private fun setupDarkMode() {
-        val isDark = prefs.getBoolean(KEY_DARK_MODE, false)
-        binding.switchDarkMode.isChecked = isDark
-
-        binding.switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean(KEY_DARK_MODE, isChecked).apply()
-            AppCompatDelegate.setDefaultNightMode(
-                if (isChecked) AppCompatDelegate.MODE_NIGHT_YES
-                else AppCompatDelegate.MODE_NIGHT_NO
-            )
-        }
     }
 
     private fun setupLanguage() {

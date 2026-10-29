@@ -4,13 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC">
+    android:background="@color/background">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
+        android:background="@color/surface"
         android:elevation="2dp"
         app:elevation="2dp">
 
@@ -32,7 +32,7 @@
                 android:contentDescription="Menu"
                 android:padding="8dp"
                 android:src="@drawable/ic_menu_custom"
-                app:tint="#0F172A" />
+                app:tint="@color/text_primary" />
 
             <!-- Title & Location Subtitle -->
             <LinearLayout
@@ -47,7 +47,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-bold"
                     android:text="Buy &amp; Sell"
-                    android:textColor="#0F172A"
+                    android:textColor="@color/text_primary"
                     android:textSize="18sp" />
 
                 <LinearLayout
@@ -85,7 +85,7 @@
                 android:contentDescription="Saved Items"
                 android:padding="8dp"
                 android:src="@drawable/ic_bookmark_outline"
-                app:tint="#0F172A" />
+                app:tint="@color/text_primary" />
 
             <!-- Sort / Filter Button -->
             <ImageButton
@@ -136,7 +136,7 @@
                     android:imeOptions="actionSearch"
                     android:inputType="text"
                     android:maxLines="1"
-                    android:textColor="#0F172A"
+                    android:textColor="@color/text_primary"
                     android:textColorHint="#94A3B8"
                     android:textSize="13.5sp" />
 
@@ -427,7 +427,7 @@
                 android:layout_marginTop="16dp"
                 android:fontFamily="sans-serif-bold"
                 android:text="No Listings Found"
-                android:textColor="#0F172A"
+                android:textColor="@color/text_primary"
                 android:textSize="17sp" />
 
             <TextView

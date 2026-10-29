@@ -3,12 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="@color/background">
 
 <LinearLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:background="@color/background"
     android:orientation="vertical">
 
     <!-- Top App Bar -->
@@ -30,7 +30,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Back"
             android:src="@drawable/ic_arrow_back"
-            app:tint="#0F172A" />
+            app:tint="@color/text_primary" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -45,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-black"
                 android:text="Events"
-                android:textColor="#0F172A"
+                android:textColor="@color/text_primary"
                 android:textSize="22sp" />
 
             <TextView
@@ -237,7 +237,7 @@
                 android:fontFamily="sans-serif"
                 android:hint="Search events..."
                 android:inputType="text"
-                android:textColor="#0F172A"
+                android:textColor="@color/text_primary"
                 android:textColorHint="#94A3B8"
                 android:textSize="14sp" />
 
@@ -471,7 +471,7 @@
                         android:layout_marginTop="16dp"
                         android:fontFamily="sans-serif-black"
                         android:text="No Community Events Yet"
-                        android:textColor="#0F172A"
+                        android:textColor="@color/text_primary"
                         android:textSize="22sp" />
 
                     <TextView

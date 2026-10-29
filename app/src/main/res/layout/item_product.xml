@@ -5,10 +5,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="6dp"
-    app:cardBackgroundColor="#FFFFFF"
+    app:cardBackgroundColor="@color/card_background"
     app:cardCornerRadius="18dp"
     app:cardElevation="2dp"
-    app:strokeColor="#E2E8F0"
+    app:strokeColor="@color/border"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -111,7 +111,7 @@
                 android:paddingTop="3dp"
                 android:paddingEnd="9dp"
                 android:paddingBottom="3dp"
-                android:textColor="#0F172A"
+                android:textColor="@color/text_primary"
                 android:textSize="10.5sp"
                 tools:text="Like New" />
 
@@ -134,7 +134,7 @@
                 android:maxLines="2"
                 android:minLines="2"
                 android:lineSpacingExtra="2dp"
-                android:textColor="#0F172A"
+                android:textColor="@color/text_primary"
                 android:textSize="13.5sp"
                 tools:text="Solid Teak Wood Study Desk" />
 
@@ -183,7 +183,7 @@
                 android:layout_height="1dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
-                android:background="#F1F5F9" />
+                android:background="@color/divider" />
 
             <!-- Seller & Quick Chat Row -->
             <LinearLayout
@@ -207,7 +207,7 @@
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
                     android:maxLines="1"
-                    android:textColor="#334155"
+                    android:textColor="@color/text_primary"
                     android:textSize="11sp"
                     tools:text="Gaurav Rajgor" />
 

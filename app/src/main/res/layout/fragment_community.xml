@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="@color/background">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshLayout"
@@ -47,7 +47,7 @@
                         android:layout_height="20dp"
                         android:layout_gravity="center"
                         android:src="@drawable/ic_menu_custom"
-                        app:tint="#1E293B" />
+                        app:tint="@color/text_primary" />
                 </FrameLayout>
 
                 <!-- Center Title and Subtitle -->
@@ -114,7 +114,7 @@
                             android:layout_height="20dp"
                             android:layout_gravity="center"
                             android:src="@drawable/ic_bell_outline"
-                            app:tint="#1E293B" />
+                            app:tint="@color/text_primary" />
                     </FrameLayout>
 
                     <TextView

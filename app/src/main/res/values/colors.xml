@@ -64,6 +64,7 @@
     <color name="card_background">#FFFFFF</color>
     <color name="input_background">#F8FAFC</color>
     <color name="input_stroke">#E2E8F0</color>
+    <color name="drawer_header_background">#F0FDF4</color>
 
     <!-- Status Colors -->
     <color name="status_active">#10B981</color>

@@ -7,10 +7,10 @@
     android:layout_marginStart="12dp"
     android:layout_marginEnd="12dp"
     android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="#FFFFFF"
+    app:cardBackgroundColor="@color/card_background"
     app:cardCornerRadius="16dp"
     app:cardElevation="1dp"
-    app:strokeColor="#F1F5F9"
+    app:strokeColor="@color/border"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -111,7 +111,7 @@
                     android:fontFamily="sans-serif-black"
                     android:maxLines="1"
                     android:singleLine="true"
-                    android:textColor="#0F172A"
+                    android:textColor="@color/text_primary"
                     android:textSize="13.5sp"
                     tools:text="SHRIKANT RAJGOR" />
 
@@ -179,7 +179,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-black"
-                    android:textColor="#0F172A"
+                    android:textColor="@color/text_primary"
                     android:textSize="15.5sp"
                     tools:text="Need a Plumber" />
 
@@ -190,7 +190,7 @@
                     android:layout_marginTop="4dp"
                     android:fontFamily="sans-serif"
                     android:lineSpacingExtra="2dp"
-                    android:textColor="#475569"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13.5sp"
                     tools:text="Hi everyone, I need a reliable plumber to fix a water leakage issue at my home." />
             </LinearLayout>
@@ -202,7 +202,7 @@
                 android:layout_marginStart="12dp"
                 app:cardCornerRadius="10dp"
                 app:cardElevation="0dp"
-                app:strokeColor="#E2E8F0"
+                app:strokeColor="@color/border"
                 app:strokeWidth="1dp">
 
                 <ImageView
@@ -221,7 +221,7 @@
             android:layout_height="1dp"
             android:layout_marginTop="12dp"
             android:layout_marginBottom="10dp"
-            android:background="#F1F5F9" />
+            android:background="@color/divider" />
 
         <!-- Bottom Action Row: Likes, Comments, Share, Bookmark -->
         <LinearLayout

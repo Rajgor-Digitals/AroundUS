@@ -27,7 +27,7 @@
             android:contentDescription="Menu"
             android:padding="8dp"
             android:src="@drawable/ic_menu_custom"
-            app:tint="#1E293B" />
+            app:tint="@color/text_primary" />
 
         <!-- Center Title & Subtitle with Header Unread Badge -->
         <LinearLayout
@@ -49,7 +49,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-bold"
                     android:text="Messages"
-                    android:textColor="#0F172A"
+                    android:textColor="@color/text_primary"
                     android:textSize="19sp" />
 
                 <!-- Premium Header Unread Pill Chip -->
@@ -93,7 +93,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif"
                     android:text="Stay connected with your community"
-                    android:textColor="#64748B"
+                    android:textColor="@color/text_secondary"
                     android:textSize="11.5sp" />
             </LinearLayout>
         </LinearLayout>
@@ -147,7 +147,7 @@
             android:imeOptions="actionSearch"
             android:inputType="text"
             android:maxLines="1"
-            android:textColor="#0F172A"
+            android:textColor="@color/text_primary"
             android:textColorHint="#94A3B8"
             android:textSize="13.5sp" />
 
@@ -263,7 +263,7 @@
                     android:layout_marginStart="6dp"
                     android:fontFamily="sans-serif-medium"
                     android:text="Groups"
-                    android:textColor="#64748B"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
                 <!-- Groups Tab Badge -->
@@ -324,7 +324,7 @@
                     android:layout_marginStart="6dp"
                     android:fontFamily="sans-serif-medium"
                     android:text="Announcements"
-                    android:textColor="#64748B"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
 
@@ -370,7 +370,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-bold"
                 android:text="All Conversations"
-                android:textColor="#0F172A"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
             <TextView
@@ -378,7 +378,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
                 android:text="▾"
-                android:textColor="#64748B"
+                android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
             <!-- Pill showing unread count in filter -->

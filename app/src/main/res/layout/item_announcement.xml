@@ -7,10 +7,10 @@
     android:layout_marginStart="16dp"
     android:layout_marginEnd="16dp"
     android:layout_marginBottom="16dp"
-    app:cardBackgroundColor="#FFFFFF"
+    app:cardBackgroundColor="@color/card_background"
     app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
-    app:strokeColor="#F1F5F9"
+    app:strokeColor="@color/border"
     app:strokeWidth="1.2dp">
 
     <LinearLayout
@@ -51,7 +51,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-black"
-                        android:textColor="#0F172A"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         tools:text="SHRIKANT RAJGOR" />
@@ -120,7 +120,7 @@
                 android:layout_marginEnd="8dp"
                 android:layout_weight="1"
                 android:fontFamily="sans-serif-bold"
-                android:textColor="#0F172A"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 tools:text="Community Meeting This Sunday" />
@@ -148,7 +148,7 @@
             android:layout_marginTop="8dp"
             android:fontFamily="sans-serif"
             android:lineSpacingExtra="3dp"
-            android:textColor="#475569"
+            android:textColor="@color/text_secondary"
             android:textSize="13.5sp"
             tools:text="We are organizing a community meeting this Sunday at Bhujpur Community Hall to discuss local development, cleanliness drive and upcoming events. All residents are requested to attend and share your suggestions." />
 
@@ -190,7 +190,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-bold"
-                        android:textColor="#0F172A"
+                        android:textColor="@color/text_primary"
                         android:textSize="12.5sp"
                         android:textStyle="bold"
                         tools:text="Sun, 26 Oct 2026" />
@@ -241,7 +241,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-bold"
-                        android:textColor="#0F172A"
+                        android:textColor="@color/text_primary"
                         android:textSize="12.5sp"
                         android:textStyle="bold"
                         tools:text="Bhujpur Community Hall" />

@@ -10,7 +10,7 @@
         android:id="@+id/nestedScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FAFAFA"
+        android:background="@color/background"
         android:fillViewport="true">
 
     <LinearLayout
@@ -23,7 +23,7 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#FFFFFF"
+            android:background="@color/surface"
             android:paddingStart="16dp"
             android:paddingTop="36dp"
             android:paddingEnd="16dp"
@@ -37,6 +37,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Menu"
                 android:src="@drawable/ic_menu_hamburger"
+                app:tint="@color/text_primary"
                 app:layout_constraintBottom_toBottomOf="@id/llHeaderBrand"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@id/llHeaderBrand" />
@@ -63,7 +64,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-black"
                         android:text="Around "
-                        android:textColor="#111827"
+                        android:textColor="@color/text_primary"
                         android:textSize="22sp" />
 
                     <TextView
@@ -102,7 +103,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Search"
                     android:src="@drawable/ic_search"
-                    app:tint="#111827" />
+                    app:tint="@color/text_primary" />
 
                 <FrameLayout
                     android:id="@+id/btnNotifications"
@@ -119,7 +120,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="Notifications"
                         android:src="@drawable/ic_bell_outlined"
-                        app:tint="#1E293B" />
+                        app:tint="@color/text_primary" />
 
                     <TextView
                         android:id="@+id/tvNotificationBadge"
@@ -185,7 +186,7 @@
                     android:fontFamily="sans-serif-bold"
                     android:maxLines="1"
                     android:text="Detecting location..."
-                    android:textColor="#111827"
+                    android:textColor="@color/text_primary"
                     android:textSize="13.5sp" />
 
                 <ImageView

@@ -10,7 +10,7 @@
         android:id="@+id/nestedScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#F8FAFC"
+        android:background="@color/background"
         android:fillViewport="true">
 
     <LinearLayout
@@ -46,7 +46,7 @@
                     android:layout_gravity="center"
                     android:contentDescription="Menu"
                     android:src="@drawable/ic_menu_hamburger"
-                    app:tint="#111827" />
+                    app:tint="@color/text_primary" />
             </FrameLayout>
 
             <!-- Right Actions Container: Settings & Notifications -->
@@ -74,7 +74,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="Settings"
                         android:src="@drawable/ic_settings"
-                        app:tint="#111827" />
+                        app:tint="@color/text_primary" />
                 </FrameLayout>
 
                 <!-- Notifications Button with Badge -->
@@ -93,7 +93,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="Notifications"
                         android:src="@drawable/ic_notifications"
-                        app:tint="#111827" />
+                        app:tint="@color/text_primary" />
 
                     <!-- Unread Badge "3" -->
                     <TextView

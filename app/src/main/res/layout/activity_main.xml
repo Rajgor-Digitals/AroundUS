@@ -11,7 +11,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FAFAFA">
+        android:background="@color/background">
 
         <!-- NavHostFragment taking full height above the bottom bar -->
         <androidx.fragment.app.FragmentContainerView
@@ -31,7 +31,7 @@
             android:id="@+id/bottomBarContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#FFFFFF"
+            android:background="@color/surface"
             android:elevation="16dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -41,7 +41,7 @@
                 android:id="@+id/customBottomBar"
                 android:layout_width="match_parent"
                 android:layout_height="62dp"
-                android:background="#FFFFFF"
+                android:background="@color/surface"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingBottom="4dp">

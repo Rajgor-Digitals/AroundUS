@@ -619,7 +619,7 @@ class ChatListFragment : Fragment() {
                     }
                 }
             } finally {
-                binding.swipeRefreshLayout.isRefreshing = false
+                _binding?.swipeRefreshLayout?.isRefreshing = false
                 AppRefreshManager.markRefreshed(RefreshTarget.MESSAGES)
             }
         }

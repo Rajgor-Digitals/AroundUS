@@ -75,7 +75,7 @@
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-bold"
                     android:maxLines="1"
-                    android:textColor="#0F172A"
+                    android:textColor="@color/text_primary"
                     android:textSize="15.5sp"
                     tools:text="Priya Sharma" />
 
@@ -100,7 +100,7 @@
                 android:ellipsize="end"
                 android:fontFamily="sans-serif"
                 android:maxLines="1"
-                android:textColor="#64748B"
+                android:textColor="@color/text_secondary"
                 android:textSize="13sp"
                 tools:text="Hey Gaurav, thanks for..." />
 
@@ -118,7 +118,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
-                android:textColor="#64748B"
+                android:textColor="@color/text_secondary"
                 android:textSize="11.5sp"
                 tools:text="9:40 AM" />
 
@@ -149,6 +149,6 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginStart="76dp"
-        android:background="#F1F5F9" />
+        android:background="@color/divider" />
 
 </LinearLayout>

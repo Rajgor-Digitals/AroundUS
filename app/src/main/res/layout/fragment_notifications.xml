@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:background="@color/background"
     android:orientation="vertical">
 
     <!-- Top Header Bar -->
@@ -44,7 +44,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-bold"
                 android:text="Notifications"
-                android:textColor="#0F172A"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp" />
 
             <TextView
@@ -53,7 +53,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
                 android:text="Stay updated with your community"
-                android:textColor="#64748B"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -134,7 +134,7 @@
                     android:layout_height="16dp"
                     android:layout_marginEnd="6dp"
                     android:src="@drawable/ic_announcements_megaphone"
-                    app:tint="#334155" />
+                    app:tint="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/tvFilterAnnouncements"
@@ -142,7 +142,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
                     android:text="Announcements"
-                    android:textColor="#334155"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
 
@@ -166,7 +166,7 @@
                     android:layout_height="16dp"
                     android:layout_marginEnd="6dp"
                     android:src="@drawable/ic_chat_bubble"
-                    app:tint="#334155" />
+                    app:tint="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/tvFilterMessages"
@@ -174,7 +174,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
                     android:text="Messages"
-                    android:textColor="#334155"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
 
@@ -198,7 +198,7 @@
                     android:layout_height="16dp"
                     android:layout_marginEnd="6dp"
                     android:src="@drawable/ic_event"
-                    app:tint="#334155" />
+                    app:tint="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/tvFilterEvents"
@@ -206,7 +206,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
                     android:text="Events"
-                    android:textColor="#334155"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
 
@@ -229,7 +229,7 @@
                     android:layout_height="16dp"
                     android:layout_marginEnd="6dp"
                     android:src="@drawable/ic_support_heart"
-                    app:tint="#334155" />
+                    app:tint="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/tvFilterHelp"
@@ -237,7 +237,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
                     android:text="Help"
-                    android:textColor="#334155"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
 
@@ -285,7 +285,7 @@
                     android:layout_marginTop="12dp"
                     android:fontFamily="sans-serif-bold"
                     android:text="No Notifications Yet"
-                    android:textColor="#334155"
+                    android:textColor="@color/text_secondary"
                     android:textSize="16sp" />
 
                 <TextView
@@ -294,7 +294,7 @@
                     android:layout_marginTop="4dp"
                     android:gravity="center"
                     android:text="Pull down to refresh or check back later for community updates."
-                    android:textColor="#64748B"
+                    android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
 

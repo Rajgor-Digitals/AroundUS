@@ -92,7 +92,7 @@
             android:fontFamily="sans-serif"
             android:lineSpacingExtra="2dp"
             android:text="SHRIKANT RAJGOR posted an announcement: &quot;Vavajodo ache to&quot;"
-            android:textColor="#0F172A"
+            android:textColor="@color/text_primary"
             android:textSize="13sp" />
 
         <LinearLayout
@@ -109,7 +109,7 @@
                 android:layout_height="12dp"
                 android:layout_marginEnd="4dp"
                 android:src="@drawable/ic_location"
-                app:tint="#64748B" />
+                app:tint="@color/text_secondary" />
 
             <TextView
                 android:id="@+id/tvSubtitle"
@@ -117,7 +117,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
                 android:text="Bhujpur, Kutch  •  32m ago"
-                android:textColor="#64748B"
+                android:textColor="@color/text_secondary"
                 android:textSize="11.5sp" />
         </LinearLayout>
 
@@ -166,7 +166,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Options"
                 android:src="@drawable/ic_more_vert"
-                app:tint="#64748B" />
+                app:tint="@color/text_secondary" />
 
             <View
                 android:id="@+id/unreadDot"
