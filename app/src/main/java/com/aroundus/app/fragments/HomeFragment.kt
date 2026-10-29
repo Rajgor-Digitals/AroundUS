@@ -149,9 +149,10 @@ class HomeFragment : Fragment() {
             postList.addAll(cached)
             postAdapter.notifyDataSetChanged()
 
-            val announcements = cached.filter {
-                it.category.equals("Announcement", ignoreCase = true) ||
-                it.category.equals("Announcements", ignoreCase = true)
+            val announcements = cached.filter { post ->
+                listOf("Announcement", "Announcements", "Community", "Events", "Event",
+                       "Alert", "Alerts", "Emergency", "Notice")
+                    .any { it.equals(post.category, ignoreCase = true) }
             }
             if (announcements.isNotEmpty()) {
                 announcementList.clear()
@@ -255,9 +256,10 @@ class HomeFragment : Fragment() {
                 }
 
                 // Filter & Smart Diffing for Announcements
-                val announcements = fetchedPosts.filter {
-                    it.category.equals("Announcement", ignoreCase = true) ||
-                    it.category.equals("Announcements", ignoreCase = true)
+                val announcements = fetchedPosts.filter { post ->
+                    listOf("Announcement", "Announcements", "Community", "Events", "Event",
+                           "Alert", "Alerts", "Emergency", "Notice")
+                        .any { it.equals(post.category, ignoreCase = true) }
                 }
 
                 if (announcements != announcementList) {

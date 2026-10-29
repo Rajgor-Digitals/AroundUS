@@ -40,6 +40,7 @@ class CreatePostFragment : Fragment() {
     private val binding get() = _binding!!
 
     private var selectedCategory = "General"
+    private var selectedAnnouncementSubtype = "Community" // Community, Events, Alert
     private var selectedAudience = "Public"
     private var selectedLocation = ""
     private var selectedMediaUri: Uri? = null
@@ -224,10 +225,16 @@ class CreatePostFragment : Fragment() {
 
                 binding.btnPostHeader.text = "Publishing..."
 
+                val finalCategory = if (selectedCategory.equals("Announcement", ignoreCase = true)) {
+                    selectedAnnouncementSubtype
+                } else {
+                    selectedCategory
+                }
+
                 // 2. Insert post metadata into Supabase posts table with the permanent remote URL
                 val result = postRepository.createPost(
                     text = content,
-                    type = selectedCategory,
+                    type = finalCategory,
                     media = remoteMediaUrl,
                     location = selectedLocation,
                     context = requireContext().applicationContext
@@ -254,8 +261,36 @@ class CreatePostFragment : Fragment() {
     }
 
     private fun setupCategorySelectors() {
-        arguments?.getString("category")?.let {
-            if (it.isNotBlank()) selectedCategory = it
+        arguments?.getString("category")?.let { incoming ->
+            if (incoming.isNotBlank()) {
+                when {
+                    incoming.equals("Announcement", ignoreCase = true) ||
+                    incoming.equals("Announcements", ignoreCase = true) -> {
+                        selectedCategory = "Announcement"
+                    }
+                    incoming.equals("Community", ignoreCase = true) -> {
+                        selectedCategory = "Announcement"
+                        selectedAnnouncementSubtype = "Community"
+                    }
+                    incoming.equals("Event", ignoreCase = true) ||
+                    incoming.equals("Events", ignoreCase = true) -> {
+                        selectedCategory = "Announcement"
+                        selectedAnnouncementSubtype = "Events"
+                    }
+                    incoming.equals("Alert", ignoreCase = true) ||
+                    incoming.equals("Alerts", ignoreCase = true) -> {
+                        selectedCategory = "Announcement"
+                        selectedAnnouncementSubtype = "Alert"
+                    }
+                    incoming.equals("Help & Support", ignoreCase = true) ||
+                    incoming.equals("Help", ignoreCase = true) -> {
+                        selectedCategory = "Help & Support"
+                    }
+                    else -> {
+                        selectedCategory = "General"
+                    }
+                }
+            }
         }
 
         val categoryViews = listOf(
@@ -272,6 +307,72 @@ class CreatePostFragment : Fragment() {
                 updateCategorySelection(categoryViews)
             }
         }
+
+        setupAnnouncementSubtypeChips()
+    }
+
+    private fun setupAnnouncementSubtypeChips() {
+        fun updateSubtypeChips(selected: String) {
+            val isCommunity = selected.equals("Community", ignoreCase = true)
+            val isEvents = selected.equals("Events", ignoreCase = true) || selected.equals("Event", ignoreCase = true)
+            val isAlert = selected.equals("Alert", ignoreCase = true) || selected.equals("Alerts", ignoreCase = true)
+
+            // 1. Community Chip
+            if (isCommunity) {
+                binding.chipAnnounceCommunity.setBackgroundResource(R.drawable.bg_announcement_chip_community_selected)
+                binding.tvAnnounceSubtypeCommunity.setTextColor(android.graphics.Color.parseColor("#15803D"))
+                binding.ivAnnounceSubtypeCommunity.setColorFilter(android.graphics.Color.parseColor("#15803D"))
+                binding.tvAnnounceSubtypeCommunity.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            } else {
+                binding.chipAnnounceCommunity.setBackgroundResource(R.drawable.bg_announcement_chip_subtype_unselected)
+                binding.tvAnnounceSubtypeCommunity.setTextColor(android.graphics.Color.parseColor("#475569"))
+                binding.ivAnnounceSubtypeCommunity.setColorFilter(android.graphics.Color.parseColor("#64748B"))
+                binding.tvAnnounceSubtypeCommunity.typeface = android.graphics.Typeface.DEFAULT
+            }
+
+            // 2. Events Chip
+            if (isEvents) {
+                binding.chipAnnounceEvent.setBackgroundResource(R.drawable.bg_announcement_chip_events_selected)
+                binding.tvAnnounceSubtypeEvent.setTextColor(android.graphics.Color.parseColor("#0F766E"))
+                binding.ivAnnounceSubtypeEvent.setColorFilter(android.graphics.Color.parseColor("#0F766E"))
+                binding.tvAnnounceSubtypeEvent.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            } else {
+                binding.chipAnnounceEvent.setBackgroundResource(R.drawable.bg_announcement_chip_subtype_unselected)
+                binding.tvAnnounceSubtypeEvent.setTextColor(android.graphics.Color.parseColor("#475569"))
+                binding.ivAnnounceSubtypeEvent.setColorFilter(android.graphics.Color.parseColor("#64748B"))
+                binding.tvAnnounceSubtypeEvent.typeface = android.graphics.Typeface.DEFAULT
+            }
+
+            // 3. Alert Chip
+            if (isAlert) {
+                binding.chipAnnounceAlert.setBackgroundResource(R.drawable.bg_announcement_chip_alerts_selected)
+                binding.tvAnnounceSubtypeAlert.setTextColor(android.graphics.Color.parseColor("#B91C1C"))
+                binding.ivAnnounceSubtypeAlert.setColorFilter(android.graphics.Color.parseColor("#B91C1C"))
+                binding.tvAnnounceSubtypeAlert.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            } else {
+                binding.chipAnnounceAlert.setBackgroundResource(R.drawable.bg_announcement_chip_subtype_unselected)
+                binding.tvAnnounceSubtypeAlert.setTextColor(android.graphics.Color.parseColor("#475569"))
+                binding.ivAnnounceSubtypeAlert.setColorFilter(android.graphics.Color.parseColor("#64748B"))
+                binding.tvAnnounceSubtypeAlert.typeface = android.graphics.Typeface.DEFAULT
+            }
+        }
+
+        updateSubtypeChips(selectedAnnouncementSubtype)
+
+        binding.chipAnnounceCommunity.setOnClickListener {
+            selectedAnnouncementSubtype = "Community"
+            updateSubtypeChips("Community")
+        }
+
+        binding.chipAnnounceEvent.setOnClickListener {
+            selectedAnnouncementSubtype = "Events"
+            updateSubtypeChips("Events")
+        }
+
+        binding.chipAnnounceAlert.setOnClickListener {
+            selectedAnnouncementSubtype = "Alert"
+            updateSubtypeChips("Alert")
+        }
     }
 
     private fun updateCategorySelection(categoryViews: List<Pair<Triple<View, TextView, View>, String>>) {
@@ -279,7 +380,7 @@ class CreatePostFragment : Fragment() {
         val defaultTextColor = android.graphics.Color.parseColor("#334155")
 
         categoryViews.forEach { (views, categoryName) ->
-            val isSelected = categoryName == selectedCategory
+            val isSelected = categoryName.equals(selectedCategory, ignoreCase = true)
             val (container, textView, line) = views
             if (isSelected) {
                 container.setBackgroundResource(R.drawable.bg_post_type_selected)
@@ -291,6 +392,9 @@ class CreatePostFragment : Fragment() {
                 line.visibility = View.GONE
             }
         }
+
+        val isAnnouncement = selectedCategory.equals("Announcement", ignoreCase = true)
+        binding.layoutAnnouncementSubtype.visibility = if (isAnnouncement) View.VISIBLE else View.GONE
     }
 
     private fun setupInputCounter() {

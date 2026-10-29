@@ -324,6 +324,7 @@ class AnnouncementsFragment : Fragment() {
                         val filteredPosts = posts.filter { post ->
                             post.category.equals("Announcement", ignoreCase = true) ||
                                     post.category.equals("Announcements", ignoreCase = true) ||
+                                    post.category.equals("Community", ignoreCase = true) ||
                                     post.category.equals("Alert", ignoreCase = true) ||
                                     post.category.equals("Alerts", ignoreCase = true) ||
                                     post.category.equals("Event", ignoreCase = true) ||

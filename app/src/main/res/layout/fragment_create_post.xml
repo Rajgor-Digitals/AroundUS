@@ -224,6 +224,134 @@
             </LinearLayout>
         </HorizontalScrollView>
 
+        <!-- Announcement Sub-type Selector Row (shown only when Announcement tab is selected) -->
+        <HorizontalScrollView
+            android:id="@+id/layoutAnnouncementSubtype"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:clipToPadding="false"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Announcement Type:"
+                    android:textSize="12sp"
+                    android:textColor="#64748B"
+                    android:fontFamily="sans-serif-bold"
+                    android:layout_marginEnd="10dp" />
+
+                <!-- Community chip -->
+                <LinearLayout
+                    android:id="@+id/chipAnnounceCommunity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_announcement_chip_community_selected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:id="@+id/ivAnnounceSubtypeCommunity"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="Community"
+                        android:src="@drawable/ic_people"
+                        app:tint="#15803D" />
+
+                    <TextView
+                        android:id="@+id/tvAnnounceSubtypeCommunity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Community"
+                        android:textSize="12.5sp"
+                        android:fontFamily="sans-serif-bold"
+                        android:textColor="#15803D" />
+                </LinearLayout>
+
+                <!-- Event chip -->
+                <LinearLayout
+                    android:id="@+id/chipAnnounceEvent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_announcement_chip_subtype_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:id="@+id/ivAnnounceSubtypeEvent"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="Event"
+                        android:src="@drawable/ic_event"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvAnnounceSubtypeEvent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Event"
+                        android:textSize="12.5sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="#475569" />
+                </LinearLayout>
+
+                <!-- Alert chip -->
+                <LinearLayout
+                    android:id="@+id/chipAnnounceAlert"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_announcement_chip_subtype_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:id="@+id/ivAnnounceSubtypeAlert"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="Alert"
+                        android:src="@drawable/ic_bell_outline"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvAnnounceSubtypeAlert"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Alert"
+                        android:textSize="12.5sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="#475569" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </HorizontalScrollView>
+
         <!-- Main Card: Author Row + Textarea Input + Media Action Row -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"

@@ -302,7 +302,34 @@ class PostDetailFragment : Fragment() {
         val loc = post.neighborhood ?: "Bhujpur, Kutch"
         val time = post.timeAgo ?: "Just now"
         binding.tvLocationTime.text = "$loc · $time"
-        binding.chipCategory.text = post.category ?: "General"
+        val category = post.category ?: "General"
+        binding.chipCategory.text = category
+        when {
+            category.equals("Community", ignoreCase = true) -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#DCFCE7"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#15803D"))
+            }
+            category.equals("Events", ignoreCase = true) || category.equals("Event", ignoreCase = true) -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#CCFBF1"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#0F766E"))
+            }
+            category.equals("Alert", ignoreCase = true) || category.equals("Alerts", ignoreCase = true) || category.equals("Emergency", ignoreCase = true) -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FEE2E2"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#B91C1C"))
+            }
+            category.equals("Help & Support", ignoreCase = true) || category.contains("Help", ignoreCase = true) -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#EDE9FE"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#7C3AED"))
+            }
+            category.equals("Announcement", ignoreCase = true) || category.equals("Announcements", ignoreCase = true) -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FEF3C7"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#D97706"))
+            }
+            else -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#DBEAFE"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#2563EB"))
+            }
+        }
         binding.tvPostText.text = post.text ?: ""
 
         // Author Check
