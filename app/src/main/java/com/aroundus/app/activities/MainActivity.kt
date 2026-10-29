@@ -13,7 +13,9 @@ import androidx.navigation.fragment.NavHostFragment
 import com.aroundus.app.R
 import com.aroundus.app.databinding.ActivityMainBinding
 import com.aroundus.app.network.SupabaseClient
+import com.aroundus.app.utils.UserPresenceManager
 import com.aroundus.app.utils.loadUserAvatar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -175,8 +177,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.navigationDrawer.menuDrawerLogout.setOnClickListener {
-            closeDrawer()
-            performLogout()
+            showLogoutConfirmationDialog()
         }
 
         // Handle back button: Close drawer first if open
@@ -192,6 +193,18 @@ class MainActivity : AppCompatActivity() {
         })
 
         refreshDrawerUserData()
+    }
+
+    private fun showLogoutConfirmationDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Log Out")
+            .setMessage("Are you sure you want to log out of AroundUS? You'll need to log back in to interact with your neighborhood.")
+            .setPositiveButton("Log Out") { _, _ ->
+                closeDrawer()
+                performLogout()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun refreshDrawerUserData() {
@@ -231,6 +244,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun performLogout() {
+        val currentUid = SupabaseClient.getCurrentUserId() ?: ""
+        if (currentUid.isNotBlank()) {
+            UserPresenceManager.setUserOnline(currentUid, false)
+        }
         SupabaseClient.clearSession()
         Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
         val intent = Intent(this, LoginActivity::class.java).apply {
