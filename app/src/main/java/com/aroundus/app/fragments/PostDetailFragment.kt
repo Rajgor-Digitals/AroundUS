@@ -317,6 +317,22 @@ class PostDetailFragment : Fragment() {
                 binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FEE2E2"))
                 binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#B91C1C"))
             }
+            category.equals("General Help", ignoreCase = true) || category.contains("general", ignoreCase = true) -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#ECFDF5"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#059669"))
+            }
+            category.equals("Lost & Found", ignoreCase = true) || category.contains("lost", ignoreCase = true) -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FFFBEB"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#D97706"))
+            }
+            category.equals("Recommendations", ignoreCase = true) || category.contains("recommend", ignoreCase = true) -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#EFF6FF"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#2563EB"))
+            }
+            category.equals("Services", ignoreCase = true) || category.contains("service", ignoreCase = true) -> {
+                binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F5F3FF"))
+                binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#7C3AED"))
+            }
             category.equals("Help & Support", ignoreCase = true) || category.contains("Help", ignoreCase = true) -> {
                 binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#EDE9FE"))
                 binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#7C3AED"))

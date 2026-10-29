@@ -352,6 +352,200 @@
             </LinearLayout>
         </HorizontalScrollView>
 
+        <!-- Help & Support Sub-type Selector Row (shown only when Help & Support tab is selected) -->
+        <HorizontalScrollView
+            android:id="@+id/layoutHelpSubtype"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:clipToPadding="false"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Request Type:"
+                    android:textSize="12sp"
+                    android:textColor="#64748B"
+                    android:fontFamily="sans-serif-bold"
+                    android:layout_marginEnd="10dp" />
+
+                <!-- General Help chip -->
+                <LinearLayout
+                    android:id="@+id/chipHelpGeneral"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_help_chip_general_selected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:id="@+id/ivHelpSubtypeGeneral"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="General Help"
+                        android:src="@drawable/ic_support_heart"
+                        app:tint="#059669" />
+
+                    <TextView
+                        android:id="@+id/tvHelpSubtypeGeneral"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="General Help"
+                        android:textSize="12.5sp"
+                        android:fontFamily="sans-serif-bold"
+                        android:textColor="#059669" />
+                </LinearLayout>
+
+                <!-- Lost & Found chip -->
+                <LinearLayout
+                    android:id="@+id/chipHelpLostFound"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_announcement_chip_subtype_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:id="@+id/ivHelpSubtypeLostFound"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="Lost &amp; Found"
+                        android:src="@drawable/ic_search"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvHelpSubtypeLostFound"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Lost &amp; Found"
+                        android:textSize="12.5sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="#475569" />
+                </LinearLayout>
+
+                <!-- Recommendations chip -->
+                <LinearLayout
+                    android:id="@+id/chipHelpRecommendations"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_announcement_chip_subtype_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:id="@+id/ivHelpSubtypeRecommendations"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="Recommendations"
+                        android:src="@drawable/ic_star"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvHelpSubtypeRecommendations"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Recommendations"
+                        android:textSize="12.5sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="#475569" />
+                </LinearLayout>
+
+                <!-- Emergency chip -->
+                <LinearLayout
+                    android:id="@+id/chipHelpEmergency"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_announcement_chip_subtype_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:id="@+id/ivHelpSubtypeEmergency"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="Emergency"
+                        android:src="@drawable/ic_bell_outline"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvHelpSubtypeEmergency"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Emergency"
+                        android:textSize="12.5sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="#475569" />
+                </LinearLayout>
+
+                <!-- Services chip -->
+                <LinearLayout
+                    android:id="@+id/chipHelpServices"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_announcement_chip_subtype_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="14dp">
+
+                    <ImageView
+                        android:id="@+id/ivHelpSubtypeServices"
+                        android:layout_width="15dp"
+                        android:layout_height="15dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="Services"
+                        android:src="@drawable/ic_tools_wrench"
+                        app:tint="#64748B" />
+
+                    <TextView
+                        android:id="@+id/tvHelpSubtypeServices"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Services"
+                        android:textSize="12.5sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="#475569" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </HorizontalScrollView>
+
         <!-- Main Card: Author Row + Textarea Input + Media Action Row -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"

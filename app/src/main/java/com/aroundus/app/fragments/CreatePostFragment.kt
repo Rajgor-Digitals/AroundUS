@@ -41,6 +41,7 @@ class CreatePostFragment : Fragment() {
 
     private var selectedCategory = "General"
     private var selectedAnnouncementSubtype = "Community" // Community, Events, Alert
+    private var selectedHelpSubtype = "General Help" // General Help, Lost & Found, Recommendations, Emergency, Services
     private var selectedAudience = "Public"
     private var selectedLocation = ""
     private var selectedMediaUri: Uri? = null
@@ -225,10 +226,10 @@ class CreatePostFragment : Fragment() {
 
                 binding.btnPostHeader.text = "Publishing..."
 
-                val finalCategory = if (selectedCategory.equals("Announcement", ignoreCase = true)) {
-                    selectedAnnouncementSubtype
-                } else {
-                    selectedCategory
+                val finalCategory = when {
+                    selectedCategory.equals("Announcement", ignoreCase = true) -> selectedAnnouncementSubtype
+                    selectedCategory.equals("Help & Support", ignoreCase = true) -> selectedHelpSubtype
+                    else -> selectedCategory
                 }
 
                 // 2. Insert post metadata into Supabase posts table with the permanent remote URL
@@ -286,6 +287,25 @@ class CreatePostFragment : Fragment() {
                     incoming.equals("Help", ignoreCase = true) -> {
                         selectedCategory = "Help & Support"
                     }
+                    incoming.equals("General Help", ignoreCase = true) -> {
+                        selectedCategory = "Help & Support"
+                        selectedHelpSubtype = "General Help"
+                    }
+                    incoming.equals("Lost & Found", ignoreCase = true) ||
+                    incoming.equals("Lost and Found", ignoreCase = true) -> {
+                        selectedCategory = "Help & Support"
+                        selectedHelpSubtype = "Lost & Found"
+                    }
+                    incoming.equals("Recommendations", ignoreCase = true) ||
+                    incoming.equals("Recommendation", ignoreCase = true) -> {
+                        selectedCategory = "Help & Support"
+                        selectedHelpSubtype = "Recommendations"
+                    }
+                    incoming.equals("Services", ignoreCase = true) ||
+                    incoming.equals("Service", ignoreCase = true) -> {
+                        selectedCategory = "Help & Support"
+                        selectedHelpSubtype = "Services"
+                    }
                     else -> {
                         selectedCategory = "General"
                     }
@@ -309,6 +329,7 @@ class CreatePostFragment : Fragment() {
         }
 
         setupAnnouncementSubtypeChips()
+        setupHelpSubtypeChips()
     }
 
     private fun setupAnnouncementSubtypeChips() {
@@ -394,7 +415,115 @@ class CreatePostFragment : Fragment() {
         }
 
         val isAnnouncement = selectedCategory.equals("Announcement", ignoreCase = true)
+        val isHelp = selectedCategory.equals("Help & Support", ignoreCase = true)
         binding.layoutAnnouncementSubtype.visibility = if (isAnnouncement) View.VISIBLE else View.GONE
+        binding.layoutHelpSubtype.visibility = if (isHelp) View.VISIBLE else View.GONE
+    }
+
+    private fun setupHelpSubtypeChips() {
+        val unselectedBg = R.drawable.bg_announcement_chip_subtype_unselected
+        val unselectedTextColor = android.graphics.Color.parseColor("#475569")
+        val unselectedIconColor = android.graphics.Color.parseColor("#64748B")
+
+        fun updateHelpChips(selected: String) {
+            val isGeneral = selected.equals("General Help", ignoreCase = true)
+            val isLost = selected.equals("Lost & Found", ignoreCase = true) || selected.contains("Lost", ignoreCase = true)
+            val isRec = selected.equals("Recommendations", ignoreCase = true) || selected.contains("Recommend", ignoreCase = true)
+            val isEmergency = selected.equals("Emergency", ignoreCase = true)
+            val isServices = selected.equals("Services", ignoreCase = true) || selected.equals("Service", ignoreCase = true)
+
+            // 1. General Help
+            if (isGeneral) {
+                binding.chipHelpGeneral.setBackgroundResource(R.drawable.bg_help_chip_general_selected)
+                binding.tvHelpSubtypeGeneral.setTextColor(android.graphics.Color.parseColor("#059669"))
+                binding.ivHelpSubtypeGeneral.setColorFilter(android.graphics.Color.parseColor("#059669"))
+                binding.tvHelpSubtypeGeneral.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            } else {
+                binding.chipHelpGeneral.setBackgroundResource(unselectedBg)
+                binding.tvHelpSubtypeGeneral.setTextColor(unselectedTextColor)
+                binding.ivHelpSubtypeGeneral.setColorFilter(unselectedIconColor)
+                binding.tvHelpSubtypeGeneral.typeface = android.graphics.Typeface.DEFAULT
+            }
+
+            // 2. Lost & Found
+            if (isLost) {
+                binding.chipHelpLostFound.setBackgroundResource(R.drawable.bg_help_chip_lost_found_selected)
+                binding.tvHelpSubtypeLostFound.setTextColor(android.graphics.Color.parseColor("#D97706"))
+                binding.ivHelpSubtypeLostFound.setColorFilter(android.graphics.Color.parseColor("#D97706"))
+                binding.tvHelpSubtypeLostFound.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            } else {
+                binding.chipHelpLostFound.setBackgroundResource(unselectedBg)
+                binding.tvHelpSubtypeLostFound.setTextColor(unselectedTextColor)
+                binding.ivHelpSubtypeLostFound.setColorFilter(unselectedIconColor)
+                binding.tvHelpSubtypeLostFound.typeface = android.graphics.Typeface.DEFAULT
+            }
+
+            // 3. Recommendations
+            if (isRec) {
+                binding.chipHelpRecommendations.setBackgroundResource(R.drawable.bg_help_chip_recommendations_selected)
+                binding.tvHelpSubtypeRecommendations.setTextColor(android.graphics.Color.parseColor("#2563EB"))
+                binding.ivHelpSubtypeRecommendations.setColorFilter(android.graphics.Color.parseColor("#2563EB"))
+                binding.tvHelpSubtypeRecommendations.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            } else {
+                binding.chipHelpRecommendations.setBackgroundResource(unselectedBg)
+                binding.tvHelpSubtypeRecommendations.setTextColor(unselectedTextColor)
+                binding.ivHelpSubtypeRecommendations.setColorFilter(unselectedIconColor)
+                binding.tvHelpSubtypeRecommendations.typeface = android.graphics.Typeface.DEFAULT
+            }
+
+            // 4. Emergency
+            if (isEmergency) {
+                binding.chipHelpEmergency.setBackgroundResource(R.drawable.bg_help_chip_emergency_selected)
+                binding.tvHelpSubtypeEmergency.setTextColor(android.graphics.Color.parseColor("#DC2626"))
+                binding.ivHelpSubtypeEmergency.setColorFilter(android.graphics.Color.parseColor("#DC2626"))
+                binding.tvHelpSubtypeEmergency.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            } else {
+                binding.chipHelpEmergency.setBackgroundResource(unselectedBg)
+                binding.tvHelpSubtypeEmergency.setTextColor(unselectedTextColor)
+                binding.ivHelpSubtypeEmergency.setColorFilter(unselectedIconColor)
+                binding.tvHelpSubtypeEmergency.typeface = android.graphics.Typeface.DEFAULT
+            }
+
+            // 5. Services
+            if (isServices) {
+                binding.chipHelpServices.setBackgroundResource(R.drawable.bg_help_chip_services_selected)
+                binding.tvHelpSubtypeServices.setTextColor(android.graphics.Color.parseColor("#7C3AED"))
+                binding.ivHelpSubtypeServices.setColorFilter(android.graphics.Color.parseColor("#7C3AED"))
+                binding.tvHelpSubtypeServices.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            } else {
+                binding.chipHelpServices.setBackgroundResource(unselectedBg)
+                binding.tvHelpSubtypeServices.setTextColor(unselectedTextColor)
+                binding.ivHelpSubtypeServices.setColorFilter(unselectedIconColor)
+                binding.tvHelpSubtypeServices.typeface = android.graphics.Typeface.DEFAULT
+            }
+        }
+
+        updateHelpChips(selectedHelpSubtype)
+
+        binding.chipHelpGeneral.setOnClickListener {
+            selectedHelpSubtype = "General Help"
+            updateHelpChips("General Help")
+        }
+
+        binding.chipHelpLostFound.setOnClickListener {
+            selectedHelpSubtype = "Lost & Found"
+            updateHelpChips("Lost & Found")
+        }
+
+        binding.chipHelpRecommendations.setOnClickListener {
+            selectedHelpSubtype = "Recommendations"
+            updateHelpChips("Recommendations")
+        }
+
+        binding.chipHelpEmergency.setOnClickListener {
+            selectedHelpSubtype = "Emergency"
+            updateHelpChips("Emergency")
+        }
+
+        binding.chipHelpServices.setOnClickListener {
+            selectedHelpSubtype = "Services"
+            updateHelpChips("Services")
+        }
     }
 
     private fun setupInputCounter() {
