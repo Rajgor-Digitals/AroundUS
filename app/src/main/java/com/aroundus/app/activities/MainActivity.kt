@@ -75,7 +75,8 @@ class MainActivity : AppCompatActivity() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
                 R.id.myCommentsFragment,
-                R.id.myPostsFragment -> {
+                R.id.myPostsFragment,
+                R.id.savedPostsFragment -> {
                     binding.bottomBarContainer.visibility = View.GONE
                 }
                 else -> {

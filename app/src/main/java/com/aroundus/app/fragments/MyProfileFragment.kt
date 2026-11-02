@@ -242,7 +242,7 @@ class MyProfileFragment : Fragment() {
         }
 
         binding.cardSaved.setOnClickListener {
-            showSavedPostsDialog()
+            openSavedPostsScreen()
         }
 
         // Menu Navigation List Items
@@ -255,7 +255,7 @@ class MyProfileFragment : Fragment() {
         }
 
         binding.rowSavedPosts.setOnClickListener {
-            showSavedPostsDialog()
+            openSavedPostsScreen()
         }
 
         binding.rowMyListings.setOnClickListener {
@@ -298,6 +298,10 @@ class MyProfileFragment : Fragment() {
             putString("userName", targetUserName)
         }
         findNavController().navigate(R.id.myPostsFragment, bundle)
+    }
+
+    private fun openSavedPostsScreen() {
+        findNavController().navigate(R.id.savedPostsFragment)
     }
 
     private fun openMyCommentsScreen() {
