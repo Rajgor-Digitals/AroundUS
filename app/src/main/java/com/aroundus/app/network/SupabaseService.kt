@@ -134,8 +134,16 @@ interface SupabaseService {
     ): Response<List<CommentEntity>>
 
     @GET("rest/v1/comments")
+    suspend fun getCommentsForUser(
+        @Query("user_id") queryFilter: String, // e.g. "eq.$userId"
+        @Query("select") select: String = "*",
+        @Query("order") order: String = "timestamp.desc"
+    ): Response<List<CommentEntity>>
+
+    @GET("rest/v1/comments")
     suspend fun getAllComments(
-        @Query("select") select: String = "comment_id,post_id"
+        @Query("select") select: String = "*",
+        @Query("order") order: String = "timestamp.desc"
     ): Response<List<CommentEntity>>
 
     @POST("rest/v1/comments")

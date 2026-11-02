@@ -8,6 +8,8 @@ import android.net.Uri
 
 import android.os.Bundle
 
+import android.view.View
+
 import android.widget.Toast
 
 import androidx.activity.OnBackPressedCallback
@@ -69,6 +71,18 @@ class MainActivity : AppCompatActivity() {
 
 
         setupBottomNavigation()
+
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                R.id.myCommentsFragment,
+                R.id.myPostsFragment -> {
+                    binding.bottomBarContainer.visibility = View.GONE
+                }
+                else -> {
+                    binding.bottomBarContainer.visibility = View.VISIBLE
+                }
+            }
+        }
 
         setupDrawer()
 

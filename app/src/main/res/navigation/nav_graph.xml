@@ -24,6 +24,12 @@
         app:exitAnim="@anim/slide_out_left" />
 
     <action
+        android:id="@+id/action_global_myComments"
+        app:destination="@id/myCommentsFragment"
+        app:enterAnim="@anim/slide_in_right"
+        app:exitAnim="@anim/slide_out_left" />
+
+    <action
         android:id="@+id/action_global_myPosts"
         app:destination="@id/myPostsFragment"
         app:enterAnim="@anim/slide_in_right"
@@ -194,6 +200,12 @@
             app:exitAnim="@anim/slide_out_left" />
 
         <action
+            android:id="@+id/action_profile_to_myComments"
+            app:destination="@id/myCommentsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
+
+        <action
             android:id="@+id/action_profile_to_myPosts"
             app:destination="@id/myPostsFragment"
             app:enterAnim="@anim/slide_in_right"
@@ -285,6 +297,21 @@
             android:id="@+id/action_myPosts_to_createPost"
             app:destination="@id/createPostFragment"
             app:enterAnim="@anim/slide_up" />
+
+    </fragment>
+
+    <!-- My Comments -->
+    <fragment
+        android:id="@+id/myCommentsFragment"
+        android:name="com.aroundus.app.fragments.MyCommentsFragment"
+        android:label="My Comments"
+        tools:layout="@layout/fragment_my_comments">
+
+        <action
+            android:id="@+id/action_myComments_to_postDetail"
+            app:destination="@id/postDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left" />
 
     </fragment>
 

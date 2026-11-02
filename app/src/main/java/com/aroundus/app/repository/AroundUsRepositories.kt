@@ -1557,6 +1557,60 @@ class CommentRepository {
             }
         }
 
+    suspend fun fetchMyCommentsWithPosts(
+        context: Context,
+        targetUserId: String
+    ): NetworkResult<List<MyCommentItem>> = withContext(Dispatchers.IO) {
+        try {
+            val allCommentsResp = service.getAllComments()
+            if (!allCommentsResp.isSuccessful || allCommentsResp.body() == null) {
+                return@withContext NetworkResult.Error("Failed to fetch comments.")
+            }
+            val allComments = allCommentsResp.body()!!
+
+            val loggedInUid = SupabaseClient.getCurrentUserId() ?: ""
+            val userComments = allComments.filter { comment ->
+                (targetUserId.isNotBlank() && comment.userId == targetUserId) ||
+                (loggedInUid.isNotBlank() && comment.userId == loggedInUid)
+            }.sortedByDescending { it.timestamp.toLongOrNull() ?: 0L }
+
+            if (userComments.isEmpty()) {
+                return@withContext NetworkResult.Success(emptyList())
+            }
+
+            val postRepo = PostRepository()
+            val postsResult = postRepo.fetchPostsWithAuthors(context)
+            val postsMap = mutableMapOf<String, Post>()
+            if (postsResult is NetworkResult.Success) {
+                postsResult.data.forEach { postsMap[it.id] = it }
+            }
+
+            val items = userComments.map { comment ->
+                val post = postsMap[comment.postId]
+                val postTitle = post?.title?.takeIf { it.isNotBlank() }
+                    ?: post?.text?.lines()?.firstOrNull()?.trim()?.takeIf { it.isNotBlank() }
+                    ?: "Community Post"
+
+                MyCommentItem(
+                    commentId = comment.commentId,
+                    postId = comment.postId,
+                    commentText = comment.text,
+                    timestamp = comment.timestamp,
+                    timeAgo = formatTimeAgo(comment.timestamp),
+                    postTitle = postTitle,
+                    postMediaUrl = post?.mediaUrl,
+                    postCategory = post?.category,
+                    postAuthorName = post?.userName,
+                    postAuthorAvatarUrl = post?.userAvatarPath ?: (post?.authorId?.let { SupabaseClient.getAvatarPath(it) })
+                )
+            }
+
+            NetworkResult.Success(items)
+        } catch (e: Exception) {
+            NetworkResult.Error(e.localizedMessage ?: "Failed to load comments", e)
+        }
+    }
+
     suspend fun fetchCommentsCountMap(): Map<String, Int> =
         withContext(Dispatchers.IO) {
             try {

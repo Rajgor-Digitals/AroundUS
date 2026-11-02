@@ -251,7 +251,7 @@ class MyProfileFragment : Fragment() {
         }
 
         binding.rowMyComments.setOnClickListener {
-            showMyCommentsDialog()
+            openMyCommentsScreen()
         }
 
         binding.rowSavedPosts.setOnClickListener {
@@ -298,6 +298,17 @@ class MyProfileFragment : Fragment() {
             putString("userName", targetUserName)
         }
         findNavController().navigate(R.id.myPostsFragment, bundle)
+    }
+
+    private fun openMyCommentsScreen() {
+        val loggedInUid = SupabaseClient.getCurrentUserId() ?: ""
+        val targetUserId = arguments?.getString("userId")?.takeIf { it.isNotBlank() } ?: loggedInUid
+        val targetUserName = currentUserEntity?.name ?: ""
+        val bundle = Bundle().apply {
+            putString("userId", targetUserId)
+            putString("userName", targetUserName)
+        }
+        findNavController().navigate(R.id.myCommentsFragment, bundle)
     }
 
     private fun togglePostsVisibility() {
