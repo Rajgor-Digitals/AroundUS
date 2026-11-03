@@ -25,6 +25,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.view.Gravity
 import com.aroundus.app.repository.MarketplaceRepository
+import com.aroundus.app.repository.EventRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
@@ -37,6 +38,11 @@ import com.bumptech.glide.Glide
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import java.io.File
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class CreatePostFragment : Fragment() {
 
@@ -53,11 +59,24 @@ class CreatePostFragment : Fragment() {
     private val postRepository = PostRepository()
     private val userRepository = UserRepository()
     private val marketplaceRepository = MarketplaceRepository()
+    private val eventRepository = EventRepository()
 
     private val selectedBuySellPhotoUris = mutableListOf<Uri>()
     private var selectedBuySellCategory = "Furniture"
     private var selectedBuySellCondition = "Like New"
     private var isPublishingBuySell = false
+
+    private var selectedEventCoverUri: Uri? = null
+    private var selectedEventCategory: String = "Community"
+    private var selectedEventDate: String = ""
+    private var selectedEventTime: String = ""
+    private var isPublishingEvent = false
+
+    private val pickEventCoverLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            showEventCoverPreview(uri)
+        }
+    }
 
     // ActivityResult Launchers for Photo & Video selection
     private val pickPhotoLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -138,6 +157,7 @@ class CreatePostFragment : Fragment() {
         setupMediaActionButtons()
         setupSettingsRows()
         setupBuySellForm()
+        setupEventForm()
     }
 
     private fun setupUserProfile() {
@@ -214,6 +234,11 @@ class CreatePostFragment : Fragment() {
             if (selectedCategory.contains("Buy", ignoreCase = true) ||
                 selectedCategory.equals("Sale", ignoreCase = true)) {
                 handleBuySellPublish()
+                return@setOnClickListener
+            }
+            if (selectedCategory.equals("Event", ignoreCase = true) ||
+                selectedCategory.equals("Events", ignoreCase = true)) {
+                handleEventPublish()
                 return@setOnClickListener
             }
 
@@ -340,6 +365,10 @@ class CreatePostFragment : Fragment() {
                     incoming.equals("Marketplace", ignoreCase = true) -> {
                         selectedCategory = "Buy & Sell"
                     }
+                    incoming.equals("Event", ignoreCase = true) ||
+                    incoming.equals("Events", ignoreCase = true) -> {
+                        selectedCategory = "Event"
+                    }
                     else -> {
                         selectedCategory = "General"
                     }
@@ -351,7 +380,8 @@ class CreatePostFragment : Fragment() {
             Triple(binding.catGeneral, binding.tvCatGeneral, binding.lineCatGeneral) to "General",
             Triple(binding.catAnnouncement, binding.tvCatAnnouncement, binding.lineCatAnnouncement) to "Announcement",
             Triple(binding.catHelpSupport, binding.tvCatHelpSupport, binding.lineCatHelpSupport) to "Help & Support",
-            Triple(binding.catBuySell, binding.tvCatBuySell, binding.lineCatBuySell) to "Buy / Sell"
+            Triple(binding.catBuySell, binding.tvCatBuySell, binding.lineCatBuySell) to "Buy / Sell",
+            Triple(binding.catEvent, binding.tvCatEvent, binding.lineCatEvent) to "Event"
         )
 
         updateCategorySelection(categoryViews)
@@ -441,31 +471,47 @@ class CreatePostFragment : Fragment() {
             if (isSelected) {
                 container.setBackgroundResource(R.drawable.bg_post_type_selected)
                 textView.setTextColor(greenColor)
+                textView.typeface = android.graphics.Typeface.DEFAULT_BOLD
                 line.visibility = View.VISIBLE
             } else {
                 container.setBackgroundResource(R.drawable.bg_group_category_unselected)
                 textView.setTextColor(defaultTextColor)
-                line.visibility = View.GONE
+                textView.typeface = android.graphics.Typeface.DEFAULT
+                line.visibility = View.INVISIBLE
             }
         }
 
         val isBuySell = selectedCategory.contains("Buy", ignoreCase = true) ||
                 selectedCategory.equals("Sale", ignoreCase = true)
+        val isEvent = selectedCategory.equals("Event", ignoreCase = true) ||
+                selectedCategory.equals("Events", ignoreCase = true)
         val isAnnouncement = selectedCategory.equals("Announcement", ignoreCase = true)
         val isHelp = selectedCategory.equals("Help & Support", ignoreCase = true)
 
         if (isBuySell) {
             binding.layoutStandardPostForm.visibility = View.GONE
             binding.layoutBuySellForm.visibility = View.VISIBLE
+            binding.layoutEventForm.visibility = View.GONE
             binding.layoutAnnouncementSubtype.visibility = View.GONE
             binding.layoutHelpSubtype.visibility = View.GONE
             binding.btnPostHeader.text = "List Item"
             if (binding.etBuySellLocality.text.isNullOrBlank() && selectedLocation.isNotBlank()) {
                 binding.etBuySellLocality.setText(selectedLocation)
             }
+        } else if (isEvent) {
+            binding.layoutStandardPostForm.visibility = View.GONE
+            binding.layoutBuySellForm.visibility = View.GONE
+            binding.layoutEventForm.visibility = View.VISIBLE
+            binding.layoutAnnouncementSubtype.visibility = View.GONE
+            binding.layoutHelpSubtype.visibility = View.GONE
+            binding.btnPostHeader.text = "Create Event"
+            if (binding.etEventFormLocation.text.isNullOrBlank() && selectedLocation.isNotBlank()) {
+                binding.etEventFormLocation.setText(selectedLocation)
+            }
         } else {
             binding.layoutStandardPostForm.visibility = View.VISIBLE
             binding.layoutBuySellForm.visibility = View.GONE
+            binding.layoutEventForm.visibility = View.GONE
             binding.btnPostHeader.text = "Post"
             binding.layoutAnnouncementSubtype.visibility = if (isAnnouncement) View.VISIBLE else View.GONE
             binding.layoutHelpSubtype.visibility = if (isHelp) View.VISIBLE else View.GONE
@@ -997,6 +1043,260 @@ class CreatePostFragment : Fragment() {
 
             Toast.makeText(requireContext(), "🎉 Item listed successfully in Marketplace!", Toast.LENGTH_SHORT).show()
             findNavController().popBackStack()
+        }
+    }
+
+    private fun setupEventForm() {
+        binding.cardEventUploadPhoto.setOnClickListener {
+            pickEventCoverLauncher.launch("image/*")
+        }
+        binding.btnEventChangePhoto.setOnClickListener {
+            pickEventCoverLauncher.launch("image/*")
+        }
+        binding.btnEventRemovePhoto.setOnClickListener {
+            removeEventCover()
+        }
+
+        setupEventCategoryChips()
+        setupEventDateTimePickers()
+        setupEventLocation()
+        setupEventDescriptionCounter()
+
+        binding.btnEventPublish.setOnClickListener {
+            handleEventPublish()
+        }
+    }
+
+    private fun showEventCoverPreview(uri: Uri) {
+        selectedEventCoverUri = uri
+        Glide.with(this)
+            .load(uri)
+            .centerCrop()
+            .into(binding.ivEventPhotoPreview)
+        binding.cardEventUploadPhoto.visibility = View.GONE
+        binding.cardEventPhotoPreviewContainer.visibility = View.VISIBLE
+    }
+
+    private fun removeEventCover() {
+        selectedEventCoverUri = null
+        binding.ivEventPhotoPreview.setImageDrawable(null)
+        binding.cardEventPhotoPreviewContainer.visibility = View.GONE
+        binding.cardEventUploadPhoto.visibility = View.VISIBLE
+    }
+
+    private fun setupEventCategoryChips() {
+        val categories = listOf(
+            Triple(binding.chipEventCatCommunity, binding.tvEventCatCommunity, binding.ivEventCatCommunity to "Community"),
+            Triple(binding.chipEventCatMusic, binding.tvEventCatMusic, binding.ivEventCatMusic to "Music"),
+            Triple(binding.chipEventCatSports, binding.tvEventCatSports, binding.ivEventCatSports to "Sports"),
+            Triple(binding.chipEventCatWorkshop, binding.tvEventCatWorkshop, binding.ivEventCatWorkshop to "Workshop"),
+            Triple(binding.chipEventCatCultural, binding.tvEventCatCultural, binding.ivEventCatCultural to "Cultural"),
+            Triple(binding.chipEventCatVolunteering, binding.tvEventCatVolunteering, binding.ivEventCatVolunteering to "Volunteering"),
+            Triple(binding.chipEventCatFood, binding.tvEventCatFood, binding.ivEventCatFood to "Food"),
+            Triple(binding.chipEventCatOther, binding.tvEventCatOther, binding.ivEventCatOther to "Other")
+        )
+
+        fun updateEventCategorySelection(selectedName: String) {
+            selectedEventCategory = selectedName
+            val selectedBg = R.drawable.bg_chip_category_selected
+            val unselectedBg = R.drawable.bg_chip_category_unselected
+            val selectedGreen = Color.parseColor("#0D8A3F")
+            val unselectedGray = Color.parseColor("#475569")
+            val iconGray = Color.parseColor("#64748B")
+
+            for ((chip, tv, iconPair) in categories) {
+                val (iv, name) = iconPair
+                val isSelected = name.equals(selectedName, ignoreCase = true)
+                chip.setBackgroundResource(if (isSelected) selectedBg else unselectedBg)
+                tv.setTextColor(if (isSelected) selectedGreen else unselectedGray)
+                iv.setColorFilter(if (isSelected) selectedGreen else iconGray)
+            }
+        }
+
+        for ((chip, _, iconPair) in categories) {
+            val name = iconPair.second
+            chip.setOnClickListener {
+                updateEventCategorySelection(name)
+            }
+        }
+
+        updateEventCategorySelection("Community")
+    }
+
+    private fun setupEventDateTimePickers() {
+        val calendar = Calendar.getInstance()
+
+        binding.boxEventSelectDate.setOnClickListener {
+            val datePicker = DatePickerDialog(
+                requireContext(),
+                { _, year, month, dayOfMonth ->
+                    calendar.set(Calendar.YEAR, year)
+                    calendar.set(Calendar.MONTH, month)
+                    calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                    val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault())
+                    selectedEventDate = dateFormat.format(calendar.time)
+                    binding.tvEventSelectedDate.text = selectedEventDate
+                    binding.tvEventSelectedDate.setTextColor(Color.parseColor("#0F172A"))
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            )
+            datePicker.datePicker.minDate = System.currentTimeMillis() - 1000
+            datePicker.show()
+        }
+
+        binding.boxEventSelectTime.setOnClickListener {
+            val timePicker = TimePickerDialog(
+                requireContext(),
+                { _, hourOfDay, minute ->
+                    calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                    calendar.set(Calendar.MINUTE, minute)
+                    val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+                    selectedEventTime = timeFormat.format(calendar.time)
+                    binding.tvEventSelectedTime.text = selectedEventTime
+                    binding.tvEventSelectedTime.setTextColor(Color.parseColor("#0F172A"))
+                },
+                calendar.get(Calendar.HOUR_OF_DAY),
+                calendar.get(Calendar.MINUTE),
+                false
+            )
+            timePicker.show()
+        }
+    }
+
+    private fun setupEventLocation() {
+        binding.btnEventUseCurrentLocation.setOnClickListener {
+            val loc = UserLocationManager.getSelectedLocation(requireContext())?.displayName
+            if (!loc.isNullOrBlank()) {
+                binding.etEventFormLocation.setText(loc)
+                Toast.makeText(requireContext(), "Location updated", Toast.LENGTH_SHORT).show()
+            } else if (selectedLocation.isNotBlank()) {
+                binding.etEventFormLocation.setText(selectedLocation)
+                Toast.makeText(requireContext(), "Location updated", Toast.LENGTH_SHORT).show()
+            } else {
+                fetchDeviceLocationAutomatically(silent = false)
+            }
+        }
+
+        binding.btnEventClearLocation.setOnClickListener {
+            binding.etEventFormLocation.text?.clear()
+        }
+    }
+
+    private fun setupEventDescriptionCounter() {
+        binding.etEventFormDescription.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                binding.tvEventFormDescCounter.text = "${s?.length ?: 0}/500"
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+    }
+
+    private fun handleEventPublish() {
+        if (isPublishingEvent) return
+
+        val title = binding.etEventFormTitle.text.toString().trim()
+        val location = binding.etEventFormLocation.text.toString().trim()
+        val description = binding.etEventFormDescription.text.toString().trim()
+
+        if (title.isBlank()) {
+            binding.etEventFormTitle.error = "Please enter an event title"
+            binding.etEventFormTitle.requestFocus()
+            Toast.makeText(requireContext(), "Please enter an event title", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val eventDateStr = if (selectedEventDate.isNotBlank() && selectedEventTime.isNotBlank()) {
+            "$selectedEventDate · $selectedEventTime"
+        } else if (selectedEventDate.isNotBlank()) {
+            selectedEventDate
+        } else if (selectedEventTime.isNotBlank()) {
+            "Today · $selectedEventTime"
+        } else {
+            val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
+            SimpleDateFormat("EEE, MMM d · 6:00 PM", Locale.getDefault()).format(cal.time)
+        }
+
+        val fullTitle = if (selectedEventCategory.isNotBlank() && !title.startsWith("[")) {
+            "[$selectedEventCategory] $title"
+        } else {
+            title
+        }
+
+        val finalLocation = if (location.isNotBlank()) location else "Community Center"
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            isPublishingEvent = true
+            binding.btnPostHeader.isEnabled = false
+            binding.btnEventPublish.isEnabled = false
+            val originalHeaderText = binding.btnPostHeader.text
+            binding.btnPostHeader.text = "Creating..."
+            binding.btnEventPublish.text = "Creating Event..."
+
+            var uploadedUrl: String? = null
+            if (selectedEventCoverUri != null) {
+                binding.btnPostHeader.text = "Uploading Image..."
+                binding.btnEventPublish.text = "Uploading Cover Image..."
+                when (val uploadResult = eventRepository.uploadEventImage(requireContext(), selectedEventCoverUri!!)) {
+                    is NetworkResult.Success -> {
+                        uploadedUrl = uploadResult.data
+                    }
+                    is NetworkResult.Error -> {
+                        // Log or inform, still allow creation
+                    }
+                }
+            }
+
+            binding.btnPostHeader.text = "Publishing..."
+            binding.btnEventPublish.text = "Publishing Event..."
+
+            when (val result = eventRepository.createEvent(
+                title = fullTitle,
+                date = eventDateStr,
+                location = finalLocation,
+                attendees = "1 Attending",
+                imageUrl = uploadedUrl
+            )) {
+                is NetworkResult.Success -> {
+                    SupabaseClient.addCreatedEventId(result.data.eventId)
+                    SupabaseClient.setEventAttended(result.data.eventId, true)
+
+                    // Also post to Feed so neighbors see the announcement
+                    val feedText = buildString {
+                        append("📅 Event: ").append(title).append("\n")
+                        append("🕒 ").append(eventDateStr).append("\n")
+                        append("📍 ").append(finalLocation)
+                        if (description.isNotBlank()) {
+                            append("\n\n").append(description)
+                        }
+                    }
+                    try {
+                        postRepository.createPost(
+                            text = feedText,
+                            type = "Event",
+                            media = uploadedUrl,
+                            location = finalLocation,
+                            context = requireContext().applicationContext
+                        )
+                    } catch (_: Exception) {}
+
+                    isPublishingEvent = false
+                    Toast.makeText(requireContext(), "🎉 Event created successfully!", Toast.LENGTH_SHORT).show()
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.EVENTS)
+                    AppRefreshManager.notifyDataChanged(RefreshTarget.HOME_FEED)
+                    findNavController().popBackStack()
+                }
+                is NetworkResult.Error -> {
+                    isPublishingEvent = false
+                    binding.btnPostHeader.isEnabled = true
+                    binding.btnEventPublish.isEnabled = true
+                    binding.btnPostHeader.text = originalHeaderText
+                    binding.btnEventPublish.text = "Publish Event in Community"
+                    Toast.makeText(requireContext(), "Error: ${result.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
