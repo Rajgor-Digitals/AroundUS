@@ -367,7 +367,10 @@ object UserLocationManager {
             }
         }
 
-        if (!Geocoder.isPresent()) {
+        if (!Geocoder.isPresent() || !NetworkUtils.isNetworkAvailable(context)) {
+            if (cached != null && !cached.displayName.isBlank()) {
+                return@withContext cached.copy(latitude = lat, longitude = lng)
+            }
             return@withContext fallbackCoordsData(lat, lng)
         }
 
@@ -459,10 +462,11 @@ object UserLocationManager {
 
     private fun syncLocationToProfileAsync(context: Context, locationName: String) {
         if (locationName.isBlank()) return
+        if (!NetworkUtils.isNetworkAvailable(context)) return
         val currentUserId = SupabaseClient.getCurrentUserId() ?: return
         if (currentUserId.isBlank()) return
 
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob()).launch {
             try {
                 val userRepo = UserRepository()
                 val profileRes = userRepo.getUserProfile(currentUserId)

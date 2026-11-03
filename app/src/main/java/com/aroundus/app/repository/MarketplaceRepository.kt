@@ -30,6 +30,36 @@ class MarketplaceRepository {
         private val memoryCachedListings = mutableListOf<Product>()
         private val globalAuthorMap = ConcurrentHashMap<String, Pair<String, String?>>() // userId -> (name, avatarUrl)
         private const val PREFS_NAME = "aroundus_marketplace_prefs"
+        private const val KEY_LISTINGS_JSON = "cached_listings_json"
+
+        fun getCachedListings(context: Context): List<Product> {
+            if (memoryCachedListings.isNotEmpty()) return memoryCachedListings
+            try {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val json = prefs.getString(KEY_LISTINGS_JSON, null)
+                if (!json.isNullOrBlank()) {
+                    val type = object : com.google.gson.reflect.TypeToken<List<Product>>() {}.type
+                    val list: List<Product>? = com.google.gson.Gson().fromJson(json, type)
+                    if (!list.isNullOrEmpty()) {
+                        memoryCachedListings.clear()
+                        memoryCachedListings.addAll(list)
+                        return list
+                    }
+                }
+            } catch (_: Exception) {}
+            return emptyList()
+        }
+
+        fun saveListingsToCache(context: Context, listings: List<Product>) {
+            if (listings.isEmpty()) return
+            memoryCachedListings.clear()
+            memoryCachedListings.addAll(listings)
+            try {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val json = com.google.gson.Gson().toJson(listings)
+                prefs.edit().putString(KEY_LISTINGS_JSON, json).apply()
+            } catch (_: Exception) {}
+        }
     }
 
     /**
@@ -86,13 +116,14 @@ class MarketplaceRepository {
                 // Network or Supabase error - continue to fallback
             }
 
-            // 2. Keep only authentic listings directly from the database
+            // 2. Cache-first persistence: save remote products if fetched, or load cached listings if offline
             val combined = mutableListOf<Product>()
-            combined.addAll(remoteProducts)
-
-            // Update in-memory cache
-            memoryCachedListings.clear()
-            memoryCachedListings.addAll(combined)
+            if (remoteProducts.isNotEmpty()) {
+                saveListingsToCache(context, remoteProducts)
+                combined.addAll(remoteProducts)
+            } else {
+                combined.addAll(getCachedListings(context))
+            }
 
             // 3. Filter & Sort
             val filtered = filterAndSortListings(combined, category, query, sort, onlySaved)

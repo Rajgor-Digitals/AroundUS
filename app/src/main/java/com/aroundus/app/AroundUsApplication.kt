@@ -7,6 +7,7 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.PostRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class AroundUsApplication : Application() {
@@ -20,21 +21,41 @@ class AroundUsApplication : Application() {
             prefs.edit().remove("dark_mode").apply()
         }
 
+        com.aroundus.app.utils.NetworkUtils.init(this)
         SupabaseClient.init(this)
         com.aroundus.app.utils.UserLocationManager.init(this)
         com.aroundus.app.utils.UserPresenceManager.init(this)
         com.aroundus.app.utils.UnreadMessageManager.init(this)
         com.aroundus.app.utils.MessageNotificationManager.initNotificationChannel(this)
 
+        // Production-grade safety: Intercept unhandled network/connectivity exceptions so
+        // unexpected offline glitches or DNS failures never crash or kill the app process
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            if (com.aroundus.app.utils.NetworkUtils.isNetworkException(throwable)) {
+                android.util.Log.w("AroundUS", "Safely caught unhandled network exception on [${thread.name}]: ${throwable.message}")
+            } else {
+                defaultHandler?.uncaughtException(thread, throwable)
+            }
+        }
+
         // Asynchronously pre-warm Retrofit client, OkHttp connection pool, Post cache, and start message notification listener
-        CoroutineScope(Dispatchers.IO).launch {
+        val appScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+        appScope.launch {
             try {
-                PostRepository().fetchPostsWithAuthors(applicationContext)
+                if (com.aroundus.app.utils.NetworkUtils.isNetworkAvailable(applicationContext)) {
+                    PostRepository().fetchPostsWithAuthors(applicationContext)
+                } else {
+                    PostRepository().getCachedPosts(applicationContext)
+                }
             } catch (_: Exception) {}
-            com.aroundus.app.utils.MessageNotificationManager.startListeningForIncomingMessages(
-                applicationContext,
-                CoroutineScope(Dispatchers.IO)
-            )
+
+            try {
+                com.aroundus.app.utils.MessageNotificationManager.startListeningForIncomingMessages(
+                    applicationContext,
+                    appScope
+                )
+            } catch (_: Exception) {}
         }
     }
 }

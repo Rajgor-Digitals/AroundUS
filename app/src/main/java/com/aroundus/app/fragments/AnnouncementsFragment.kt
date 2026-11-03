@@ -30,6 +30,7 @@ import com.aroundus.app.utils.RefreshTarget
 import com.aroundus.app.utils.isPassed
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.launch
 
 class AnnouncementsFragment : Fragment() {
@@ -307,7 +308,7 @@ class AnnouncementsFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                coroutineScope {
+                supervisorScope {
                     val postsDeferred = async { postRepository.fetchPostsWithAuthors(context?.applicationContext) }
                     val commentsMapDeferred = async { commentRepository.fetchCommentsCountMap() }
                     val eventsDeferred = async { eventRepository.fetchEvents() }

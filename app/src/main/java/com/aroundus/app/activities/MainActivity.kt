@@ -93,6 +93,8 @@ class MainActivity : AppCompatActivity() {
 
         handleOpenProductId(intent)
 
+        setupNetworkConnectivityObserver()
+
     }
 
 
@@ -707,6 +709,70 @@ class MainActivity : AppCompatActivity() {
 
         binding.tvNavProfile.setTextColor(inactiveColor)
 
+    }
+
+    // --- OFFLINE & CONNECTIVITY MONITORING ---
+
+    private var wasOffline = false
+
+    private fun setupNetworkConnectivityObserver() {
+        lifecycleScope.launch {
+            com.aroundus.app.utils.NetworkUtils.isOnlineFlow.collect { isOnline ->
+                runOnUiThread {
+                    if (!isOnline) {
+                        wasOffline = true
+                        showOfflineBanner()
+                    } else if (wasOffline) {
+                        showOnlineBannerAndRefresh()
+                        wasOffline = false
+                    } else {
+                        binding.layoutOfflineBanner.visibility = View.GONE
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showOfflineBanner() {
+        val banner = binding.layoutOfflineBanner
+        banner.setBackgroundColor(android.graphics.Color.parseColor("#0D8A3F")) // AroundUS Emerald Green
+        binding.ivOfflineStatusIcon.setImageResource(R.drawable.ic_wifi_off)
+        binding.tvOfflineStatusText.text = "You're offline · Showing saved content"
+
+        if (banner.visibility != View.VISIBLE) {
+            banner.visibility = View.VISIBLE
+            banner.alpha = 0f
+            banner.translationY = -60f
+            banner.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(300)
+                .start()
+        }
+    }
+
+    private fun showOnlineBannerAndRefresh() {
+        val banner = binding.layoutOfflineBanner
+        banner.setBackgroundColor(android.graphics.Color.parseColor("#065F46")) // Dark Emerald Green
+        binding.ivOfflineStatusIcon.setImageResource(R.drawable.ic_check_circle)
+        binding.tvOfflineStatusText.text = "Back online · Refreshing..."
+
+        // Automatically trigger live refresh across all active fragments
+        com.aroundus.app.utils.AppRefreshManager.notifyDataChanged(com.aroundus.app.utils.RefreshTarget.ALL)
+
+        // Slide up and hide after 2.5 seconds
+        banner.postDelayed({
+            if (!isDestroyed && !isFinishing) {
+                banner.animate()
+                    .alpha(0f)
+                    .translationY(-60f)
+                    .setDuration(350)
+                    .withEndAction {
+                        banner.visibility = View.GONE
+                    }
+                    .start()
+            }
+        }, 2500L)
     }
 
 }

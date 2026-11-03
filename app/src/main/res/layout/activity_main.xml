@@ -13,6 +13,41 @@
         android:layout_height="match_parent"
         android:background="@color/background">
 
+        <!-- Offline Status Banner (Shown when no internet, styled with app emerald green) -->
+        <LinearLayout
+            android:id="@+id/layoutOfflineBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/primary"
+            android:elevation="20dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="7dp"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:visibility="visible">
+
+            <ImageView
+                android:id="@+id/ivOfflineStatusIcon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_wifi_off"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/tvOfflineStatusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="No internet connection · Showing offline content"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
         <!-- NavHostFragment taking full height above the bottom bar -->
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/navHostFragment"
@@ -23,7 +58,7 @@
             app:layout_constraintBottom_toTopOf="@id/bottomBarContainer"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutOfflineBanner"
             app:navGraph="@navigation/nav_graph" />
 
         <!-- Bottom Navigation Bar Container with Top Divider and Elevation -->

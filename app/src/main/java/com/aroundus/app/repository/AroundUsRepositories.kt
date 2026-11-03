@@ -7,6 +7,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import com.aroundus.app.models.*
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.network.SupabaseConfig
+import kotlinx.coroutines.supervisorScope
+import com.aroundus.app.utils.NetworkUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -271,6 +273,15 @@ class UserRepository {
 
                 NetworkResult.Error("User profile not found in database.")
             } catch (e: Exception) {
+                val currentUid = SupabaseClient.getCurrentUserId() ?: ""
+                if (userId == currentUid && currentUid.isNotBlank()) {
+                    val name = SupabaseClient.getCurrentUserName() ?: "Neighbor"
+                    val email = SupabaseClient.getCurrentUserEmail() ?: "$currentUid@aroundus.app"
+                    val avatar = SupabaseClient.getAvatarPath(currentUid)
+                    return@withContext NetworkResult.Success(
+                        UserEntity(userId = currentUid, name = name, email = email, profilePhoto = avatar)
+                    )
+                }
                 NetworkResult.Error(e.localizedMessage ?: "Network error", e)
             }
         }
@@ -293,6 +304,11 @@ class UserRepository {
         withContext(Dispatchers.IO) {
             val currentEmail = SupabaseClient.getCurrentUserEmail()?.trim()?.lowercase() ?: ""
             val cachedUid = SupabaseClient.getCurrentUserId() ?: ""
+            val ctx = SupabaseClient.getAppContext()
+            val isOffline = ctx != null && !NetworkUtils.isNetworkAvailable(ctx)
+            if (cachedUid.isNotBlank() && isOffline) {
+                return@withContext cachedUid
+            }
 
             // 1. If cachedUid exists in public.users table, use it
             if (cachedUid.isNotBlank() && cachedUid.startsWith("usr_")) {
@@ -321,6 +337,11 @@ class UserRepository {
                         }
                     }
                 } catch (_: Exception) {}
+            }
+
+            // If network lookup failed or we are offline, preserve existing cached session
+            if (cachedUid.isNotBlank()) {
+                return@withContext cachedUid
             }
 
             // 3. Fallback: generate deterministic usr_<hash> and ensure record exists in public.users
@@ -1097,30 +1118,53 @@ class PostRepository {
 
     suspend fun fetchPostsWithAuthors(context: Context? = null): NetworkResult<List<Post>> =
         withContext(Dispatchers.IO) {
+            val ctx = context ?: SupabaseClient.getAppContext()
+            val cachedPosts = getCachedPosts(ctx)
+
+            // 1. Fast offline return: if device has no network, serve cache immediately
+            if (ctx != null && !NetworkUtils.isNetworkAvailable(ctx)) {
+                return@withContext if (cachedPosts.isNotEmpty()) {
+                    NetworkResult.Success(cachedPosts)
+                } else {
+                    NetworkResult.Error("No internet connection. Please check your network.")
+                }
+            }
+
             try {
-                val currentUserId = UserRepository().resolveValidAuthorId()
+                val currentUserId = try {
+                    UserRepository().resolveValidAuthorId()
+                } catch (_: Exception) {
+                    SupabaseClient.getCurrentUserId() ?: ""
+                }
 
-                // Fetch posts, comments count map, and likes data concurrently
-                val postsDeferred = async { service.getPosts() }
-                val commentsMapDeferred = async { CommentRepository().fetchCommentsCountMap() }
-                val likesDataDeferred = async { LikeRepository().fetchLikesData(currentUserId) }
+                // 2. Fetch posts, comments count map, and likes data concurrently under supervisorScope
+                // This ensures network/DNS failures never cancel sibling coroutines or crash the scope
+                val (resp, commentsCountMap, likesData) = supervisorScope {
+                    val postsDeferred = async {
+                        try { service.getPosts() } catch (_: Exception) { null }
+                    }
+                    val commentsMapDeferred = async {
+                        try { CommentRepository().fetchCommentsCountMap() } catch (_: Exception) { emptyMap() }
+                    }
+                    val likesDataDeferred = async {
+                        try { LikeRepository().fetchLikesData(currentUserId) } catch (_: Exception) { LikeRepository.LikesData() }
+                    }
 
-                val resp = postsDeferred.await()
-                val commentsCountMap = commentsMapDeferred.await()
-                val likesData = likesDataDeferred.await()
+                    Triple(postsDeferred.await(), commentsMapDeferred.await(), likesDataDeferred.await())
+                }
 
-                if (resp.isSuccessful && resp.body() != null) {
+                if (resp != null && resp.isSuccessful && resp.body() != null) {
                     val posts = resp.body()!!
 
-                    // 1. Identify all unknown author IDs
+                    // Identify unknown author IDs
                     val unknownAuthorIds = posts
                         .mapNotNull { it.authorId.takeIf { id -> !id.isNullOrBlank() } }
                         .filter { !globalAuthorCache.containsKey(it) || globalAuthorCache[it]?.second.isNullOrBlank() }
                         .distinct()
 
-                    // 2. Fetch unknown authors in parallel concurrently (300ms total instead of N * 500ms)
+                    // Fetch unknown authors in parallel concurrently
                     if (unknownAuthorIds.isNotEmpty()) {
-                        coroutineScope {
+                        supervisorScope {
                             unknownAuthorIds.map { authorId ->
                                 async(Dispatchers.IO) {
                                     try {
@@ -1143,7 +1187,7 @@ class PostRepository {
                         }
                     }
 
-                    // 3. Assemble UI models using dynamic comments and likes from database
+                    // Assemble UI models using dynamic comments and likes from database
                     val uiPosts = posts.map { p ->
                         val pAuthorId = p.authorId ?: ""
                         val (authorName, avatarPath) = if (pAuthorId.isNotBlank()) {
@@ -1166,15 +1210,25 @@ class PostRepository {
                         )
                     }
 
-                    // 4. Update memory & disk cache for instant 0ms app open next time
-                    savePostsToCache(context, uiPosts)
+                    // Update memory & disk cache for instant offline access next time
+                    savePostsToCache(ctx, uiPosts)
 
                     NetworkResult.Success(uiPosts)
                 } else {
-                    NetworkResult.Error("Failed to fetch posts: ${resp.message()}")
+                    // Fall back to cached posts if server query fails or is unreachable
+                    if (cachedPosts.isNotEmpty()) {
+                        NetworkResult.Success(cachedPosts)
+                    } else {
+                        NetworkResult.Error("Unable to load latest posts. Showing offline content.")
+                    }
                 }
             } catch (e: Exception) {
-                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+                // In real-world apps, never fail completely if cache exists
+                if (cachedPosts.isNotEmpty()) {
+                    NetworkResult.Success(cachedPosts)
+                } else {
+                    NetworkResult.Error(e.localizedMessage ?: "No internet connection", e)
+                }
             }
         }
 
@@ -1840,18 +1894,72 @@ class GroupRepository {
     private val service get() = SupabaseClient.getService()
     private val userRepo = UserRepository()
 
+    companion object {
+        private var memoryCachedGroups: List<GroupEntity> = emptyList()
+        private const val PREFS_GROUP_CACHE = "aroundus_groups_cache"
+        private const val KEY_GROUPS_JSON = "cached_groups_json"
+
+        fun getCachedGroups(context: Context?): List<GroupEntity> {
+            if (memoryCachedGroups.isNotEmpty()) return memoryCachedGroups
+            val ctx = context ?: SupabaseClient.getAppContext() ?: return emptyList()
+            try {
+                val prefs = ctx.getSharedPreferences(PREFS_GROUP_CACHE, Context.MODE_PRIVATE)
+                val json = prefs.getString(KEY_GROUPS_JSON, null)
+                if (!json.isNullOrBlank()) {
+                    val type = object : com.google.gson.reflect.TypeToken<List<GroupEntity>>() {}.type
+                    val list: List<GroupEntity>? = com.google.gson.Gson().fromJson(json, type)
+                    if (!list.isNullOrEmpty()) {
+                        memoryCachedGroups = list
+                        return list
+                    }
+                }
+            } catch (_: Exception) {}
+            return emptyList()
+        }
+
+        fun saveGroupsToCache(context: Context?, groups: List<GroupEntity>) {
+            if (groups.isEmpty()) return
+            memoryCachedGroups = groups
+            val ctx = context ?: SupabaseClient.getAppContext() ?: return
+            try {
+                val prefs = ctx.getSharedPreferences(PREFS_GROUP_CACHE, Context.MODE_PRIVATE)
+                val json = com.google.gson.Gson().toJson(groups)
+                prefs.edit().putString(KEY_GROUPS_JSON, json).apply()
+            } catch (_: Exception) {}
+        }
+    }
+
     suspend fun fetchGroups(): NetworkResult<List<GroupEntity>> =
         withContext(Dispatchers.IO) {
+            val ctx = SupabaseClient.getAppContext()
+            val cached = getCachedGroups(ctx)
+            if (ctx != null && !NetworkUtils.isNetworkAvailable(ctx)) {
+                return@withContext if (cached.isNotEmpty()) {
+                    NetworkResult.Success(cached)
+                } else {
+                    NetworkResult.Error("No internet connection.")
+                }
+            }
+
             try {
                 val resp = service.getGroups()
                 if (resp.isSuccessful && resp.body() != null) {
                     val sorted = resp.body()!!.sortedByDescending { it.getCreatedAtMillis() }
+                    saveGroupsToCache(ctx, sorted)
                     NetworkResult.Success(sorted)
                 } else {
-                    NetworkResult.Error("Failed to fetch groups.")
+                    if (cached.isNotEmpty()) {
+                        NetworkResult.Success(cached)
+                    } else {
+                        NetworkResult.Error("Failed to fetch groups.")
+                    }
                 }
             } catch (e: Exception) {
-                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+                if (cached.isNotEmpty()) {
+                    NetworkResult.Success(cached)
+                } else {
+                    NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+                }
             }
         }
 
@@ -2382,17 +2490,72 @@ class EventRepository {
     private val service get() = SupabaseClient.getService()
     private val userRepo = UserRepository()
 
+    companion object {
+        private var memoryCachedEvents: List<EventEntity> = emptyList()
+        private const val PREFS_EVENT_CACHE = "aroundus_events_cache"
+        private const val KEY_EVENTS_JSON = "cached_events_json"
+
+        fun getCachedEvents(context: Context?): List<EventEntity> {
+            if (memoryCachedEvents.isNotEmpty()) return memoryCachedEvents
+            val ctx = context ?: SupabaseClient.getAppContext() ?: return emptyList()
+            try {
+                val prefs = ctx.getSharedPreferences(PREFS_EVENT_CACHE, Context.MODE_PRIVATE)
+                val json = prefs.getString(KEY_EVENTS_JSON, null)
+                if (!json.isNullOrBlank()) {
+                    val type = object : com.google.gson.reflect.TypeToken<List<EventEntity>>() {}.type
+                    val list: List<EventEntity>? = com.google.gson.Gson().fromJson(json, type)
+                    if (!list.isNullOrEmpty()) {
+                        memoryCachedEvents = list
+                        return list
+                    }
+                }
+            } catch (_: Exception) {}
+            return emptyList()
+        }
+
+        fun saveEventsToCache(context: Context?, events: List<EventEntity>) {
+            if (events.isEmpty()) return
+            memoryCachedEvents = events
+            val ctx = context ?: SupabaseClient.getAppContext() ?: return
+            try {
+                val prefs = ctx.getSharedPreferences(PREFS_EVENT_CACHE, Context.MODE_PRIVATE)
+                val json = com.google.gson.Gson().toJson(events)
+                prefs.edit().putString(KEY_EVENTS_JSON, json).apply()
+            } catch (_: Exception) {}
+        }
+    }
+
     suspend fun fetchEvents(): NetworkResult<List<EventEntity>> =
         withContext(Dispatchers.IO) {
+            val ctx = SupabaseClient.getAppContext()
+            val cached = getCachedEvents(ctx)
+            if (ctx != null && !NetworkUtils.isNetworkAvailable(ctx)) {
+                return@withContext if (cached.isNotEmpty()) {
+                    NetworkResult.Success(cached)
+                } else {
+                    NetworkResult.Error("No internet connection.")
+                }
+            }
+
             try {
                 val resp = service.getEvents()
                 if (resp.isSuccessful && resp.body() != null) {
-                    NetworkResult.Success(resp.body()!!)
+                    val events = resp.body()!!
+                    saveEventsToCache(ctx, events)
+                    NetworkResult.Success(events)
                 } else {
-                    NetworkResult.Error("Failed to fetch events.")
+                    if (cached.isNotEmpty()) {
+                        NetworkResult.Success(cached)
+                    } else {
+                        NetworkResult.Error("Failed to fetch events.")
+                    }
                 }
             } catch (e: Exception) {
-                NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+                if (cached.isNotEmpty()) {
+                    NetworkResult.Success(cached)
+                } else {
+                    NetworkResult.Error(e.localizedMessage ?: "Network error", e)
+                }
             }
         }
 

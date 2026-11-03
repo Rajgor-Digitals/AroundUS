@@ -445,32 +445,34 @@ class ChatListFragment : Fragment() {
                     }
                 }
                 lifecycleScope.launch {
-                    val postRes = postRepository.fetchPostsWithAuthors(context?.applicationContext)
-                    if (postRes is NetworkResult.Success && currentTab == TabType.ANNOUNCEMENTS) {
-                        val announcementPosts = postRes.data.filter {
-                            it.category.equals("Announcement", ignoreCase = true) ||
-                            it.category.equals("Alert", ignoreCase = true) ||
-                            it.category.equals("Notice", ignoreCase = true)
+                    try {
+                        val postRes = postRepository.fetchPostsWithAuthors(context?.applicationContext)
+                        if (postRes is NetworkResult.Success && currentTab == TabType.ANNOUNCEMENTS) {
+                            val announcementPosts = postRes.data.filter {
+                                it.category.equals("Announcement", ignoreCase = true) ||
+                                it.category.equals("Alert", ignoreCase = true) ||
+                                it.category.equals("Notice", ignoreCase = true)
+                            }
+                            allAnnouncementsList.clear()
+                            allAnnouncementsList.addAll(announcementPosts.map {
+                                ChatItem(
+                                    id = it.id,
+                                    userName = it.userName,
+                                    avatarRes = it.userAvatar,
+                                    lastMessage = it.text,
+                                    time = it.timeAgo,
+                                    unreadCount = 0,
+                                    isOnline = false,
+                                    avatarUrl = it.userAvatarPath
+                                )
+                            })
+                            displayedChatsList.clear()
+                            displayedChatsList.addAll(allAnnouncementsList)
+                            if (::chatAdapter.isInitialized) {
+                                chatAdapter.notifyDataSetChanged()
+                            }
                         }
-                        allAnnouncementsList.clear()
-                        allAnnouncementsList.addAll(announcementPosts.map {
-                            ChatItem(
-                                id = it.id,
-                                userName = it.userName,
-                                avatarRes = it.userAvatar,
-                                lastMessage = it.text,
-                                time = it.timeAgo,
-                                unreadCount = 0,
-                                isOnline = false,
-                                avatarUrl = it.userAvatarPath
-                            )
-                        })
-                        displayedChatsList.clear()
-                        displayedChatsList.addAll(allAnnouncementsList)
-                        if (::chatAdapter.isInitialized) {
-                            chatAdapter.notifyDataSetChanged()
-                        }
-                    }
+                    } catch (_: Exception) {}
                 }
             }
         }

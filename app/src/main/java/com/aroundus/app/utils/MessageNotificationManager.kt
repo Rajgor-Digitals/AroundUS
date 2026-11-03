@@ -180,6 +180,11 @@ object MessageNotificationManager {
 
             while (isActive) {
                 try {
+                    // Avoid unnecessary queries and battery drain when offline
+                    if (!NetworkUtils.isNetworkAvailable(context)) {
+                        delay(6000L)
+                        continue
+                    }
                     val currentUserId = userRepo.resolveValidAuthorId().ifBlank { SupabaseClient.getCurrentUserId() ?: "" }
 
                     if (currentUserId.isNotBlank()) {

@@ -98,8 +98,12 @@ class HomeFragment : Fragment() {
 
         // 2. Fetch fresh posts on initial load
         viewLifecycleOwner.lifecycleScope.launch {
-            fetchPostsAndCheckUpdate()
-            AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+            try {
+                fetchPostsAndCheckUpdate()
+                AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -109,8 +113,12 @@ class HomeFragment : Fragment() {
         refreshNotificationBadge(isInitial = false)
         if (AppRefreshManager.isStale(RefreshTarget.HOME_FEED)) {
             viewLifecycleOwner.lifecycleScope.launch {
-                fetchPostsAndCheckUpdate()
-                AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+                try {
+                    fetchPostsAndCheckUpdate()
+                    AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }
@@ -118,10 +126,18 @@ class HomeFragment : Fragment() {
     private fun setupSwipeRefresh() {
         binding.swipeRefreshLayout.applyAroundUsTheme()
         binding.swipeRefreshLayout.setOnRefreshListener {
+            val ctx = context
+            if (ctx != null && !com.aroundus.app.utils.NetworkUtils.isNetworkAvailable(ctx)) {
+                binding.swipeRefreshLayout.isRefreshing = false
+                Toast.makeText(ctx, "You're offline. Showing cached posts.", Toast.LENGTH_SHORT).show()
+                return@setOnRefreshListener
+            }
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     fetchPostsAndCheckUpdate()
                     AppRefreshManager.markRefreshed(RefreshTarget.HOME_FEED)
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 } finally {
                     binding.swipeRefreshLayout.isRefreshing = false
                 }
@@ -251,31 +267,42 @@ class HomeFragment : Fragment() {
 
 
     private suspend fun fetchPostsAndCheckUpdate() {
-        when (val result = postRepository.fetchPostsWithAuthors(context?.applicationContext)) {
-            is NetworkResult.Success -> {
-                val fetchedPosts = result.data
+        try {
+            when (val result = postRepository.fetchPostsWithAuthors(context?.applicationContext)) {
+                is NetworkResult.Success -> {
+                    val fetchedPosts = result.data
 
-                // Smart Diffing for Community Posts
-                if (fetchedPosts != postList) {
-                    postList.clear()
-                    postList.addAll(fetchedPosts)
-                    postAdapter.notifyDataSetChanged()
+                    // Smart Diffing for Community Posts
+                    if (fetchedPosts != postList) {
+                        postList.clear()
+                        postList.addAll(fetchedPosts)
+                        postAdapter.notifyDataSetChanged()
+                    }
+
+                    // Filter & Smart Diffing for Announcements
+                    val announcements = fetchedPosts.filter { post ->
+                        listOf("Announcement", "Announcements", "Community", "Events", "Event",
+                               "Alert", "Alerts", "Emergency", "Notice")
+                            .any { it.equals(post.category, ignoreCase = true) }
+                    }
+
+                    if (announcements != announcementList) {
+                        announcementList.clear()
+                        announcementList.addAll(announcements)
+                        announcementAdapter.notifyDataSetChanged()
+                    }
                 }
-
-                // Filter & Smart Diffing for Announcements
-                val announcements = fetchedPosts.filter { post ->
-                    listOf("Announcement", "Announcements", "Community", "Events", "Event",
-                           "Alert", "Alerts", "Emergency", "Notice")
-                        .any { it.equals(post.category, ignoreCase = true) }
-                }
-
-                if (announcements != announcementList) {
-                    announcementList.clear()
-                    announcementList.addAll(announcements)
-                    announcementAdapter.notifyDataSetChanged()
+                is NetworkResult.Error -> {
+                    if (postList.isEmpty()) {
+                        loadPostsFromCache()
+                    }
                 }
             }
-            is NetworkResult.Error -> {}
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (postList.isEmpty()) {
+                loadPostsFromCache()
+            }
         }
     }
 
@@ -534,8 +561,12 @@ class HomeFragment : Fragment() {
 
         // 2. Fresh live asynchronous count from Supabase
         viewLifecycleOwner.lifecycleScope.launch {
-            val liveCount = notificationRepository.getUnreadNotificationCount(ctx)
-            applyNotificationCount(liveCount, animate = !isInitial && liveCount > lastNotificationCount)
+            try {
+                val liveCount = notificationRepository.getUnreadNotificationCount(ctx)
+                applyNotificationCount(liveCount, animate = !isInitial && liveCount > lastNotificationCount)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
