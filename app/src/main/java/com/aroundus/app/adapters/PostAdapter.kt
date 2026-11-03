@@ -83,6 +83,10 @@ class PostAdapter(
                     binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FEF3C7"))
                     binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#D97706"))
                 }
+                category.equals("Buy & Sell", ignoreCase = true) || category.equals("Sale", ignoreCase = true) || category.equals("Buy/Sell", ignoreCase = true) || category.equals("Marketplace", ignoreCase = true) -> {
+                    binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FEF3C7"))
+                    binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#D97706"))
+                }
                 else -> {
                     binding.chipCategory.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#DBEAFE"))
                     binding.chipCategory.setTextColor(android.graphics.Color.parseColor("#2563EB"))

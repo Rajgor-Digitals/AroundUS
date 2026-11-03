@@ -221,6 +221,47 @@
                         android:visibility="gone" />
                 </LinearLayout>
 
+                <!-- 4. Buy &amp; Sell -->
+                <LinearLayout
+                    android:id="@+id/catBuySell"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_group_category_unselected"
+                    android:gravity="center"
+                    android:minWidth="76dp"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="12dp">
+
+                    <ImageView
+                        android:id="@+id/ivCatBuySell"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:contentDescription="Buy / Sell"
+                        android:src="@drawable/ic_shopping_bag" />
+
+                    <TextView
+                        android:id="@+id/tvCatBuySell"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Buy / Sell"
+                        android:textColor="#334155"
+                        android:textSize="11sp" />
+
+                    <View
+                        android:id="@+id/lineCatBuySell"
+                        android:layout_width="24dp"
+                        android:layout_height="2dp"
+                        android:layout_marginTop="3dp"
+                        android:background="#0D8A3F"
+                        android:visibility="gone" />
+                </LinearLayout>
+
             </LinearLayout>
         </HorizontalScrollView>
 
@@ -545,6 +586,13 @@
 
             </LinearLayout>
         </HorizontalScrollView>
+
+        <!-- Standard Post Form Container (General, Announcement, Help & Support) -->
+        <LinearLayout
+            android:id="@+id/layoutStandardPostForm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
         <!-- Main Card: Author Row + Textarea Input + Media Action Row -->
         <com.google.android.material.card.MaterialCardView
@@ -1140,6 +1188,793 @@
             </LinearLayout>
 
         </FrameLayout>
+
+        </LinearLayout>
+
+        <!-- Buy & Sell Form (Visible when Buy & Sell category is selected) -->
+        <LinearLayout
+            android:id="@+id/layoutBuySellForm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- 1. Photos Section Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="1dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="Item Photos *"
+                            android:textColor="#0F172A"
+                            android:textSize="14.5sp" />
+
+                        <TextView
+                            android:id="@+id/tvBuySellAddPhotoCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="0/5 photos"
+                            android:textColor="#0D8A3F"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:fontFamily="sans-serif"
+                        android:text="Add clear photos of the item from multiple angles (up to 5)."
+                        android:textColor="#64748B"
+                        android:textSize="11.5sp" />
+
+                    <!-- Photos Container -->
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:clipToPadding="false"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/layoutBuySellPhotosContainer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <!-- Add Photo Card -->
+                            <com.google.android.material.card.MaterialCardView
+                                android:id="@+id/cardAddBuySellPhoto"
+                                android:layout_width="96dp"
+                                android:layout_height="96dp"
+                                android:layout_marginEnd="10dp"
+                                android:clickable="true"
+                                android:focusable="true"
+                                app:cardBackgroundColor="#F1F5F9"
+                                app:cardCornerRadius="14dp"
+                                app:cardElevation="0dp"
+                                app:strokeColor="#CBD5E1"
+                                app:strokeWidth="1.5dp">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    android:orientation="vertical">
+
+                                    <ImageView
+                                        android:layout_width="26dp"
+                                        android:layout_height="26dp"
+                                        android:src="@drawable/ic_camera"
+                                        app:tint="#0D8A3F" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="6dp"
+                                        android:fontFamily="sans-serif-bold"
+                                        android:text="Add Photo"
+                                        android:textColor="#0D8A3F"
+                                        android:textSize="11.5sp" />
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+
+                        </LinearLayout>
+                    </HorizontalScrollView>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 2. Listing Details Card: Title, Price &amp; Negotiable -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="16dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="1dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Title -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Listing Title *"
+                        android:textColor="#0F172A"
+                        android:textSize="13.5sp" />
+
+                    <EditText
+                        android:id="@+id/etBuySellTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_post_input_box"
+                        android:fontFamily="sans-serif"
+                        android:hint="What are you selling? (e.g. Wooden Study Table)"
+                        android:inputType="textCapWords"
+                        android:maxLines="1"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:textColor="#1E293B"
+                        android:textColorHint="#94A3B8"
+                        android:textSize="14sp" />
+
+                    <!-- Price -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Price (₹) *"
+                        android:textColor="#0F172A"
+                        android:textSize="13.5sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_post_input_box"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="₹ "
+                            android:textColor="#0D8A3F"
+                            android:textSize="17sp" />
+
+                        <EditText
+                            android:id="@+id/etBuySellPrice"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@null"
+                            android:fontFamily="sans-serif-bold"
+                            android:hint="0"
+                            android:inputType="numberDecimal"
+                            android:textColor="#0F172A"
+                            android:textColorHint="#94A3B8"
+                            android:textSize="15sp" />
+                    </LinearLayout>
+
+                    <!-- Negotiable Switch -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="Price is Negotiable"
+                                android:textColor="#1E293B"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
+                                android:fontFamily="sans-serif"
+                                android:text="Allow buyers to propose reasonable offers"
+                                android:textColor="#64748B"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/switchBuySellNegotiable"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="false"
+                            app:thumbTint="@color/switch_thumb_tint"
+                            app:trackTint="@color/switch_track_tint" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 3. Category &amp; Condition Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="16dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="1dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Category Label -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Category *"
+                        android:textColor="#0F172A"
+                        android:textSize="13.5sp" />
+
+                    <!-- Category Chips Scroll -->
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:clipToPadding="false"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/layoutBuySellCategoryChips"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/chipBuySellCatFurniture"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_active"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Furniture"
+                                android:textColor="#FFFFFF"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCatVehicles"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Vehicles"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCatElectronics"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Electronics"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCatMobilePhones"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Mobile Phones"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCatHomeKitchen"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Home &amp; Kitchen"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCatFashion"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Fashion"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCatBooks"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Books"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCatSports"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Sports"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCatOther"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Other"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+                    </HorizontalScrollView>
+
+                    <!-- Condition Label -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Condition *"
+                        android:textColor="#0F172A"
+                        android:textSize="13.5sp" />
+
+                    <!-- Condition Chips Scroll -->
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:clipToPadding="false"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/layoutBuySellConditionChips"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/chipBuySellCondBrandNew"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Brand New"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCondLikeNew"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_active"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Like New"
+                                android:textColor="#FFFFFF"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCondExcellent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Excellent"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCondGood"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Good"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/chipBuySellCondFair"
+                                android:layout_width="wrap_content"
+                                android:layout_height="36dp"
+                                android:background="@drawable/bg_category_chip_inactive"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:text="Fair"
+                                android:textColor="#475569"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+                    </HorizontalScrollView>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 4. Additional Info: Brand, Locality, Description -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginEnd="16dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="1dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Brand / Model -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Brand or Model (Optional)"
+                        android:textColor="#0F172A"
+                        android:textSize="13.5sp" />
+
+                    <EditText
+                        android:id="@+id/etBuySellBrand"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_post_input_box"
+                        android:fontFamily="sans-serif"
+                        android:hint="e.g. Samsung, Godrej, Milton"
+                        android:inputType="textCapWords"
+                        android:maxLines="1"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:textColor="#1E293B"
+                        android:textColorHint="#94A3B8"
+                        android:textSize="14sp" />
+
+                    <!-- Locality -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Item Location / Area *"
+                        android:textColor="#0F172A"
+                        android:textSize="13.5sp" />
+
+                    <EditText
+                        android:id="@+id/etBuySellLocality"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_post_input_box"
+                        android:fontFamily="sans-serif"
+                        android:hint="e.g. Bhujpur Village, Kutch"
+                        android:inputType="textCapWords"
+                        android:maxLines="1"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:textColor="#1E293B"
+                        android:textColorHint="#94A3B8"
+                        android:textSize="14sp" />
+
+                    <!-- Description -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Description *"
+                        android:textColor="#0F172A"
+                        android:textSize="13.5sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_post_input_box"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <EditText
+                            android:id="@+id/etBuySellDescription"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:fontFamily="sans-serif"
+                            android:gravity="top|start"
+                            android:hint="Describe the item condition, features, age, reason for selling..."
+                            android:inputType="textMultiLine|textCapSentences"
+                            android:lineSpacingExtra="3dp"
+                            android:minLines="4"
+                            android:textColor="#1E293B"
+                            android:textColorHint="#94A3B8"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvBuySellCharCounter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="6dp"
+                            android:fontFamily="sans-serif"
+                            android:text="0/1000"
+                            android:textColor="#94A3B8"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <!-- Allow Chat Switch -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="Allow Direct Chat Inquiries"
+                                android:textColor="#1E293B"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
+                                android:fontFamily="sans-serif"
+                                android:text="Interested buyers can message you directly"
+                                android:textColor="#64748B"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/switchBuySellAllowChat"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            app:thumbTint="@color/switch_thumb_tint"
+                            app:trackTint="@color/switch_track_tint" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 5. Marketplace Safety Tips Banner -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/bg_community_guideline_banner"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_icon_container_green">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_shield_safe"
+                            app:tint="#0D8A3F" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-black"
+                            android:text="Safe Marketplace Guidelines"
+                            android:textColor="#1E293B"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif"
+                            android:lineSpacingExtra="1dp"
+                            android:text="Meet in a public area in daylight, inspect items before paying, and never share OTPs or bank credentials."
+                            android:textColor="#475569"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- 6. Bottom Publish Listing Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBuySellPublish"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="#0D8A3F"
+                android:fontFamily="sans-serif-bold"
+                android:text="Publish Listing in Marketplace"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                app:cornerRadius="14dp"
+                app:elevation="2dp"
+                app:icon="@drawable/ic_shopping_bag"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="#FFFFFF" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

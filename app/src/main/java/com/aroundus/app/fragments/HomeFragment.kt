@@ -552,6 +552,7 @@ class HomeFragment : Fragment() {
 
     private fun refreshNotificationBadge(isInitial: Boolean = false) {
         val ctx = context ?: return
+        if (view == null || _binding == null) return
 
         // 1. Instant 0ms cache-based check
         if (isInitial || lastNotificationCount == -1) {
@@ -562,6 +563,7 @@ class HomeFragment : Fragment() {
         // 2. Fresh live asynchronous count from Supabase
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                if (_binding == null) return@launch
                 val liveCount = notificationRepository.getUnreadNotificationCount(ctx)
                 applyNotificationCount(liveCount, animate = !isInitial && liveCount > lastNotificationCount)
             } catch (e: Exception) {

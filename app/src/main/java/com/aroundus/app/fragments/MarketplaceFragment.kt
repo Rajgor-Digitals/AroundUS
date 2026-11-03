@@ -150,23 +150,27 @@ class MarketplaceFragment : Fragment() {
     }
 
     private fun loadMarketplaceData(showLoadingIndicator: Boolean) {
+        val b = _binding ?: return
         if (showLoadingIndicator) {
-            binding.pbLoading.visibility = View.VISIBLE
+            b.pbLoading.visibility = View.VISIBLE
         }
 
         loadJob?.cancel()
-        loadJob = lifecycleScope.launch {
+        loadJob = viewLifecycleOwner.lifecycleScope.launch {
             try {
+                val ctx = context ?: return@launch
                 val result = marketplaceRepository.fetchListings(
-                    context = requireContext(),
+                    context = ctx,
                     category = currentCategory,
                     query = currentQuery,
                     sort = currentSort.name,
                     onlySaved = isSavedFilterOnly
                 )
 
-                binding.pbLoading.visibility = View.GONE
-                binding.swipeRefreshLayout.isRefreshing = false
+                _binding?.let { currentBinding ->
+                    currentBinding.pbLoading.visibility = View.GONE
+                    currentBinding.swipeRefreshLayout.isRefreshing = false
+                }
 
                 when (result) {
                     is NetworkResult.Success -> {
@@ -180,8 +184,10 @@ class MarketplaceFragment : Fragment() {
                     }
                 }
             } catch (e: Exception) {
-                binding.pbLoading.visibility = View.GONE
-                binding.swipeRefreshLayout.isRefreshing = false
+                _binding?.let { currentBinding ->
+                    currentBinding.pbLoading.visibility = View.GONE
+                    currentBinding.swipeRefreshLayout.isRefreshing = false
+                }
                 applyCurrentFilters()
             }
         }
