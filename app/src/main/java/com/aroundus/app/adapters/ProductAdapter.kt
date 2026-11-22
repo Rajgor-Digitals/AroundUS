@@ -41,7 +41,7 @@ class ProductAdapter(
             }
 
             binding.tvLocation.text = if (!product.locality.isNullOrBlank()) product.locality else product.location
-            binding.tvTime.text = product.timeAgo
+            binding.tvTime.text = product.displayTimeAgo
             binding.tvCondition.text = product.condition
 
             // Video indicator badge

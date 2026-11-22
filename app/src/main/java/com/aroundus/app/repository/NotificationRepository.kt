@@ -82,6 +82,18 @@ class NotificationRepository {
                     val num = clean.replace(Regex("[^0-9]"), "").toLongOrNull() ?: 1L
                     now - num * 86400_000L
                 }
+                clean.contains("w ago") || clean.endsWith("w") -> {
+                    val num = clean.replace(Regex("[^0-9]"), "").toLongOrNull() ?: 1L
+                    now - num * 7 * 86400_000L
+                }
+                clean.contains("mo ago") || clean.endsWith("mo") -> {
+                    val num = clean.replace(Regex("[^0-9]"), "").toLongOrNull() ?: 1L
+                    now - num * 30 * 86400_000L
+                }
+                clean.contains("y ago") || clean.endsWith("y") -> {
+                    val num = clean.replace(Regex("[^0-9]"), "").toLongOrNull() ?: 1L
+                    now - num * 365 * 86400_000L
+                }
                 else -> now - 172800_000L
             }
         } catch (_: Exception) {

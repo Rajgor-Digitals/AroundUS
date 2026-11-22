@@ -350,29 +350,85 @@ data class SavedListingEntity(
 
 // Extension functions to convert Database Entities to UI Models
 
+/**
+ * Parses diverse timestamp formats into epoch milliseconds:
+ * 1. Raw epoch digits (millis or seconds)
+ * 2. ISO-8601 with offset (e.g. "2024-10-15T14:30:00+00:00" from Supabase / Postgres timestamptz)
+ * 3. ISO-8601 UTC / Instant (e.g. "2024-10-15T14:30:00Z")
+ * 4. Local ISO (e.g. "2024-10-15T14:30:00")
+ * 5. Legacy SQL timestamps (e.g. "2024-10-15 14:30:00")
+ */
+fun parseTimestampToMillis(timestampStr: String?): Long? {
+    if (timestampStr.isNullOrBlank()) return null
+    val raw = timestampStr.trim()
+
+    // 1. Raw numeric epoch digits
+    val numeric = raw.toLongOrNull()
+    if (numeric != null) {
+        return if (numeric < 100_000_000_000L) numeric * 1000L else numeric
+    }
+
+    // 2. ISO-8601 with offset (Supabase timestamptz default)
+    try {
+        return java.time.OffsetDateTime.parse(raw).toInstant().toEpochMilli()
+    } catch (_: Exception) {}
+
+    // 3. Instant UTC ("Z")
+    try {
+        return java.time.Instant.parse(raw).toEpochMilli()
+    } catch (_: Exception) {}
+
+    // 4. Local ISO without timezone
+    try {
+        return java.time.LocalDateTime.parse(raw.replace(" ", "T"))
+            .atZone(java.time.ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    } catch (_: Exception) {}
+
+    // 5. Fallback for custom SQL formats
+    val patterns = arrayOf(
+        "yyyy-MM-dd'T'HH:mm:ss.SSSSSSX",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSX",
+        "yyyy-MM-dd'T'HH:mm:ssX",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd"
+    )
+    for (fmt in patterns) {
+        try {
+            val sdf = java.text.SimpleDateFormat(fmt, java.util.Locale.US).apply {
+                timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }
+            val d = sdf.parse(raw)
+            if (d != null) return d.time
+        } catch (_: Exception) {}
+    }
+    return null
+}
+
 fun formatTimeAgo(timestampStr: String?): String {
     if (timestampStr.isNullOrBlank()) return "Just now"
-    try {
-        val timeMs = timestampStr.toLongOrNull() ?: return "Just now"
-        val nowMs = System.currentTimeMillis()
-        val diffMs = nowMs - timeMs
+    val timeMs = parseTimestampToMillis(timestampStr) ?: return timestampStr
+    val nowMs = System.currentTimeMillis()
+    val diffMs = nowMs - timeMs
 
-        if (diffMs < 0) return "Just now"
+    if (diffMs < 0) return "Just now"
 
-        val diffSec = diffMs / 1000
-        val diffMin = diffSec / 60
-        val diffHours = diffMin / 60
-        val diffDays = diffHours / 24
+    val diffSec = diffMs / 1000
+    val diffMin = diffSec / 60
+    val diffHours = diffMin / 60
+    val diffDays = diffHours / 24
 
-        return when {
-            diffMin < 1 -> "Just now"
-            diffMin < 60 -> "${diffMin}m ago"
-            diffHours < 24 -> "${diffHours}h ago"
-            diffDays < 7 -> "${diffDays}d ago"
-            else -> "${diffDays / 7}w ago"
-        }
-    } catch (_: Exception) {
-        return "Just now"
+    return when {
+        diffMin < 1 -> "Just now"
+        diffMin < 60 -> "${diffMin}m ago"
+        diffHours < 24 -> "${diffHours}h ago"
+        diffDays < 7 -> "${diffDays}d ago"
+        diffDays < 30 -> "${diffDays / 7}w ago"
+        diffDays < 365 -> "${diffDays / 30}mo ago"
+        else -> "${diffDays / 365}y ago"
     }
 }
 
@@ -591,14 +647,7 @@ fun ListingEntity.toUIModel(
         priceAmount = price,
         isNegotiable = isNegotiable,
         listingStatus = listingStatus,
-        createdAtMs = try {
-            if (createdAt?.toLongOrNull() != null) createdAt.toLong()
-            else {
-                val parser = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US)
-                parser.timeZone = java.util.TimeZone.getTimeZone("UTC")
-                parser.parse(createdAt?.substringBefore(".") ?: "")?.time ?: System.currentTimeMillis()
-            }
-        } catch (_: Exception) { System.currentTimeMillis() },
+        createdAtMs = parseTimestampToMillis(createdAt) ?: System.currentTimeMillis(),
         latitude = latitude,
         longitude = longitude
     )

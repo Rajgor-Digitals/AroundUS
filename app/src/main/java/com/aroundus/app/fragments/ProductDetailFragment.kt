@@ -75,7 +75,12 @@ class ProductDetailFragment : Fragment() {
         binding.tvPrice.text = product.price
         binding.chipCondition.text = product.condition
         binding.tvLocation.text = if (!product.locality.isNullOrBlank()) product.locality else product.location
-        binding.tvTimeAgo.text = "Posted ${product.timeAgo}"
+        val postedTime = product.displayTimeAgo
+        binding.tvTimeAgo.text = if (postedTime.equals("Just now", ignoreCase = true)) {
+            "Posted just now"
+        } else {
+            "Posted $postedTime"
+        }
 
         // Negotiable badge
         binding.badgeNegotiable.visibility = if (product.isNegotiable) View.VISIBLE else View.GONE

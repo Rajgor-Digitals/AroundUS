@@ -61,6 +61,9 @@ data class Product(
     val latitude: Double? = null,
     val longitude: Double? = null
 ) {
+    val displayTimeAgo: String
+        get() = if (createdAtMs > 0L) formatTimeAgo(createdAtMs.toString()) else timeAgo.ifBlank { "Recently" }
+
     val isVideo: Boolean
         get() {
             val url = imageUrl ?: imageUrls.firstOrNull() ?: return false
