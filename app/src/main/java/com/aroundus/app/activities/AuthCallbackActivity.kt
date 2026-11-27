@@ -112,6 +112,7 @@ class AuthCallbackActivity : AppCompatActivity() {
                     val resp = service.exchangePkceCode(mapOf("auth_code" to code!!))
                     if (resp.isSuccessful && resp.body() != null) {
                         accessToken = resp.body()?.accessToken
+                        refreshToken = resp.body()?.refreshToken ?: refreshToken
                     }
                 } catch (_: Exception) {}
             }
@@ -206,22 +207,26 @@ class AuthCallbackActivity : AppCompatActivity() {
                     }
                 } catch (_: Exception) {}
 
-                // Save session in SharedPreferences
+                // Save session in SharedPreferences (preserve existing DB user_id if matched by email)
+                val resolvedUserId = existingUser?.userId?.ifBlank { userId } ?: userId
+                val resolvedName = existingUser?.name?.ifBlank { name } ?: name
+                val resolvedAvatar = existingUser?.profilePhoto?.takeIf { it.isNotBlank() } ?: avatarUrl
                 SupabaseClient.saveSession(
                     accessToken = accessToken,
-                    userId = userId,
+                    userId = resolvedUserId,
                     email = email,
-                    name = existingUser?.name?.ifBlank { name } ?: name
+                    name = resolvedName,
+                    refreshToken = refreshToken
                 )
                 SupabaseClient.saveAccount(
                     email = email,
                     pass = "",
-                    userId = userId,
-                    name = existingUser?.name?.ifBlank { name } ?: name
+                    userId = resolvedUserId,
+                    name = resolvedName
                 )
-                if (!avatarUrl.isNullOrBlank()) {
-                    SupabaseClient.saveAvatarPath(email, avatarUrl)
-                    SupabaseClient.saveAvatarPath(userId, avatarUrl)
+                if (!resolvedAvatar.isNullOrBlank()) {
+                    SupabaseClient.saveAvatarPath(email, resolvedAvatar)
+                    SupabaseClient.saveAvatarPath(resolvedUserId, resolvedAvatar)
                 }
 
                 // Determine if this is first-time signup/signin or returning user:
@@ -239,10 +244,10 @@ class AuthCallbackActivity : AppCompatActivity() {
                         ).show()
 
                         val intent = Intent(this@AuthCallbackActivity, ProfileSetupActivity::class.java).apply {
-                            putExtra("userId", userId)
+                            putExtra("userId", resolvedUserId)
                             putExtra("email", email)
-                            putExtra("name", name)
-                            putExtra("avatarUrl", avatarUrl)
+                            putExtra("name", resolvedName)
+                            putExtra("avatarUrl", resolvedAvatar)
                             putExtra("isFirstTimeGoogle", true)
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                         }

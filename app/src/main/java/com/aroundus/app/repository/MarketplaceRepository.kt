@@ -32,6 +32,19 @@ class MarketplaceRepository {
         private const val PREFS_NAME = "aroundus_marketplace_prefs"
         private const val KEY_LISTINGS_JSON = "cached_listings_json"
 
+        fun updateSellerAvatar(sellerId: String, newAvatar: String?) {
+            if (sellerId.isBlank()) return
+            val existing = globalAuthorMap[sellerId]
+            val sellerName = existing?.first ?: "Neighbor"
+            globalAuthorMap[sellerId] = Pair(sellerName, newAvatar)
+            for (i in memoryCachedListings.indices) {
+                val p = memoryCachedListings[i]
+                if (p.sellerId == sellerId) {
+                    memoryCachedListings[i] = p.copy(sellerAvatarUrl = newAvatar)
+                }
+            }
+        }
+
         fun getCachedListings(context: Context): List<Product> {
             if (memoryCachedListings.isNotEmpty()) return memoryCachedListings
             try {
@@ -89,10 +102,18 @@ class MarketplaceRepository {
                     val usersResp = service.getUsers()
                     if (usersResp.isSuccessful && usersResp.body() != null) {
                         usersResp.body()!!.forEach { user ->
+                            val remotePhoto = user.profilePhoto?.trim()?.takeIf {
+                                it.startsWith("http://") || it.startsWith("https://")
+                            } ?: user.profilePhoto?.takeIf { it.isNotBlank() }
                             globalAuthorMap[user.userId] = Pair(
                                 user.name.ifBlank { "Neighbor" },
-                                user.profilePhoto
+                                remotePhoto
                             )
+                            if (!remotePhoto.isNullOrBlank() &&
+                                (remotePhoto.startsWith("http://") || remotePhoto.startsWith("https://"))
+                            ) {
+                                SupabaseClient.saveAvatarPath(user.userId, remotePhoto)
+                            }
                         }
                     }
 
@@ -229,10 +250,27 @@ class MarketplaceRepository {
                     }
                     val isSaved = getSavedListingIds(context, currentUserId).contains(listingId)
 
-                    val authorInfo = globalAuthorMap[entity.sellerId]
+                    var authorInfo = globalAuthorMap[entity.sellerId]
+                    if (authorInfo == null || authorInfo.second.isNullOrBlank()) {
+                        try {
+                            val uResp = service.getUserById("eq.${entity.sellerId}")
+                            val u = uResp.body()?.firstOrNull()
+                            if (u != null) {
+                                val resolvedAvatar = u.profilePhoto?.takeIf { it.isNotBlank() }
+                                    ?: SupabaseClient.getAvatarPath(entity.sellerId)
+                                authorInfo = Pair(u.name.ifBlank { "Neighbor" }, resolvedAvatar)
+                                globalAuthorMap[entity.sellerId] = authorInfo
+                                if (!resolvedAvatar.isNullOrBlank() &&
+                                    (resolvedAvatar.startsWith("http://") || resolvedAvatar.startsWith("https://"))
+                                ) {
+                                    SupabaseClient.saveAvatarPath(entity.sellerId, resolvedAvatar)
+                                }
+                            }
+                        } catch (_: Exception) {}
+                    }
                     val product = entity.toUIModel(
                         sellerName = authorInfo?.first ?: "Neighbor",
-                        sellerAvatarUrl = authorInfo?.second,
+                        sellerAvatarUrl = authorInfo?.second ?: SupabaseClient.getAvatarPath(entity.sellerId),
                         isVerifiedSeller = true,
                         isSaved = isSaved
                     )

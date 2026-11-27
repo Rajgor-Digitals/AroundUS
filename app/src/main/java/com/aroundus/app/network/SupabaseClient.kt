@@ -3,7 +3,9 @@ package com.aroundus.app.network
 import android.content.Context
 import android.content.SharedPreferences
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -16,6 +18,7 @@ object SupabaseClient {
 
     private const val PREFS_NAME = "aroundus_supabase_prefs"
     private const val KEY_ACCESS_TOKEN = "access_token"
+    private const val KEY_REFRESH_TOKEN = "refresh_token"
     private const val KEY_USER_ID = "user_id"
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_USER_NAME = "user_name"
@@ -43,13 +46,18 @@ object SupabaseClient {
                 // If caller already passed an explicit Authorization header (e.g. Bearer token for updateAuthUser or getAuthUser),
                 // do NOT clobber it with the anon key or default session!
                 val token = getAccessToken()
-                val validToken = if (!token.isNullOrBlank() && !isJwtExpired(token)) {
+                var validToken = if (!token.isNullOrBlank() && token.startsWith("eyJ") && !isJwtExpired(token)) {
                     token
                 } else {
-                    if (!token.isNullOrBlank()) {
-                        prefs?.edit()?.remove(KEY_ACCESS_TOKEN)?.apply()
+                    if (!token.isNullOrBlank() && token.startsWith("eyJ") && isJwtExpired(token)) {
+                        if (refreshSessionBlocking()) {
+                            getAccessToken()?.takeIf { it.startsWith("eyJ") && !isJwtExpired(it) }
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
                     }
-                    null
                 }
 
                 val authHeaderValue = if (!existingAuth.isNullOrBlank() && !existingAuth.equals("Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}", ignoreCase = true)) {
@@ -72,11 +80,18 @@ object SupabaseClient {
 
                 var response = chain.proceed(requestBuilder.build())
                 if (response.code == 401 && authHeaderValue != "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}") {
-                    prefs?.edit()?.remove(KEY_ACCESS_TOKEN)?.apply()
                     response.close()
+                    val refreshed = refreshSessionBlocking()
+                    val newAccessToken = if (refreshed) getAccessToken()?.takeIf { it.startsWith("eyJ") } else null
+                    val fallbackAuth = if (!newAccessToken.isNullOrBlank()) {
+                        "Bearer $newAccessToken"
+                    } else {
+                        prefs?.edit()?.remove(KEY_ACCESS_TOKEN)?.apply()
+                        "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
+                    }
                     val retryRequest = originalRequest.newBuilder()
                         .header("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
-                        .header("Authorization", "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}")
+                        .header("Authorization", fallbackAuth)
                         .header("Content-Type", "application/json")
                         .header("Accept", "application/json")
                         .build()
@@ -127,13 +142,60 @@ object SupabaseClient {
 
     // --- SESSION MANAGEMENT ---
 
-    fun saveSession(accessToken: String?, userId: String?, email: String?, name: String? = null) {
+    fun saveSession(
+        accessToken: String?,
+        userId: String?,
+        email: String?,
+        name: String? = null,
+        refreshToken: String? = null
+    ) {
         prefs?.edit()?.apply {
             putString(KEY_ACCESS_TOKEN, accessToken)
+            if (!refreshToken.isNullOrBlank()) putString(KEY_REFRESH_TOKEN, refreshToken)
             putString(KEY_USER_ID, userId)
             putString(KEY_USER_EMAIL, email?.trim()?.lowercase())
             if (name != null) putString(KEY_USER_NAME, name.trim())
             apply()
+        }
+    }
+
+    fun getRefreshToken(): String? = prefs?.getString(KEY_REFRESH_TOKEN, null)
+
+    @Synchronized
+    fun refreshSessionBlocking(): Boolean {
+        val rToken = getRefreshToken()
+        if (rToken.isNullOrBlank() || !SupabaseConfig.isConfigured()) return false
+        return try {
+            val baseUrl = SupabaseConfig.SUPABASE_URL.trimEnd('/')
+            val bodyJson = org.json.JSONObject().put("refresh_token", rToken).toString()
+            val requestBody = bodyJson.toRequestBody("application/json; charset=utf-8".toMediaType())
+            val request = okhttp3.Request.Builder()
+                .url("$baseUrl/auth/v1/token?grant_type=refresh_token")
+                .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
+                .addHeader("Authorization", "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}")
+                .addHeader("Content-Type", "application/json")
+                .post(requestBody)
+                .build()
+            val client = OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
+            client.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) return false
+                val respStr = resp.body?.string() ?: return false
+                val json = org.json.JSONObject(respStr)
+                val newAccess = json.optString("access_token", "")
+                val newRefresh = json.optString("refresh_token", "").ifBlank { rToken }
+                if (newAccess.isBlank() || !newAccess.startsWith("eyJ")) return false
+                prefs?.edit()?.apply {
+                    putString(KEY_ACCESS_TOKEN, newAccess)
+                    putString(KEY_REFRESH_TOKEN, newRefresh)
+                    apply()
+                }
+                true
+            }
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -310,7 +372,7 @@ object SupabaseClient {
 
     fun clearSession() {
         clearTestSession()
-        prefs?.edit()?.remove(KEY_ACCESS_TOKEN)?.remove(KEY_USER_ID)?.remove(KEY_USER_EMAIL)?.remove(KEY_USER_NAME)?.apply()
+        prefs?.edit()?.remove(KEY_ACCESS_TOKEN)?.remove(KEY_REFRESH_TOKEN)?.remove(KEY_USER_ID)?.remove(KEY_USER_EMAIL)?.remove(KEY_USER_NAME)?.apply()
     }
 
     fun isLoggedIn(): Boolean = !getCurrentUserId().isNullOrBlank()

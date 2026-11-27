@@ -24,6 +24,7 @@ import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.repository.CommentRepository
 import com.aroundus.app.repository.GroupRepository
 import com.aroundus.app.repository.LikeRepository
+import com.aroundus.app.repository.MarketplaceRepository
 import com.aroundus.app.repository.NetworkResult
 import com.aroundus.app.repository.PostRepository
 import com.aroundus.app.repository.UserRepository
@@ -109,6 +110,8 @@ class MyProfileFragment : Fragment() {
                                 SupabaseClient.saveAvatarPath(loggedInUid, remoteUrl)
                                 if (email.isNotBlank()) SupabaseClient.saveAvatarPath(email, remoteUrl)
                                 PostRepository.updateAuthorAvatar(loggedInUid, remoteUrl)
+                                MarketplaceRepository.updateSellerAvatar(loggedInUid, remoteUrl)
+                                AppRefreshManager.notifyDataChanged(RefreshTarget.ALL)
                                 displayAvatar(remoteUrl)
                                 activeDialogAvatarView?.loadUserAvatar(remoteUrl)
                                 Toast.makeText(requireContext(), "Profile photo updated & synced!", Toast.LENGTH_SHORT).show()
@@ -766,8 +769,18 @@ class MyProfileFragment : Fragment() {
                     b.tvUserLocation.text = realLocation
                     b.tvBio.text = realBio
 
+                    displayAvatar(profile.profilePhoto)
                     if (!profile.profilePhoto.isNullOrBlank()) {
-                        displayAvatar(profile.profilePhoto)
+                        if (profile.profilePhoto.startsWith("http://") || profile.profilePhoto.startsWith("https://")) {
+                            SupabaseClient.saveAvatarPath(targetUserId, profile.profilePhoto)
+                        }
+                        PostRepository.updateAuthorAvatar(targetUserId, profile.profilePhoto)
+                        if (myPostList.isNotEmpty()) {
+                            for (i in myPostList.indices) {
+                                myPostList[i] = myPostList[i].copy(userAvatarPath = profile.profilePhoto)
+                            }
+                            postAdapter.notifyDataSetChanged()
+                        }
                     }
 
                     // Check if current user's profile photo needs migration from legacy Base64 or local path
@@ -831,7 +844,7 @@ class MyProfileFragment : Fragment() {
                     val currentAvatar = if (isOwnProfile) {
                         myOwnUserEntity?.profilePhoto ?: SupabaseClient.getAvatarPath(targetUserId) ?: selectedRemoteAvatarUrl
                     } else {
-                        viewedUserEntity?.profilePhoto
+                        viewedUserEntity?.profilePhoto ?: SupabaseClient.getAvatarPath(targetUserId)
                     }
 
                     val onlyUserPosts = result.data
@@ -918,23 +931,25 @@ class MyProfileFragment : Fragment() {
                 pathOrUri ?: viewedUserEntity?.profilePhoto
             }
 
+            val fallbackRes = if (isOwnProfile) R.drawable.img_avatar_gaurav_rajgor else R.drawable.shape_avatar_placeholder
+
             if (!savedPath.isNullOrBlank()) {
-                binding.ivAvatar.loadUserAvatar(savedPath, R.drawable.img_avatar_gaurav_rajgor)
+                binding.ivAvatar.loadUserAvatar(savedPath, fallbackRes)
                 return
             }
 
             if (isOwnProfile && loggedInUserId.isNotBlank()) {
                 val localAvatarFile = File(requireContext().filesDir, "avatar_${loggedInUserId}.jpg")
                 if (localAvatarFile.exists() && localAvatarFile.length() > 0L) {
-                    binding.ivAvatar.loadUserAvatar(localAvatarFile.absolutePath, R.drawable.img_avatar_gaurav_rajgor)
+                    binding.ivAvatar.loadUserAvatar(localAvatarFile.absolutePath, fallbackRes)
                     return
                 }
             }
 
             // Fallback to placeholder avatar
-            binding.ivAvatar.setImageResource(R.drawable.img_avatar_gaurav_rajgor)
+            binding.ivAvatar.setImageResource(fallbackRes)
         } catch (e: Exception) {
-            binding.ivAvatar.setImageResource(R.drawable.img_avatar_gaurav_rajgor)
+            binding.ivAvatar.setImageResource(R.drawable.shape_avatar_placeholder)
         }
     }
 

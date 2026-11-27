@@ -1,13 +1,19 @@
 package com.aroundus.app.models
 
 import com.aroundus.app.R
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
+import java.lang.reflect.Type
 
 /**
  * Supabase Database Entity Models
  * Core entities corresponding to Supabase Postgres database tables.
  */
 
+@JsonAdapter(UserEntityDeserializer::class)
 data class UserEntity(
     @SerializedName(value = "user_id", alternate = ["userId"])
     val userId: String = "",
@@ -31,6 +37,72 @@ data class UserEntity(
     val usernameLastChanged: Long? = null
 ) {
     val profile: String? get() = profilePhoto
+}
+
+/**
+ * Custom deserializer for UserEntity so that when both 'profile_photo' and legacy 'profile'/'avatar_url'
+ * columns exist in Supabase, a null sibling column never overwrites a valid remote URL.
+ */
+class UserEntityDeserializer : JsonDeserializer<UserEntity> {
+    override fun deserialize(
+        json: JsonElement?,
+        typeOfT: Type?,
+        context: JsonDeserializationContext?
+    ): UserEntity {
+        val obj = json?.takeIf { it.isJsonObject }?.asJsonObject ?: return UserEntity()
+
+        fun firstString(vararg keys: String): String? {
+            for (k in keys) {
+                val el = obj.get(k) ?: continue
+                if (el.isJsonPrimitive) {
+                    val str = el.asString?.trim()
+                    if (!str.isNullOrBlank()) return str
+                }
+            }
+            return null
+        }
+
+        val avatarKeys = arrayOf("profile_photo", "profilePhoto", "avatar_url", "profile_image", "avatar", "profile", "image")
+        var bestRemotePhoto: String? = null
+        var firstNonBlankPhoto: String? = null
+        for (k in avatarKeys) {
+            val el = obj.get(k) ?: continue
+            if (el.isJsonPrimitive) {
+                val v = el.asString?.trim()
+                if (!v.isNullOrBlank()) {
+                    if (firstNonBlankPhoto == null) firstNonBlankPhoto = v
+                    if (bestRemotePhoto == null && (v.startsWith("http://") || v.startsWith("https://"))) {
+                        bestRemotePhoto = v
+                    }
+                }
+            }
+        }
+
+        val isVerifiedVal = when {
+            obj.get("isVerified")?.isJsonPrimitive == true -> runCatching { obj.get("isVerified").asBoolean }.getOrNull()
+            obj.get("is_verified")?.isJsonPrimitive == true -> runCatching { obj.get("is_verified").asBoolean }.getOrNull()
+            else -> null
+        }
+
+        val usernameLastChangedVal = when {
+            obj.get("username_last_changed")?.isJsonPrimitive == true -> runCatching { obj.get("username_last_changed").asLong }.getOrNull()
+            obj.get("usernameLastChanged")?.isJsonPrimitive == true -> runCatching { obj.get("usernameLastChanged").asLong }.getOrNull()
+            else -> null
+        }
+
+        return UserEntity(
+            userId = firstString("user_id", "userId") ?: "",
+            name = firstString("name") ?: "",
+            email = firstString("email") ?: "",
+            phone = firstString("phone"),
+            location = firstString("location"),
+            bio = firstString("bio"),
+            profilePhoto = bestRemotePhoto ?: firstNonBlankPhoto,
+            isVerified = isVerifiedVal,
+            createdAt = firstString("created_at", "createdAt"),
+            usernameLastChanged = usernameLastChangedVal
+        )
+    }
 }
 
 data class PostEntity(
@@ -218,6 +290,8 @@ data class EventEntity(
 data class AuthResponse(
     @SerializedName("access_token")
     val accessToken: String? = null,
+    @SerializedName("refresh_token")
+    val refreshToken: String? = null,
     @SerializedName("token_type")
     val tokenType: String? = null,
     @SerializedName("user")

@@ -14,6 +14,7 @@ import com.bumptech.glide.Glide
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.utils.loadUserAvatar
 import com.aroundus.app.utils.loadPostImage
+import com.aroundus.app.utils.resolveBestAvatarPath
 
 class AnnouncementAdapter(
     private val announcements: MutableList<Announcement>,
@@ -47,7 +48,11 @@ class AnnouncementAdapter(
                 SupabaseClient.getAvatarPath(announcement.authorId)
             } else null
 
-            val avatarPath = announcement.authorAvatarUrl ?: cachedAvatar
+            val avatarPath = resolveBestAvatarPath(
+                primary = announcement.authorAvatarUrl,
+                cached = cachedAvatar,
+                isCurrentUser = isCurrentAuthor
+            )
             binding.ivAuthorAvatar.loadUserAvatar(avatarPath, announcement.authorAvatarRes ?: R.drawable.shape_avatar_placeholder)
 
             binding.ivAuthorAvatar.setOnClickListener {

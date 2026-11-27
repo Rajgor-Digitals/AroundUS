@@ -151,6 +151,7 @@ class UserRepository {
                     userId = "usr_" + Math.abs(cleanEmail.hashCode())
                 }
                 val token = authResp.body()?.accessToken ?: "session_$userId"
+                val refreshToken = authResp.body()?.refreshToken
 
                 val userEntity = UserEntity(
                     userId = userId,
@@ -162,11 +163,20 @@ class UserRepository {
                 )
 
                 try {
-                    service.createUser(user = userEntity)
+                    val createResp = service.createUser(user = userEntity)
+                    if (!createResp.isSuccessful && createResp.code() == 400) {
+                        val fallbackMap = mutableMapOf<String, Any>(
+                            "user_id" to userId,
+                            "name" to cleanName,
+                            "email" to cleanEmail
+                        )
+                        phone?.trim()?.takeIf { it.isNotBlank() }?.let { fallbackMap["phone"] = it }
+                        service.createUserFromMap(userMap = fallbackMap)
+                    }
                 } catch (_: Exception) {}
 
                 SupabaseClient.saveAccount(cleanEmail, pass, userId, cleanName)
-                SupabaseClient.saveSession(token, userId, cleanEmail, cleanName)
+                SupabaseClient.saveSession(token, userId, cleanEmail, cleanName, refreshToken = refreshToken)
 
                 NetworkResult.Success(userEntity)
             } catch (e: Exception) {
@@ -190,16 +200,48 @@ class UserRepository {
                 val authResp = service.signIn(LoginRequest(cleanEmail, pass))
                 if (authResp.isSuccessful && authResp.body() != null && !authResp.body()?.user?.id.isNullOrEmpty()) {
                     val body = authResp.body()!!
-                    val userId = body.user!!.id
-                    val accessToken = body.accessToken ?: "session_$userId"
+                    val authUserId = body.user!!.id
+                    val accessToken = body.accessToken ?: "session_$authUserId"
+                    val refreshToken = body.refreshToken
 
-                    val userResp = service.getUserById("eq.$userId")
-                    val existingUser = userResp.body()?.firstOrNull()
-                    val userName = existingUser?.name ?: cleanEmail.substringBefore("@")
+                    // Save session first so interceptor uses fresh JWT when querying/creating user row
+                    SupabaseClient.saveSession(accessToken, authUserId, cleanEmail, refreshToken = refreshToken)
 
-                    SupabaseClient.saveAccount(cleanEmail, pass, userId, userName)
-                    SupabaseClient.saveSession(accessToken, userId, cleanEmail, userName)
-                    val userEntity = existingUser ?: UserEntity(userId = userId, name = userName, email = cleanEmail)
+                    var existingUser = service.getUserById("eq.$authUserId").body()?.firstOrNull()
+                    if (existingUser == null) {
+                        existingUser = service.getUserByEmail("eq.$cleanEmail").body()?.firstOrNull()
+                    }
+                    val resolvedUserId = existingUser?.userId?.ifBlank { authUserId } ?: authUserId
+                    val userName = existingUser?.name?.ifBlank { null } ?: cleanEmail.substringBefore("@")
+
+                    val existingPhoto = existingUser?.profilePhoto?.trim()
+                    if (existingUser == null) {
+                        val newUser = UserEntity(
+                            userId = resolvedUserId,
+                            name = userName,
+                            email = cleanEmail,
+                            bio = "Member of AroundUs community."
+                        )
+                        try {
+                            val createResp = service.createUser(user = newUser)
+                            if (!createResp.isSuccessful && createResp.code() == 400) {
+                                service.createUserFromMap(userMap = mapOf(
+                                    "user_id" to resolvedUserId,
+                                    "name" to userName,
+                                    "email" to cleanEmail
+                                ))
+                            }
+                        } catch (_: Exception) {}
+                    } else if (!existingPhoto.isNullOrBlank() &&
+                        (existingPhoto.startsWith("http://") || existingPhoto.startsWith("https://"))
+                    ) {
+                        SupabaseClient.saveAvatarPath(resolvedUserId, existingPhoto)
+                        SupabaseClient.saveAvatarPath(cleanEmail, existingPhoto)
+                    }
+
+                    SupabaseClient.saveAccount(cleanEmail, pass, resolvedUserId, userName)
+                    SupabaseClient.saveSession(accessToken, resolvedUserId, cleanEmail, userName, refreshToken = refreshToken)
+                    val userEntity = existingUser ?: UserEntity(userId = resolvedUserId, name = userName, email = cleanEmail)
                     return@withContext NetworkResult.Success(userEntity)
                 }
 
@@ -248,14 +290,30 @@ class UserRepository {
         withContext(Dispatchers.IO) {
             try {
                 if (userId.isNotBlank()) {
-                    val resp = service.getUserById("eq.$userId")
+                    val resp = if (userId.contains("@")) {
+                        service.getUserByEmail("eq.${userId.trim().lowercase()}")
+                    } else {
+                        service.getUserById("eq.$userId")
+                    }
                     if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                        return@withContext NetworkResult.Success(resp.body()!!.first())
+                        val user = resp.body()!!.first()
+                        val photo = user.profilePhoto?.trim()
+                        if (!photo.isNullOrBlank() && (photo.startsWith("http://") || photo.startsWith("https://"))) {
+                            if (user.userId.isNotBlank()) SupabaseClient.saveAvatarPath(user.userId, photo)
+                            if (user.email.isNotBlank()) SupabaseClient.saveAvatarPath(user.email, photo)
+                        }
+                        return@withContext NetworkResult.Success(user)
                     }
                 }
 
+                // Only fall back to the logged-in user's email if we are explicitly looking up our own profile
+                val currentUid = SupabaseClient.getCurrentUserId()
                 val currentEmail = SupabaseClient.getCurrentUserEmail()
-                if (!currentEmail.isNullOrBlank()) {
+                val isLookingUpSelf = userId.isBlank() ||
+                    (!currentUid.isNullOrBlank() && userId == currentUid) ||
+                    (!currentEmail.isNullOrBlank() && userId.equals(currentEmail, ignoreCase = true))
+
+                if (isLookingUpSelf && !currentEmail.isNullOrBlank()) {
                     val emailResp = service.getUserByEmail("eq.${currentEmail.trim().lowercase()}")
                     if (emailResp.isSuccessful && !emailResp.body().isNullOrEmpty()) {
                         val user = emailResp.body()!!.first()
@@ -266,6 +324,11 @@ class UserRepository {
                                 email = currentEmail,
                                 name = user.name
                             )
+                        }
+                        val photo = user.profilePhoto?.trim()
+                        if (!photo.isNullOrBlank() && (photo.startsWith("http://") || photo.startsWith("https://"))) {
+                            if (user.userId.isNotBlank()) SupabaseClient.saveAvatarPath(user.userId, photo)
+                            if (user.email.isNotBlank()) SupabaseClient.saveAvatarPath(user.email, photo)
                         }
                         return@withContext NetworkResult.Success(user)
                     }
@@ -549,28 +612,96 @@ class UserRepository {
                     updateMap["username_last_changed"] = finalUser.usernameLastChanged.toString()
                 }
 
+                // Refresh JWT if expired before modifying user row
+                val currentToken = SupabaseClient.getAccessToken()
+                if (!currentToken.isNullOrBlank() && currentToken.startsWith("eyJ") && SupabaseClient.isJwtExpired(currentToken)) {
+                    SupabaseClient.refreshSessionBlocking()
+                }
+
                 // 5. Update row in Supabase users table ONLY for the authorized user
                 var isUpdated = false
                 var savedUser: UserEntity? = null
+                var lastErrCode = 0
+                var lastErrBody: String? = null
 
-                if (authorizedUserId.isNotBlank()) {
-                    val resp = service.updateUser("eq.$authorizedUserId", userMap = updateMap)
-                    if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                        savedUser = resp.body()!!.first()
-                        isUpdated = true
+                suspend fun attemptPatch(payload: Map<String, String>): Boolean {
+                    if (authorizedUserId.isNotBlank()) {
+                        val resp = service.updateUser("eq.$authorizedUserId", userMap = payload)
+                        if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                            savedUser = resp.body()!!.first()
+                            return true
+                        } else if (!resp.isSuccessful) {
+                            lastErrCode = resp.code()
+                            lastErrBody = resp.errorBody()?.string()
+                        }
                     }
+                    if (authorizedEmail.isNotBlank()) {
+                        val resp = service.updateUserByEmail("eq.$authorizedEmail", userMap = payload)
+                        if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                            savedUser = resp.body()!!.first()
+                            return true
+                        } else if (!resp.isSuccessful) {
+                            lastErrCode = resp.code()
+                            lastErrBody = resp.errorBody()?.string()
+                        }
+                    }
+                    return false
                 }
 
-                if (!isUpdated && authorizedEmail.isNotBlank()) {
-                    val resp = service.updateUserByEmail("eq.$authorizedEmail", userMap = updateMap)
-                    if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                        savedUser = resp.body()!!.first()
+                isUpdated = attemptPatch(updateMap)
+
+                // Retry with legacy 'profile' column / core fields if schema lacks newer optional columns (HTTP 400 / PGRST204)
+                if (!isUpdated && lastErrCode == 400) {
+                    val fallbackMap = mutableMapOf<String, String>()
+                    fallbackMap["name"] = finalUser.name
+                    finalUser.location?.takeIf { it.isNotBlank() }?.let { fallbackMap["location"] = it }
+                    finalUser.phone?.takeIf { it.isNotBlank() }?.let { fallbackMap["phone"] = it }
+                    if (photoValue != null && (photoValue.startsWith("http://") || photoValue.startsWith("https://"))) {
+                        fallbackMap["profile"] = photoValue
+                    }
+                    isUpdated = attemptPatch(fallbackMap)
+                }
+
+                // If PATCH returned 200 [] (row missing in public.users), insert/upsert the user row
+                if (!isUpdated && lastErrCode == 0) {
+                    val safeEmail = authorizedEmail.ifBlank { "$authorizedUserId@aroundus.app" }
+                    val insertMap = mutableMapOf<String, Any>(
+                        "user_id" to authorizedUserId,
+                        "name" to finalUser.name,
+                        "email" to safeEmail
+                    )
+                    finalUser.location?.takeIf { it.isNotBlank() }?.let { insertMap["location"] = it }
+                    finalUser.phone?.takeIf { it.isNotBlank() }?.let { insertMap["phone"] = it }
+                    finalUser.bio?.takeIf { it.isNotBlank() }?.let { insertMap["bio"] = it }
+                    if (photoValue != null && (photoValue.startsWith("http://") || photoValue.startsWith("https://"))) {
+                        insertMap["profile_photo"] = photoValue
+                    }
+                    val createResp = service.createUserFromMap(userMap = insertMap)
+                    if (createResp.isSuccessful && !createResp.body().isNullOrEmpty()) {
+                        savedUser = createResp.body()!!.first()
                         isUpdated = true
+                    } else if (createResp.code() == 400) {
+                        val legacyInsertMap = mutableMapOf<String, Any>(
+                            "user_id" to authorizedUserId,
+                            "name" to finalUser.name,
+                            "email" to safeEmail
+                        )
+                        finalUser.location?.takeIf { it.isNotBlank() }?.let { legacyInsertMap["location"] = it }
+                        finalUser.phone?.takeIf { it.isNotBlank() }?.let { legacyInsertMap["phone"] = it }
+                        if (photoValue != null && (photoValue.startsWith("http://") || photoValue.startsWith("https://"))) {
+                            legacyInsertMap["profile"] = photoValue
+                        }
+                        val retryCreate = service.createUserFromMap(userMap = legacyInsertMap)
+                        if (retryCreate.isSuccessful && !retryCreate.body().isNullOrEmpty()) {
+                            savedUser = retryCreate.body()!!.first()
+                            isUpdated = true
+                        }
                     }
                 }
 
                 if (!isUpdated) {
-                    return@withContext NetworkResult.Error("Failed to update profile: Profile not found or update unauthorized.")
+                    val detail = extractSupabaseError(lastErrBody, "Profile not found or update unauthorized (HTTP $lastErrCode).")
+                    return@withContext NetworkResult.Error("Failed to update profile: $detail")
                 }
 
                 val resultUser = savedUser ?: finalUser
@@ -689,8 +820,13 @@ class UserRepository {
             val baseUrl = SupabaseConfig.SUPABASE_URL.trimEnd('/')
             val uploadUrl = "$baseUrl/storage/v1/object/avatars/$objectPath"
 
-            val token = SupabaseClient.getAccessToken()
-            val authHeaderValue = if (!token.isNullOrBlank() && token.startsWith("eyJ")) {
+            var token = SupabaseClient.getAccessToken()
+            if (!token.isNullOrBlank() && token.startsWith("eyJ") && SupabaseClient.isJwtExpired(token)) {
+                if (SupabaseClient.refreshSessionBlocking()) {
+                    token = SupabaseClient.getAccessToken()
+                }
+            }
+            val authHeaderValue = if (!token.isNullOrBlank() && token.startsWith("eyJ") && !SupabaseClient.isJwtExpired(token)) {
                 "Bearer $token"
             } else {
                 "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}"
@@ -698,27 +834,45 @@ class UserRepository {
 
             val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
 
-            val request = okhttp3.Request.Builder()
-                .url(uploadUrl)
-                .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
-                .addHeader("Authorization", authHeaderValue)
-                .addHeader("Content-Type", mimeType)
-                .post(requestBody)
-                .build()
-
             val client = okhttp3.OkHttpClient.Builder()
                 .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
                 .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                 .readTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
                 .build()
 
-            val response = client.newCall(request).execute()
-            if (response.isSuccessful) {
-                val publicUrl = "$baseUrl/storage/v1/object/public/avatars/$objectPath"
-                NetworkResult.Success(publicUrl)
-            } else {
-                val errBody = response.body?.string() ?: response.message
-                NetworkResult.Error("Upload failed (${response.code}): $errBody")
+            fun buildUploadRequest(authHeader: String): okhttp3.Request {
+                return okhttp3.Request.Builder()
+                    .url(uploadUrl)
+                    .addHeader("apikey", SupabaseConfig.SUPABASE_ANON_KEY)
+                    .addHeader("Authorization", authHeader)
+                    .addHeader("Content-Type", mimeType)
+                    .post(requestBody)
+                    .build()
+            }
+
+            var response = client.newCall(buildUploadRequest(authHeaderValue)).execute()
+            if ((response.code == 401 || response.code == 403) && authHeaderValue != "Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}") {
+                response.close()
+                if (response.code == 401 && SupabaseClient.refreshSessionBlocking()) {
+                    val refreshed = SupabaseClient.getAccessToken()
+                    if (!refreshed.isNullOrBlank() && refreshed.startsWith("eyJ")) {
+                        response = client.newCall(buildUploadRequest("Bearer $refreshed")).execute()
+                    }
+                }
+                if (!response.isSuccessful) {
+                    response.close()
+                    response = client.newCall(buildUploadRequest("Bearer ${SupabaseConfig.SUPABASE_ANON_KEY}")).execute()
+                }
+            }
+
+            response.use { res ->
+                if (res.isSuccessful) {
+                    val publicUrl = "$baseUrl/storage/v1/object/public/avatars/$objectPath"
+                    NetworkResult.Success(publicUrl)
+                } else {
+                    val errBody = res.body?.string() ?: res.message
+                    NetworkResult.Error("Upload failed (${res.code}): $errBody")
+                }
             }
         } catch (e: Exception) {
             NetworkResult.Error(e.localizedMessage ?: "Storage upload error", e)
@@ -726,7 +880,9 @@ class UserRepository {
     }
 
     /**
-     * Updates only the 'profile_photo' column in the users table for the given user.
+     * Updates the profile photo URL in the Supabase users table for the given authorized user.
+     * Supports 'profile_photo' as primary column with automatic fallback to legacy 'profile'/'avatar_url'
+     * columns and creates the user row if it does not yet exist in public.users.
      */
     suspend fun updateProfilePhotoUrl(userId: String, email: String, remoteUrl: String): NetworkResult<Boolean> =
         withContext(Dispatchers.IO) {
@@ -748,19 +904,94 @@ class UserRepository {
                 if (remoteUrl.isBlank() || (!remoteUrl.startsWith("http://") && !remoteUrl.startsWith("https://"))) {
                     return@withContext NetworkResult.Error("Invalid remote URL.")
                 }
-                val updateMap = mapOf("profile_photo" to remoteUrl)
-                var updated = false
 
-                if (authorizedUserId.isNotBlank()) {
-                    val resp = service.updateUser("eq.$authorizedUserId", userMap = updateMap)
-                    if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                        updated = true
+                // Refresh JWT if expired so authenticated RLS policies succeed
+                val currentToken = SupabaseClient.getAccessToken()
+                if (!currentToken.isNullOrBlank() && currentToken.startsWith("eyJ") && SupabaseClient.isJwtExpired(currentToken)) {
+                    SupabaseClient.refreshSessionBlocking()
+                }
+
+                var updated = false
+                var lastErrCode = 0
+                var lastErrBody: String? = null
+
+                suspend fun tryPatchColumn(columnName: String): Boolean {
+                    val payload = mapOf(columnName to remoteUrl)
+                    if (authorizedUserId.isNotBlank()) {
+                        val resp = service.updateUser("eq.$authorizedUserId", userMap = payload)
+                        if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                            return true
+                        } else if (!resp.isSuccessful) {
+                            lastErrCode = resp.code()
+                            lastErrBody = resp.errorBody()?.string()
+                        }
+                    }
+                    if (authorizedEmail.isNotBlank()) {
+                        val resp = service.updateUserByEmail("eq.$authorizedEmail", userMap = payload)
+                        if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                            return true
+                        } else if (!resp.isSuccessful) {
+                            lastErrCode = resp.code()
+                            lastErrBody = resp.errorBody()?.string()
+                        }
+                    }
+                    return false
+                }
+
+                // 1. Primary column: profile_photo
+                updated = tryPatchColumn("profile_photo")
+
+                // 2. Schema fallback: if profile_photo column is missing (400 / PGRST204), try legacy 'profile' and 'avatar_url'
+                if (!updated && (lastErrCode == 400 || (lastErrBody?.contains("profile_photo", ignoreCase = true) == true))) {
+                    lastErrCode = 0
+                    lastErrBody = null
+                    updated = tryPatchColumn("profile")
+                    if (!updated && (lastErrCode == 400 || (lastErrBody?.contains("profile", ignoreCase = true) == true))) {
+                        lastErrCode = 0
+                        lastErrBody = null
+                        updated = tryPatchColumn("avatar_url")
                     }
                 }
-                if (!updated && authorizedEmail.isNotBlank()) {
-                    val resp = service.updateUserByEmail("eq.$authorizedEmail", userMap = updateMap)
-                    if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                        updated = true
+
+                // 3. Missing row fallback: if PATCH returned 200 with 0 matched rows, check if user row exists and upsert it
+                if (!updated && lastErrCode == 0 && authorizedUserId.isNotBlank()) {
+                    val existingById = runCatching { service.getUserById("eq.$authorizedUserId").body()?.firstOrNull() }.getOrNull()
+                    val existingByEmail = if (existingById == null && authorizedEmail.isNotBlank()) {
+                        runCatching { service.getUserByEmail("eq.$authorizedEmail").body()?.firstOrNull() }.getOrNull()
+                    } else null
+
+                    if (existingById == null && existingByEmail == null) {
+                        val safeName = SupabaseClient.getCurrentUserName()?.takeIf { it.isNotBlank() }
+                            ?: authorizedEmail.substringBefore("@").ifBlank { "Neighbor" }
+                        val safeEmail = authorizedEmail.ifBlank { "$authorizedUserId@aroundus.app" }
+
+                        val insertPrimary = mapOf(
+                            "user_id" to authorizedUserId,
+                            "name" to safeName,
+                            "email" to safeEmail,
+                            "profile_photo" to remoteUrl
+                        )
+                        val createResp = service.createUserFromMap(userMap = insertPrimary)
+                        if (createResp.isSuccessful && !createResp.body().isNullOrEmpty()) {
+                            updated = true
+                        } else if (createResp.code() == 400) {
+                            val insertLegacy = mapOf(
+                                "user_id" to authorizedUserId,
+                                "name" to safeName,
+                                "email" to safeEmail,
+                                "profile" to remoteUrl
+                            )
+                            val retryCreate = service.createUserFromMap(userMap = insertLegacy)
+                            if (retryCreate.isSuccessful && !retryCreate.body().isNullOrEmpty()) {
+                                updated = true
+                            } else if (!retryCreate.isSuccessful) {
+                                lastErrCode = retryCreate.code()
+                                lastErrBody = retryCreate.errorBody()?.string()
+                            }
+                        } else if (!createResp.isSuccessful) {
+                            lastErrCode = createResp.code()
+                            lastErrBody = createResp.errorBody()?.string()
+                        }
                     }
                 }
 
@@ -769,9 +1000,17 @@ class UserRepository {
                     if (authorizedEmail.isNotBlank()) {
                         SupabaseClient.saveAvatarPath(authorizedEmail, remoteUrl)
                     }
+                    PostRepository.updateAuthorAvatar(authorizedUserId, remoteUrl)
+                    MarketplaceRepository.updateSellerAvatar(authorizedUserId, remoteUrl)
                     NetworkResult.Success(true)
                 } else {
-                    NetworkResult.Error("Could not update user record in database.")
+                    val detail = if (lastErrCode != 0) {
+                        val parsed = extractSupabaseError(lastErrBody, "HTTP $lastErrCode")
+                        "Could not update user record in database ($parsed)."
+                    } else {
+                        "Could not update user record in database. Please run fix_profile_photo_rls.sql in Supabase."
+                    }
+                    NetworkResult.Error(detail)
                 }
             } catch (e: Exception) {
                 NetworkResult.Error(e.localizedMessage ?: "Database update error", e)
@@ -1137,11 +1376,18 @@ class PostRepository {
                     SupabaseClient.getCurrentUserId() ?: ""
                 }
 
-                // 2. Fetch posts, comments count map, and likes data concurrently under supervisorScope
-                // This ensures network/DNS failures never cancel sibling coroutines or crash the scope
-                val (resp, commentsCountMap, likesData) = supervisorScope {
+                // 2. Fetch posts, users, comments count map, and likes data concurrently under supervisorScope
+                // Fetching users together ensures every user's updated profile photo syncs across devices immediately
+                var respMut: retrofit2.Response<List<PostEntity>>? = null
+                var usersRespMut: retrofit2.Response<List<UserEntity>>? = null
+                var commentsCountMap: Map<String, Int> = emptyMap()
+                var likesData = LikeRepository.LikesData()
+                supervisorScope {
                     val postsDeferred = async {
                         try { service.getPosts() } catch (_: Exception) { null }
+                    }
+                    val usersDeferred = async {
+                        try { service.getUsers() } catch (_: Exception) { null }
                     }
                     val commentsMapDeferred = async {
                         try { CommentRepository().fetchCommentsCountMap() } catch (_: Exception) { emptyMap() }
@@ -1150,16 +1396,39 @@ class PostRepository {
                         try { LikeRepository().fetchLikesData(currentUserId) } catch (_: Exception) { LikeRepository.LikesData() }
                     }
 
-                    Triple(postsDeferred.await(), commentsMapDeferred.await(), likesDataDeferred.await())
+                    respMut = postsDeferred.await()
+                    usersRespMut = usersDeferred.await()
+                    commentsCountMap = commentsMapDeferred.await()
+                    likesData = likesDataDeferred.await()
                 }
+                val resp = respMut
+                val usersResp = usersRespMut
 
                 if (resp != null && resp.isSuccessful && resp.body() != null) {
                     val posts = resp.body()!!
 
-                    // Identify unknown author IDs
+                    // Refresh globalAuthorCache from fresh Supabase users response
+                    if (usersResp != null && usersResp.isSuccessful && usersResp.body() != null) {
+                        for (u in usersResp.body()!!) {
+                            if (u.userId.isBlank()) continue
+                            val name = u.name.ifBlank { "Neighbor" }
+                            val remotePhoto = u.profilePhoto?.trim()?.takeIf {
+                                it.startsWith("http://") || it.startsWith("https://")
+                            } ?: u.profilePhoto?.takeIf { it.isNotBlank() }
+                            globalAuthorCache[u.userId] = Pair(name, remotePhoto ?: SupabaseClient.getAvatarPath(u.userId))
+                            globalVerifiedCache[u.userId] = (u.isVerified == true)
+                            if (!remotePhoto.isNullOrBlank() &&
+                                (remotePhoto.startsWith("http://") || remotePhoto.startsWith("https://"))
+                            ) {
+                                SupabaseClient.saveAvatarPath(u.userId, remotePhoto)
+                            }
+                        }
+                    }
+
+                    // Identify any remaining unknown author IDs
                     val unknownAuthorIds = posts
                         .mapNotNull { it.authorId.takeIf { id -> !id.isNullOrBlank() } }
-                        .filter { !globalAuthorCache.containsKey(it) || globalAuthorCache[it]?.second.isNullOrBlank() }
+                        .filter { !globalAuthorCache.containsKey(it) }
                         .distinct()
 
                     // Fetch unknown authors in parallel concurrently
@@ -1175,7 +1444,7 @@ class PostRepository {
                                         val isVer = user?.isVerified == true
                                         globalAuthorCache[authorId] = Pair(name, avatar)
                                         globalVerifiedCache[authorId] = isVer
-                                        if (!avatar.isNullOrBlank()) {
+                                        if (!avatar.isNullOrBlank() && (avatar.startsWith("http://") || avatar.startsWith("https://"))) {
                                             SupabaseClient.saveAvatarPath(authorId, avatar)
                                         }
                                     } catch (_: Exception) {
@@ -1249,23 +1518,25 @@ class PostRepository {
                     var authorAvatar: String? = null
                     val pAuthorId = p.authorId ?: ""
                     if (pAuthorId.isNotBlank()) {
-                        val authorEntry = globalAuthorCache[pAuthorId]
-                        if (authorEntry != null && !authorEntry.second.isNullOrBlank()) {
-                            authorName = authorEntry.first
-                            authorAvatar = authorEntry.second
-                        } else {
-                            try {
-                                val userResp = service.getUserById("eq.$pAuthorId")
-                                val user = userResp.body()?.firstOrNull()
-                                if (user != null) {
-                                    authorName = user.name?.ifBlank { "Neighbor" } ?: "Neighbor"
-                                    authorAvatar = user.profilePhoto?.takeIf { !it.isNullOrBlank() } ?: SupabaseClient.getAvatarPath(pAuthorId)
-                                    globalAuthorCache[pAuthorId] = Pair(authorName, authorAvatar)
-                                    if (!authorAvatar.isNullOrBlank()) {
-                                        SupabaseClient.saveAvatarPath(pAuthorId, authorAvatar)
-                                    }
+                        try {
+                            val userResp = service.getUserById("eq.$pAuthorId")
+                            val user = userResp.body()?.firstOrNull()
+                            if (user != null) {
+                                authorName = user.name.ifBlank { "Neighbor" }
+                                authorAvatar = user.profilePhoto?.takeIf { !it.isNullOrBlank() } ?: SupabaseClient.getAvatarPath(pAuthorId)
+                                globalAuthorCache[pAuthorId] = Pair(authorName, authorAvatar)
+                                if (!authorAvatar.isNullOrBlank() && (authorAvatar.startsWith("http://") || authorAvatar.startsWith("https://"))) {
+                                    SupabaseClient.saveAvatarPath(pAuthorId, authorAvatar)
                                 }
-                            } catch (_: Exception) {}
+                            } else {
+                                val authorEntry = globalAuthorCache[pAuthorId]
+                                authorName = authorEntry?.first ?: "Neighbor"
+                                authorAvatar = authorEntry?.second ?: SupabaseClient.getAvatarPath(pAuthorId)
+                            }
+                        } catch (_: Exception) {
+                            val authorEntry = globalAuthorCache[pAuthorId]
+                            authorName = authorEntry?.first ?: "Neighbor"
+                            authorAvatar = authorEntry?.second ?: SupabaseClient.getAvatarPath(pAuthorId)
                         }
                     }
 

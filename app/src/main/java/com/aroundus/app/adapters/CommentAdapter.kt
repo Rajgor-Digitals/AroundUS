@@ -7,6 +7,7 @@ import com.aroundus.app.databinding.ItemCommentBinding
 import com.aroundus.app.models.Comment
 import com.aroundus.app.network.SupabaseClient
 import com.aroundus.app.utils.loadUserAvatar
+import com.aroundus.app.utils.resolveBestAvatarPath
 import java.io.File
 
 class CommentAdapter(
@@ -34,13 +35,14 @@ class CommentAdapter(
                 SupabaseClient.getAvatarPath(comment.userId)
             } else null
 
-            val avatarPath = if (!comment.avatarPath.isNullOrBlank()) {
-                comment.avatarPath
-            } else if (!cachedAvatar.isNullOrBlank()) {
-                cachedAvatar
-            } else if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
-                localAvatarFile.absolutePath
-            } else null
+            val avatarPath = resolveBestAvatarPath(
+                primary = comment.avatarPath,
+                cached = cachedAvatar,
+                isCurrentUser = isCurrentAuthor,
+                localFallbackPath = if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+                    localAvatarFile.absolutePath
+                } else null
+            )
 
             binding.ivAvatar.loadUserAvatar(avatarPath, comment.avatarRes)
 

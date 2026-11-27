@@ -33,6 +33,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.aroundus.app.activities.FullScreenImageViewerActivity
 import com.aroundus.app.utils.PostActionUtils
 import com.aroundus.app.utils.loadUserAvatar
+import com.aroundus.app.utils.resolveBestAvatarPath
 import com.aroundus.app.utils.loadPostImage
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.launch
@@ -403,15 +404,14 @@ class PostDetailFragment : Fragment() {
             SupabaseClient.getAvatarPath(currentUserId)
         } else null
 
-        val avatarPath = if (!post.userAvatarPath.isNullOrBlank()) {
-            post.userAvatarPath
-        } else if (!cachedAvatar.isNullOrBlank()) {
-            cachedAvatar
-        } else if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
-            localAvatarFile.absolutePath
-        } else {
-            null
-        }
+        val avatarPath = resolveBestAvatarPath(
+            primary = post.userAvatarPath,
+            cached = cachedAvatar,
+            isCurrentUser = isCurrentAuthor,
+            localFallbackPath = if (localAvatarFile != null && localAvatarFile.exists() && localAvatarFile.length() > 0L) {
+                localAvatarFile.absolutePath
+            } else null
+        )
 
         binding.ivAvatar.loadUserAvatar(avatarPath, post.userAvatar)
 

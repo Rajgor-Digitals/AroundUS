@@ -78,6 +78,12 @@ interface SupabaseService {
         @Body user: UserEntity
     ): Response<List<UserEntity>>
 
+    @POST("rest/v1/users")
+    suspend fun createUserFromMap(
+        @Header("Prefer") prefer: String = "return=representation,resolution=merge-duplicates",
+        @Body userMap: Map<String, @JvmSuppressWildcards Any>
+    ): Response<List<UserEntity>>
+
     @PATCH("rest/v1/users")
     suspend fun updateUser(
         @Query("user_id") queryFilter: String,

@@ -413,7 +413,6 @@ class ProfileSetupActivity : AppCompatActivity() {
                             remoteAvatarUrl = uploadRes.data
                             SupabaseClient.saveAvatarPath(targetUserId, remoteAvatarUrl)
                             if (targetEmail.isNotBlank()) SupabaseClient.saveAvatarPath(targetEmail, remoteAvatarUrl)
-                            userRepository.updateProfilePhotoUrl(targetUserId, targetEmail, remoteAvatarUrl)
                         }
                         is NetworkResult.Error -> {
                             // Non-fatal, continue saving profile data
@@ -441,7 +440,7 @@ class ProfileSetupActivity : AppCompatActivity() {
                     profilePhoto = remoteAvatarUrl
                 )
 
-                // 3. Save profile to Supabase & local cache
+                // 3. Save profile (and remoteAvatarUrl) to Supabase & local cache
                 userRepository.updateUserProfile(userEntity)
 
                 // Save to UserLocationManager
